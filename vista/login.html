@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión - ISFT 182 Clementina</title>
+  <link rel="stylesheet" href="estilo/estilo.css">
+</head>
+<body class="fondo-login">
+
+  <div class="tarjeta-login">
+    <div class="login-cabecera">
+      <span class="sigla">ISFT 182</span>
+      <p class="subtitulo">Instituto Superior "Clementina"</p>
+    </div>
+
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="usuario">Usuario</label>
+        <input type="text" id="usuario" name="usuario"
+               placeholder="Ingresá tu usuario"
+               autocomplete="username" required>
+      </div>
+
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password"
+               placeholder="Contraseña"
+               autocomplete="current-password" required>
+      </div>
+
+      <p id="mensaje-login" class="mensaje" role="alert"></p>
+
+      <button type="submit" id="boton-ingresar" class="boton boton-primario">Ingresar</button>
+    </form>
+
+    <p class="login-pie">Sistema de gestión académica</p>
+  </div>
+
+  <script src="estilo/app.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var form     = document.getElementById('form-login');
+      var boton    = document.getElementById('boton-ingresar');
+      var mensaje  = document.getElementById('mensaje-login');
+
+      function mostrarMensaje(texto, tipo) {
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      }
+
+      // Si ya hay una sesión abierta, ir directo al menú principal.
+      // (redirigir = false: no redirigir al login, ya estamos en él.)
+      App.verificarSesion(false).then(function (usuario) {
+        if (usuario) {
+          window.location.href = App.raiz() + '/index.html';
+        }
+      });
+
+      form.addEventListener('submit', function (evento) {
+        evento.preventDefault();
+
+        var usuario  = document.getElementById('usuario').value.trim();
+        var password = document.getElementById('password').value;
+
+        if (!usuario || !password) {
+          mostrarMensaje('Ingresá usuario y contraseña.', 'error');
+          return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = 'Verificando...';
+
+        var datos = new FormData();
+        datos.append('usuario', usuario);
+        datos.append('password', password);
+
+        fetch(App.controlador('login.php'), { method: 'POST', body: datos })
+          .then(function (resp) { return resp.json(); })
+          .then(function (resultado) {
+            if (resultado.ok) {
+              mostrarMensaje(resultado.mensaje, 'ok');
+              setTimeout(function () {
+                window.location.href = App.raiz() + '/index.html';
+              }, 450);
+            } else {
+              mostrarMensaje(resultado.mensaje, 'error');
+            }
+          })
+          .catch(function () {
+            mostrarMensaje('Error de red o del servidor. Intentá de nuevo.', 'error');
+          })
+          .finally(function () {
+            boton.disabled = false;
+            boton.textContent = 'Ingresar';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

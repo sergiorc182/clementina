@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABM Materias y carreras - ISFT 182 Clementina</title>
+  <link rel="stylesheet" href="estilo/estilo.css">
+</head>
+<body>
+
+  <header class="cabecera">
+    <div>
+      <h1>ABM Materias y carreras</h1>
+      <p class="subtitulo">ISFT 182 Clementina</p>
+    </div>
+    <div class="cabecera-usuario">
+      <span id="nombre-usuario" class="usuario-nombre"></span>
+      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="tarjeta">
+      <h2 class="titulo-seccion">En construcción</h2>
+      <p>
+        Este formulario se completará en el próximo paso. Se conectará con las
+        tablas <code>carreras</code>, <code>materias</code>,
+        <code>carrera_materias</code> y <code>correlatividades</code>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="pie">ISFT 182 "Clementina"</footer>
+
+  <script src="estilo/app.js"></script>
+  <script>
+    App.verificarSesion().then(function (usuario) {
+      if (usuario) {
+        document.getElementById('nombre-usuario').textContent =
+          usuario.nombre + ' (' + App.nombreRol(usuario.rol) + ')';
+      }
+    });
+  </script>
+</body>
+</html>

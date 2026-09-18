@@ -1,0 +1,364 @@
+/* =====================================================================
+   ISFT 182 "Clementina" - Sistema de gestión académica
+   Hoja de estilos global (CSS3)
+   ===================================================================== */
+
+:root {
+  --color-primario: #1f4e79;
+  --color-primario-oscuro: #163a5a;
+  --color-secundario: #2e7d32;
+  --color-acento: #f59e0b;
+  --color-error: #c62828;
+  --color-exito: #2e7d32;
+  --color-fondo: #f3f5f8;
+  --color-tarjeta: #ffffff;
+  --color-texto: #263238;
+  --color-texto-claro: #6b7a86;
+  --color-borde: #dce3ea;
+  --radio: 10px;
+  --sombra: 0 4px 12px rgba(31, 78, 121, 0.12);
+  --sombra-hover: 0 8px 22px rgba(31, 78, 121, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+a {
+  color: var(--color-primario);
+}
+
+/* ------------------------------------------------------------------ */
+/* Cabecera común                                                        */
+/* ------------------------------------------------------------------ */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
+  color: #fff;
+  padding: 16px 28px;
+  box-shadow: var(--sombra);
+}
+
+.cabecera h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.cabecera .subtitulo {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.cabecera-usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.usuario-nombre {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Contenedores                                                          */
+/* ------------------------------------------------------------------ */
+
+.contenedor {
+  max-width: 1080px;
+  margin: 28px auto;
+  padding: 0 20px;
+}
+
+.titulo-seccion {
+  margin: 0 0 18px;
+  font-size: 1.3rem;
+  color: var(--color-primario-oscuro);
+}
+
+.tarjeta {
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 22px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Menú principal: grilla de módulos                                    */
+/* ------------------------------------------------------------------ */
+
+.grilla-modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.modulo {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 20px;
+  text-decoration: none;
+  color: var(--color-texto);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modulo:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sombra-hover);
+  border-color: var(--color-primario);
+}
+
+.modulo-letra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.modulo-letra.verde { background: var(--color-secundario); }
+.modulo-letra.ambar { background: var(--color-acento); }
+.modulo-letra.azul  { background: var(--color-primario); }
+
+.modulo-nombre {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+
+.modulo-desc {
+  font-size: 0.85rem;
+  color: var(--color-texto-claro);
+}
+
+/* ------------------------------------------------------------------ */
+/* Login                                                                  */
+/* ------------------------------------------------------------------ */
+
+.fondo-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-oscuro) 60%, #0f2740 100%);
+  padding: 20px;
+}
+
+.tarjeta-login {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-tarjeta);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  padding: 34px 32px;
+}
+
+.login-cabecera {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-cabecera .sigla {
+  display: inline-block;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--color-primario);
+}
+
+.login-cabecera .subtitulo {
+  margin: 4px 0 0;
+  color: var(--color-texto-claro);
+  font-size: 0.95rem;
+}
+
+.login-pie {
+  text-align: center;
+  margin: 20px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-claro);
+}
+
+/* ------------------------------------------------------------------ */
+/* Formularios                                                           */
+/* ------------------------------------------------------------------ */
+
+.campo {
+  margin-bottom: 16px;
+}
+
+.campo label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-texto);
+}
+
+.campo input,
+.campo select {
+  width: 100%;
+  padding: 11px 12px;
+  font-size: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.campo input:focus,
+.campo select:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.15);
+}
+
+/* ------------------------------------------------------------------ */
+/* Botones                                                                */
+/* ------------------------------------------------------------------ */
+
+.boton {
+  display: inline-block;
+  padding: 11px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.boton:active {
+  transform: translateY(1px);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.boton-primario {
+  width: 100%;
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.boton-primario:hover:not(:disabled) {
+  background: var(--color-primario-oscuro);
+}
+
+.boton-secundario {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.boton-secundario:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.boton-plano {
+  background: var(--color-fondo);
+  color: var(--color-primario);
+  border: 1px solid var(--color-borde);
+}
+
+.boton-plano:hover {
+  background: #e6ecf3;
+}
+
+/* ------------------------------------------------------------------ */
+/* Mensajes                                                               */
+/* ------------------------------------------------------------------ */
+
+.mensaje {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: none;
+}
+
+.mensaje-visible {
+  display: block;
+}
+
+.mensaje-error {
+  background: #fdecea;
+  color: var(--color-error);
+  border: 1px solid #f5c6c4;
+}
+
+.mensaje-exito {
+  background: #e8f5e9;
+  color: var(--color-exito);
+  border: 1px solid #c8e6c9;
+}
+
+/* ------------------------------------------------------------------ */
+/* Pie                                                                     */
+/* ------------------------------------------------------------------ */
+
+.pie {
+  text-align: center;
+  padding: 18px;
+  color: var(--color-texto-claro);
+  font-size: 0.8rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                             */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .cabecera {
+    padding: 14px 16px;
+  }
+
+  .cabecera-usuario {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .contenedor {
+    margin: 18px auto;
+    padding: 0 14px;
+  }
+
+  .grilla-modulos {
+    grid-template-columns: 1fr;
+  }
+}

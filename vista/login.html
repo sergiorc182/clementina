@@ -14,11 +14,12 @@
       <p class="subtitulo">Instituto Superior "Clementina"</p>
     </div>
 
+    <!-- ======================= LOGIN ======================= -->
     <form id="form-login" novalidate>
       <div class="campo">
         <label for="usuario">Usuario</label>
         <input type="text" id="usuario" name="usuario"
-               placeholder="Ingresá tu usuario"
+               placeholder="Email del alumno o usuario de personal"
                autocomplete="username" required>
       </div>
 
@@ -32,6 +33,62 @@
       <p id="mensaje-login" class="mensaje" role="alert"></p>
 
       <button type="submit" id="boton-ingresar" class="boton boton-primario">Ingresar</button>
+
+      <button type="button" id="boton-registrarse" class="boton boton-plano boton-margen-top">
+        Registrarse
+      </button>
+    </form>
+
+    <p class="login-pie">Sistema de gestión académica</p>
+  </div>
+
+  <!-- ====================== REGISTRO ======================= -->
+  <div id="tarjeta-registro" class="tarjeta-login oculto">
+    <div class="login-cabecera">
+      <span class="sigla">Registro</span>
+      <p class="subtitulo">Creá tu cuenta de alumno</p>
+    </div>
+
+    <form id="form-registro" novalidate>
+      <div class="campo">
+        <label for="reg-nombre">Nombre</label>
+        <input type="text" id="reg-nombre" name="nombre" placeholder="Tu nombre" required>
+      </div>
+
+      <div class="campo">
+        <label for="reg-apellido">Apellido</label>
+        <input type="text" id="reg-apellido" name="apellido" placeholder="Tu apellido" required>
+      </div>
+
+      <div class="campo">
+        <label for="reg-dni">DNI</label>
+        <input type="text" id="reg-dni" name="dni" placeholder="Solo números, sin puntos" required>
+      </div>
+
+      <div class="campo">
+        <label for="reg-mail">Mail</label>
+        <input type="email" id="reg-mail" name="email" placeholder="tu@email.com" autocomplete="email" required>
+      </div>
+
+      <div class="campo">
+        <label for="reg-telefono">Teléfono</label>
+        <input type="tel" id="reg-telefono" name="telefono" placeholder="Teléfono de contacto" autocomplete="tel" required>
+      </div>
+
+      <div class="campo">
+        <label for="reg-password">Contraseña</label>
+        <input type="password" id="reg-password" name="password"
+               placeholder="Mínimo 6 caracteres"
+               autocomplete="new-password" required>
+      </div>
+
+      <p id="mensaje-registro" class="mensaje" role="alert"></p>
+
+      <button type="submit" id="boton-crear-cuenta" class="boton boton-primario">Crear cuenta</button>
+
+      <button type="button" id="boton-volver-login" class="boton boton-plano boton-margen-top">
+        Ya tengo cuenta, volver a ingresar
+      </button>
     </form>
 
     <p class="login-pie">Sistema de gestión académica</p>
@@ -42,36 +99,58 @@
     (function () {
       'use strict';
 
-      var form     = document.getElementById('form-login');
-      var boton    = document.getElementById('boton-ingresar');
-      var mensaje  = document.getElementById('mensaje-login');
+      var formLogin    = document.getElementById('form-login');
+      var botonLogin   = document.getElementById('boton-ingresar');
+      var mensajeLogin = document.getElementById('mensaje-login');
+      var formReg      = document.getElementById('form-registro');
+      var botonReg     = document.getElementById('boton-crear-cuenta');
+      var mensajeReg   = document.getElementById('mensaje-registro');
+      var tarjetaReg   = document.getElementById('tarjeta-registro');
+      var botonIrReg   = document.getElementById('boton-registrarse');
+      var botonVolver  = document.getElementById('boton-volver-login');
 
-      function mostrarMensaje(texto, tipo) {
-        mensaje.textContent = texto;
-        mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      function mostrarMensaje(el, texto, tipo) {
+        el.textContent = texto;
+        el.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      }
+
+      function limpiarMensaje(el) {
+        el.textContent = '';
+        el.className = 'mensaje';
       }
 
       // Si ya hay una sesión abierta, ir directo al menú principal.
-      // (redirigir = false: no redirigir al login, ya estamos en él.)
       App.verificarSesion(false).then(function (usuario) {
         if (usuario) {
           window.location.href = App.raiz() + '/index.html';
         }
       });
 
-      form.addEventListener('submit', function (evento) {
+      // Alternar entre la tarjeta de login y la de registro.
+      botonIrReg.addEventListener('click', function () {
+        document.querySelector('.tarjeta-login').classList.add('oculto');
+        tarjetaReg.classList.remove('oculto');
+      });
+
+      botonVolver.addEventListener('click', function () {
+        tarjetaReg.classList.add('oculto');
+        document.querySelector('.tarjeta-login').classList.remove('oculto');
+      });
+
+      // ---------------- Login ----------------
+      formLogin.addEventListener('submit', function (evento) {
         evento.preventDefault();
 
         var usuario  = document.getElementById('usuario').value.trim();
         var password = document.getElementById('password').value;
 
         if (!usuario || !password) {
-          mostrarMensaje('Ingresá usuario y contraseña.', 'error');
+          mostrarMensaje(mensajeLogin, 'Ingresá usuario y contraseña.', 'error');
           return;
         }
 
-        boton.disabled = true;
-        boton.textContent = 'Verificando...';
+        botonLogin.disabled = true;
+        botonLogin.textContent = 'Verificando...';
 
         var datos = new FormData();
         datos.append('usuario', usuario);
@@ -81,20 +160,72 @@
           .then(function (resp) { return resp.json(); })
           .then(function (resultado) {
             if (resultado.ok) {
-              mostrarMensaje(resultado.mensaje, 'ok');
+              mostrarMensaje(mensajeLogin, resultado.mensaje, 'ok');
               setTimeout(function () {
                 window.location.href = App.raiz() + '/index.html';
               }, 450);
             } else {
-              mostrarMensaje(resultado.mensaje, 'error');
+              mostrarMensaje(mensajeLogin, resultado.mensaje, 'error');
             }
           })
           .catch(function () {
-            mostrarMensaje('Error de red o del servidor. Intentá de nuevo.', 'error');
+            mostrarMensaje(mensajeLogin, 'Error de red o del servidor. Intentá de nuevo.', 'error');
           })
           .finally(function () {
-            boton.disabled = false;
-            boton.textContent = 'Ingresar';
+            botonLogin.disabled = false;
+            botonLogin.textContent = 'Ingresar';
+          });
+      });
+
+      // ---------------- Registro ----------------
+      formReg.addEventListener('submit', function (evento) {
+        evento.preventDefault();
+
+        var nombre   = document.getElementById('reg-nombre').value.trim();
+        var apellido = document.getElementById('reg-apellido').value.trim();
+        var dni      = document.getElementById('reg-dni').value.trim();
+        var email    = document.getElementById('reg-mail').value.trim();
+        var telefono = document.getElementById('reg-telefono').value.trim();
+        var password = document.getElementById('reg-password').value;
+
+        if (!nombre || !apellido || !dni || !email || !telefono || !password) {
+          mostrarMensaje(mensajeReg, 'Completá todos los campos.', 'error');
+          return;
+        }
+
+        botonReg.disabled = true;
+        botonReg.textContent = 'Registrando...';
+
+        var datos = new FormData();
+        datos.append('nombre', nombre);
+        datos.append('apellido', apellido);
+        datos.append('dni', dni);
+        datos.append('email', email);
+        datos.append('telefono', telefono);
+        datos.append('password', password);
+
+        fetch(App.controlador('registro.php'), { method: 'POST', body: datos })
+          .then(function (resp) { return resp.json(); })
+          .then(function (resultado) {
+            if (resultado.ok) {
+              mostrarMensaje(mensajeReg, resultado.mensaje, 'ok');
+              limpiarMensaje(mensajeLogin);
+              document.getElementById('usuario').value = email;
+              document.getElementById('password').value = '';
+              setTimeout(function () {
+                tarjetaReg.classList.add('oculto');
+                document.querySelector('.tarjeta-login').classList.remove('oculto');
+              }, 900);
+            } else {
+              mostrarMensaje(mensajeReg, resultado.mensaje, 'error');
+            }
+          })
+          .catch(function () {
+            mostrarMensaje(mensajeReg, 'Error de red o del servidor. Intentá de nuevo.', 'error');
+          })
+          .finally(function () {
+            botonReg.disabled = false;
+            botonReg.textContent = 'Crear cuenta';
           });
       });
     })();

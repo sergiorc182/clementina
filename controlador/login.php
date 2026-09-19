@@ -39,21 +39,24 @@ if ($persona === null || !$modelo->verificarContraseña($persona['password'], $p
 // Renovamos el ID de sesión para evitar session fixation.
 session_regenerate_id(true);
 
-$nombre = trim(
-    $persona['nombre'] . ' ' .
-    ($persona['segundo_nombre'] ?? '') . ' ' .
-    $persona['apellido']
-);
+$nombre = trim(implode(' ', array_filter([
+    $persona['nombre'],
+    $persona['segundo_nombre'] ?? '',
+])));
+$apellido        = trim($persona['apellido']);
+$nombreCompleto  = trim($nombre . ' ' . $apellido);
 
 $_SESSION['usuario'] = [
-    'rol'     => $persona['rol'],
-    'id'      => $persona['id'],
-    'usuario' => $persona['usuario'],
-    'nombre'  => $nombre,
+    'rol'            => $persona['rol'],
+    'id'             => $persona['id'],
+    'usuario'        => $persona['usuario'],
+    'nombre'         => $nombre,
+    'apellido'       => $apellido,
+    'nombre_completo' => $nombreCompleto,
 ];
 
 responder([
     'ok'      => true,
-    'mensaje' => '¡Hola, ' . $nombre . '! Redirigiendo...',
+    'mensaje' => '¡Hola, ' . $nombreCompleto . '! Redirigiendo...',
     'usuario' => $_SESSION['usuario'],
 ]);

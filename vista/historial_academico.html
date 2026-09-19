@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial académico - ISFT 182 Clementina</title>
+  <link rel="stylesheet" href="estilo/estilo.css">
+</head>
+<body>
+
+  <header class="cabecera">
+    <div>
+      <h1>Historial académico</h1>
+      <p class="subtitulo">ISFT 182 Clementina</p>
+    </div>
+    <div class="cabecera-usuario">
+      <span id="nombre-usuario" class="usuario-nombre"></span>
+      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="tarjeta">
+      <h2 class="titulo-seccion">Formulario de consulta</h2>
+
+      <form id="form-historial" novalidate>
+        <div class="campo">
+          <label for="legajo">Legajo</label>
+          <input type="text" id="legajo" name="legajo" placeholder="Número de legajo">
+        </div>
+
+        <div class="campo">
+          <label for="dni">DNI</label>
+          <input type="text" id="dni" name="dni" placeholder="Sin puntos">
+        </div>
+
+        <div class="campo">
+          <label for="carrera">Carrera</label>
+          <select id="carrera" name="carrera">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <p id="mensaje" class="mensaje" role="alert"></p>
+
+        <button type="submit" class="boton boton-primario">Consultar</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="pie">ISFT 182 "Clementina"</footer>
+
+  <script src="estilo/app.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var mensaje = document.getElementById('mensaje');
+
+      function mostrar(texto, tipo) {
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      }
+
+      App.verificarSesion().then(function (usuario) {
+        if (usuario) {
+          document.getElementById('nombre-usuario').textContent =
+            usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
+        }
+      });
+
+      document.getElementById('form-historial').addEventListener('submit', function (evento) {
+        evento.preventDefault();
+        mostrar('La consulta de historial se habilitará próximamente.', 'error');
+      });
+    })();
+  </script>
+</body>
+</html>

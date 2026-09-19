@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ABM Materias y carreras - ISFT 182 Clementina</title>
+  <title>Inscripción a finales - ISFT 182 Clementina</title>
   <link rel="stylesheet" href="estilo/estilo.css">
 </head>
 <body>
 
   <header class="cabecera">
     <div>
-      <h1>ABM Materias y carreras</h1>
+      <h1>Inscripción a finales</h1>
       <p class="subtitulo">ISFT 182 Clementina</p>
     </div>
     <div class="cabecera-usuario">
@@ -23,9 +23,8 @@
     <div class="tarjeta">
       <h2 class="titulo-seccion">En construcción</h2>
       <p>
-        Este formulario se completará en el próximo paso. Se conectará con las
-        tablas <code>carreras</code>, <code>materias</code>,
-        <code>carrera_materias</code> y <code>correlatividades</code>.
+        Este formulario permitirá inscribirse a mesas finales de examen. Se conectará
+        con las tablas <code>inscripciones</code> y <code>carrera_materias</code>.
       </p>
     </div>
   </main>
@@ -37,7 +36,7 @@
     App.verificarSesion().then(function (usuario) {
       if (usuario) {
         document.getElementById('nombre-usuario').textContent =
-          usuario.nombre + ' (' + App.nombreRol(usuario.rol) + ')';
+          usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
       }
     });
   </script>

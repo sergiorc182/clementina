@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio - ISFT 182 Clementina</title>
   <link rel="stylesheet" href="vista/estilo/estilo.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23f2b02e'/><text x='50' y='68' font-size='52' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%230b2340'>182</text></svg>">
 </head>
 <body>
 
@@ -15,7 +16,7 @@
     </div>
     <div class="cabecera-usuario">
       <span id="nombre-usuario" class="usuario-nombre"></span>
-      <button id="boton-salir" type="button" class="boton boton-secundario">Salir</button>
+      <a class="boton boton-secundario" href="vista/login.html">Ingresar</a>
     </div>
   </header>
 
@@ -23,57 +24,42 @@
     <h2 class="titulo-seccion">Menú principal</h2>
 
     <div class="grilla-modulos">
+
+      <a class="modulo" href="vista/inscripcion_finales.html">
+        <span class="modulo-letra verde">IF</span>
+        <span class="modulo-nombre">Inscripción a finales</span>
+        <span class="modulo-desc">Inscripción a mesas finales de examen</span>
+      </a>
+
+      <a class="modulo" href="vista/mis_finales.html">
+        <span class="modulo-letra ambar">MF</span>
+        <span class="modulo-nombre">Mis finales</span>
+        <span class="modulo-desc">Consulta de tus mesas finales inscriptas</span>
+      </a>
+
       <a class="modulo" href="vista/inscripcion_carreras.html">
-        <span class="modulo-letra verde">IC</span>
+        <span class="modulo-letra azul">IC</span>
         <span class="modulo-nombre">Inscripción a carreras</span>
         <span class="modulo-desc">Alta de aspirantes e inscripción a carreras</span>
       </a>
 
-      <a class="modulo" href="vista/inscripcion_mesas.html">
-        <span class="modulo-letra ambar">IM</span>
-        <span class="modulo-nombre">Inscripción a mesas de examen</span>
-        <span class="modulo-desc">Inscripciones a mesas y llamados (tabla inscripciones)</span>
+      <a class="modulo" href="vista/mis_datos.html">
+        <span class="modulo-letra verde">MD</span>
+        <span class="modulo-nombre">Mis datos</span>
+        <span class="modulo-desc">Consulta y actualización de tus datos personales</span>
       </a>
 
-      <a class="modulo" href="vista/matriculacion.html">
-        <span class="modulo-letra azul">MT</span>
-        <span class="modulo-nombre">Matriculación</span>
-        <span class="modulo-desc">Matriculación anual de alumnos por carrera</span>
+      <a class="modulo" href="vista/historial_academico.html">
+        <span class="modulo-letra ambar">HA</span>
+        <span class="modulo-nombre">Historial académico</span>
+        <span class="modulo-desc">Consulta de tu historial académico</span>
       </a>
 
-      <a class="modulo" href="vista/abm_alumnos.html">
-        <span class="modulo-letra verde">AL</span>
-        <span class="modulo-nombre">ABM Alumnos</span>
-        <span class="modulo-desc">Alta, baja y modificación de alumnos</span>
-      </a>
-
-      <a class="modulo" href="vista/abm_catalogo.html">
-        <span class="modulo-letra ambar">MC</span>
-        <span class="modulo-nombre">ABM Materias y carreras</span>
-        <span class="modulo-desc">Gestión de catálogos académicos</span>
-      </a>
     </div>
   </main>
 
   <footer class="pie">ISFT 182 "Clementina" - Sistema de gestión académica</footer>
 
   <script src="vista/estilo/app.js"></script>
-  <script>
-    (function () {
-      'use strict';
-
-      App.verificarSesion().then(function (usuario) {
-        if (!usuario) {
-          return; // ya redirige al login
-        }
-        document.getElementById('nombre-usuario').textContent =
-          usuario.nombre + ' (' + App.nombreRol(usuario.rol) + ')';
-      });
-
-      document.getElementById('boton-salir').addEventListener('click', function () {
-        App.cerrarSesion();
-      });
-    })();
-  </script>
 </body>
 </html>

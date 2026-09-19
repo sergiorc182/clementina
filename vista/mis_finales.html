@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ABM Alumnos - ISFT 182 Clementina</title>
+  <title>Mis finales - ISFT 182 Clementina</title>
   <link rel="stylesheet" href="estilo/estilo.css">
 </head>
 <body>
 
   <header class="cabecera">
     <div>
-      <h1>ABM Alumnos</h1>
+      <h1>Mis finales</h1>
       <p class="subtitulo">ISFT 182 Clementina</p>
     </div>
     <div class="cabecera-usuario">
@@ -23,9 +23,7 @@
     <div class="tarjeta">
       <h2 class="titulo-seccion">En construcción</h2>
       <p>
-        Este formulario se completará en el próximo paso. Se conectará con las
-        tablas <code>alumnos</code> y <code>domicilios_alumno</code> del esquema
-        normalizado.
+        Acá vas a poder consultar las mesas finales en las que estás inscripto.
       </p>
     </div>
   </main>
@@ -37,7 +35,7 @@
     App.verificarSesion().then(function (usuario) {
       if (usuario) {
         document.getElementById('nombre-usuario').textContent =
-          usuario.nombre + ' (' + App.nombreRol(usuario.rol) + ')';
+          usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
       }
     });
   </script>

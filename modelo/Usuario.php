@@ -2,13 +2,13 @@
 /**
  * Modelo: Usuario (login).
  *
- * Base de prueba `test_clementina`:
- *   Tabla alumnos(id, usuario, password).
- *   El login se hace con la columna `usuario`.
+ * Base local `clementina` (esquema normalizado):
+ *   - Alumnos:  login con `email`, contraseña en `password_hash`.
+ *   - Personal: login con `usuario_sistema`, contraseña en `password_hash`.
  *
  * La contraseña se compara de forma segura: si está hasheada (bcrypt)
- * se usa password_verify(); mientras la base de prueba la tenga en texto
- * plano también se acepta (ver análisis de normalización, punto H).
+ * se usa password_verify(); mientras haya datos en texto plano también
+ * se acepta (ver análisis de normalización, punto H).
  */
 
 require_once dirname(__DIR__) . '/modelo/Conexion.php';
@@ -23,14 +23,39 @@ class Usuario
     }
 
     /**
-     * Busca al alumno por su usuario.
-     * Devuelve null si no existe.
+     * Busca el usuario que ingresa por `usuario` (email de alumno o
+     * usuario de personal). Devuelve null si no existe.
      */
     public function buscarPorUsuario(string $usuario): ?array
     {
-        $sql = "SELECT id, usuario, password
+        // Alumno: login con el email.
+        $sql = "SELECT id_alumno, primer_nombre, otros_nombres,
+                       primer_apellido, otros_apellidos, email, password_hash
                 FROM alumnos
-                WHERE usuario = :usuario
+                WHERE email = :usuario
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario', $usuario);
+        $stmt->execute();
+
+        $fila = $stmt->fetch();
+        if ($fila) {
+            return [
+                'rol'            => 'alumno',
+                'id'             => (int) $fila['id_alumno'],
+                'usuario'        => $fila['email'],
+                'nombre'         => $fila['primer_nombre'],
+                'segundo_nombre' => $fila['otros_nombres'] ?? '',
+                'apellido'       => $fila['primer_apellido'],
+                'password'       => (string) $fila['password_hash'],
+            ];
+        }
+
+        // Personal: login con usuario_sistema.
+        $sql = "SELECT id_personal, nombres, apellidos, usuario_sistema, password_hash
+                FROM personal
+                WHERE usuario_sistema = :usuario
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
@@ -43,13 +68,13 @@ class Usuario
         }
 
         return [
-            'rol'            => 'alumno',
-            'id'             => (int) $fila['id'],
-            'usuario'        => $fila['usuario'],
-            'nombre'         => $fila['usuario'],
+            'rol'            => 'personal',
+            'id'             => (int) $fila['id_personal'],
+            'usuario'        => $fila['usuario_sistema'],
+            'nombre'         => $fila['nombres'],
             'segundo_nombre' => '',
-            'apellido'       => '',
-            'password'       => (string) $fila['password'],
+            'apellido'       => $fila['apellidos'],
+            'password'       => (string) $fila['password_hash'],
         ];
     }
 

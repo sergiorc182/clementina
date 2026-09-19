@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis datos - ISFT 182 Clementina</title>
+  <link rel="stylesheet" href="estilo/estilo.css">
+</head>
+<body>
+
+  <header class="cabecera">
+    <div>
+      <h1>Mis datos</h1>
+      <p class="subtitulo">ISFT 182 Clementina</p>
+    </div>
+    <div class="cabecera-usuario">
+      <span id="nombre-usuario" class="usuario-nombre"></span>
+      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div class="tarjeta">
+      <h2 class="titulo-seccion">Datos personales</h2>
+      <p id="mensaje" class="mensaje" role="alert"></p>
+      <dl id="lista-datos" class="lista-datos oculto">
+        <div><dt>Nombre</dt><dd id="dato-nombre"></dd></div>
+        <div><dt>Apellido</dt><dd id="dato-apellido"></dd></div>
+        <div><dt>DNI</dt><dd id="dato-dni"></dd></div>
+        <div><dt>Email</dt><dd id="dato-email"></dd></div>
+        <div><dt>Teléfono</dt><dd id="dato-telefono"></dd></div>
+      </dl>
+    </div>
+  </main>
+
+  <footer class="pie">ISFT 182 "Clementina"</footer>
+
+  <script src="estilo/app.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var mensaje = document.getElementById('mensaje');
+
+      function mostrar(texto, tipo) {
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      }
+
+      App.verificarSesion().then(function (usuario) {
+        if (!usuario) {
+          return;
+        }
+        document.getElementById('nombre-usuario').textContent =
+          usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
+
+        if (usuario.rol !== 'alumno') {
+          mostrar('Solo los alumnos tienen datos personales en este módulo.', 'error');
+          return;
+        }
+
+        fetch(App.controlador('mis_datos.php'))
+          .then(function (resp) { return resp.json(); })
+          .then(function (resultado) {
+            if (!resultado.ok) {
+              mostrar(resultado.mensaje, 'error');
+              return;
+            }
+            var d = resultado.datos;
+            var nombre   = (d.primer_nombre || '') + (d.otros_nombres ? ' ' + d.otros_nombres : '');
+            var apellido = (d.primer_apellido || '') + (d.otros_apellidos ? ' ' + d.otros_apellidos : '');
+            document.getElementById('dato-nombre').textContent = nombre.trim();
+            document.getElementById('dato-apellido').textContent = apellido.trim();
+            document.getElementById('dato-dni').textContent = d.numero_documento;
+            document.getElementById('dato-email').textContent = d.email;
+            document.getElementById('dato-telefono').textContent = d.telefono_principal || '-';
+            document.getElementById('lista-datos').classList.remove('oculto');
+          })
+          .catch(function () {
+            mostrar('Error de red o del servidor.', 'error');
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -328,6 +328,43 @@ a {
   border: 1px solid #c8e6c9;
 }
 
+/* Oculta tarjetas/paneles que se alternan con JS */
+.oculto {
+  display: none;
+}
+
+/* Separación para botones apilados en formularios */
+.boton-margen-top {
+  margin-top: 10px;
+}
+
+/* Lista de datos (por ejemplo, módulo "Mis datos") */
+.lista-datos {
+  margin: 0;
+}
+
+.lista-datos div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.lista-datos div:last-child {
+  border-bottom: none;
+}
+
+.lista-datos dt {
+  font-weight: 600;
+  color: var(--color-texto-claro);
+}
+
+.lista-datos dd {
+  margin: 0;
+  text-align: right;
+}
+
 /* ------------------------------------------------------------------ */
 /* Pie                                                                     */
 /* ------------------------------------------------------------------ */

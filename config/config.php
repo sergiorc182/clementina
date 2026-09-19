@@ -8,7 +8,7 @@
 
 // --- Base de datos -------------------------------------------------------
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'CLEMENTINA');
+define('DB_NAME', 'clementina');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 

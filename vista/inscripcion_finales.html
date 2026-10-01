@@ -3,42 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inscripción a finales - ISFT 182 Clementina</title>
-  <link rel="stylesheet" href="estilo/estilo.css">
+  <title>Inscripción a finales · Clementina · ISFT N.º 182</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
-<body>
+<body data-page="inscripcion-finales" data-title="Inscripción a finales" data-subtitle="Mesas finales de examen">
 
-  <header class="cabecera">
-    <div>
-      <h1>Inscripción a finales</h1>
-      <p class="subtitulo">ISFT 182 Clementina</p>
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <div class="app">
+
+    <div class="app__main">
+      <header class="topbar" id="topbar"></header>
+
+      <main id="contenido" class="content">
+
+        <div class="page-head">
+          <div>
+            <h2 class="page-head__title">Inscripción a finales</h2>
+            <p class="page-head__text">Anotate en las mesas finales de examen cuando el calendario esté disponible.</p>
+          </div>
+          <div class="page-head__actions">
+            <a class="btn btn--outline" href="mis_finales.html">
+              <i data-lucide="clipboard-list"></i>Ver mis finales
+            </a>
+          </div>
+        </div>
+
+        <div class="grid grid--2">
+
+          <section class="card" aria-label="Mesas disponibles">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Mesas disponibles</h3>
+                <p class="card__subtitle">Turno de examen vigente</p>
+              </div>
+              <span class="stat__icon"><i data-lucide="calendar-plus"></i></span>
+            </div>
+            <div class="card__body">
+              <div class="empty">
+                <div class="empty__icon"><i data-lucide="calendar-x"></i></div>
+                <p class="empty__title">No hay mesas publicadas</p>
+                <p class="empty__text">
+                  El calendario de finales se habilita por turno. Cuando esté
+                  disponible vas a poder inscribirte desde esta pantalla.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="card" aria-label="Cómo funciona">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Cómo funciona</h3>
+                <p class="card__subtitle">Pasos de la inscripción</p>
+              </div>
+            </div>
+            <div class="card__body">
+              <ol class="data-list">
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="search"></i>Consultá las mesas publicadas</span>
+                  <span class="badge badge--neutral">1</span>
+                </li>
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="calendar-plus"></i>Inscribite dentro del período</span>
+                  <span class="badge badge--neutral">2</span>
+                </li>
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="check-circle-2"></i>Confirmá en “Mis finales”</span>
+                  <span class="badge badge--neutral">3</span>
+                </li>
+              </ol>
+              <div class="alert alert--info mt-4">
+                <i data-lucide="info"></i>
+                <div class="alert__body">Las inscripciones se habilitan según el turno vigente del instituto.</div>
+              </div>
+            </div>
+          </aside>
+
+        </div>
+
+      </main>
     </div>
-    <div class="cabecera-usuario">
-      <span id="nombre-usuario" class="usuario-nombre"></span>
-      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
-    </div>
-  </header>
-
-  <main class="contenedor">
-    <div class="tarjeta">
-      <h2 class="titulo-seccion">En construcción</h2>
-      <p>
-        Este formulario permitirá inscribirse a mesas finales de examen. Se conectará
-        con las tablas <code>inscripciones</code> y <code>carrera_materias</code>.
-      </p>
-    </div>
-  </main>
-
-  <footer class="pie">ISFT 182 "Clementina"</footer>
-
-  <script src="estilo/app.js"></script>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="estilo/app.js?v=8"></script>
   <script>
-    App.verificarSesion().then(function (usuario) {
-      if (usuario) {
-        document.getElementById('nombre-usuario').textContent =
-          usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
-      }
-    });
+    App.montarLayout();
   </script>
 </body>
 </html>

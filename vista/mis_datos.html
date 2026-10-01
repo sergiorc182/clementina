@@ -3,58 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mis datos - ISFT 182 Clementina</title>
-  <link rel="stylesheet" href="estilo/estilo.css">
+  <title>Mis datos · Clementina · ISFT N.º 182</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
-<body>
+<body data-page="mis-datos" data-title="Mis datos" data-subtitle="Información personal">
 
-  <header class="cabecera">
-    <div>
-      <h1>Mis datos</h1>
-      <p class="subtitulo">ISFT 182 Clementina</p>
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <div class="app">
+
+    <div class="app__main">
+      <header class="topbar" id="topbar"></header>
+
+      <main id="contenido" class="content content--narrow">
+
+        <div class="page-head">
+          <div class="page-head__lead">
+            <a class="btn btn--ghost btn--icon" href="../index.html" aria-label="Volver al inicio" title="Volver">
+              <i data-lucide="arrow-left"></i>
+            </a>
+            <div>
+              <h2 class="page-head__title">Mis datos</h2>
+              <p class="page-head__text">Información personal registrada en la institución.</p>
+            </div>
+          </div>
+        </div>
+
+        <p id="mensaje" class="mensaje" role="alert"></p>
+
+        <!-- Carga -->
+        <div class="card" id="cargando">
+          <div class="card__body">
+            <div class="skeleton skeleton--text" style="width: 30%"></div>
+            <div class="skeleton skeleton--line" style="width: 70%; margin-top: 14px;"></div>
+            <div class="skeleton skeleton--line" style="width: 55%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 62%; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Datos -->
+        <div class="card oculto" id="tarjeta-datos">
+          <div class="card__header">
+            <div>
+              <h3 class="card__title">Datos personales</h3>
+              <p class="card__subtitle">Datos del alumno</p>
+            </div>
+            <span class="stat__icon"><i data-lucide="user"></i></span>
+          </div>
+          <div class="card__body">
+            <dl class="data-list" id="lista-datos">
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="user"></i>Nombre</dt>
+                <dd class="data-row__value" id="dato-nombre">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="user"></i>Apellido</dt>
+                <dd class="data-row__value" id="dato-apellido">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="hash"></i>DNI</dt>
+                <dd class="data-row__value" id="dato-dni">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="mail"></i>Email</dt>
+                <dd class="data-row__value" id="dato-email">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="phone"></i>Teléfono</dt>
+                <dd class="data-row__value" id="dato-telefono">—</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+      </main>
     </div>
-    <div class="cabecera-usuario">
-      <span id="nombre-usuario" class="usuario-nombre"></span>
-      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
-    </div>
-  </header>
-
-  <main class="contenedor">
-    <div class="tarjeta">
-      <h2 class="titulo-seccion">Datos personales</h2>
-      <p id="mensaje" class="mensaje" role="alert"></p>
-      <dl id="lista-datos" class="lista-datos oculto">
-        <div><dt>Nombre</dt><dd id="dato-nombre"></dd></div>
-        <div><dt>Apellido</dt><dd id="dato-apellido"></dd></div>
-        <div><dt>DNI</dt><dd id="dato-dni"></dd></div>
-        <div><dt>Email</dt><dd id="dato-email"></dd></div>
-        <div><dt>Teléfono</dt><dd id="dato-telefono"></dd></div>
-      </dl>
-    </div>
-  </main>
-
-  <footer class="pie">ISFT 182 "Clementina"</footer>
-
-  <script src="estilo/app.js"></script>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="estilo/app.js?v=8"></script>
   <script>
     (function () {
       'use strict';
 
       var mensaje = document.getElementById('mensaje');
+      var cargando = document.getElementById('cargando');
+      var tarjeta = document.getElementById('tarjeta-datos');
 
       function mostrar(texto, tipo) {
         mensaje.textContent = texto;
         mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
       }
 
-      App.verificarSesion().then(function (usuario) {
-        if (!usuario) {
-          return;
-        }
-        document.getElementById('nombre-usuario').textContent =
-          usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
+      function finalizarCarga() {
+        cargando.classList.add('oculto');
+        App.iconos();
+      }
+
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
 
         if (usuario.rol !== 'alumno') {
+          finalizarCarga();
           mostrar('Solo los alumnos tienen datos personales en este módulo.', 'error');
           return;
         }
@@ -63,20 +116,23 @@
           .then(function (resp) { return resp.json(); })
           .then(function (resultado) {
             if (!resultado.ok) {
+              finalizarCarga();
               mostrar(resultado.mensaje, 'error');
               return;
             }
             var d = resultado.datos;
             var nombre   = (d.primer_nombre || '') + (d.otros_nombres ? ' ' + d.otros_nombres : '');
             var apellido = (d.primer_apellido || '') + (d.otros_apellidos ? ' ' + d.otros_apellidos : '');
-            document.getElementById('dato-nombre').textContent = nombre.trim();
-            document.getElementById('dato-apellido').textContent = apellido.trim();
-            document.getElementById('dato-dni').textContent = d.numero_documento;
-            document.getElementById('dato-email').textContent = d.email;
-            document.getElementById('dato-telefono').textContent = d.telefono_principal || '-';
-            document.getElementById('lista-datos').classList.remove('oculto');
+            document.getElementById('dato-nombre').textContent = nombre.trim() || '—';
+            document.getElementById('dato-apellido').textContent = apellido.trim() || '—';
+            document.getElementById('dato-dni').textContent = d.numero_documento || '—';
+            document.getElementById('dato-email').textContent = d.email || '—';
+            document.getElementById('dato-telefono').textContent = d.telefono_principal || '—';
+            finalizarCarga();
+            tarjeta.classList.remove('oculto');
           })
           .catch(function () {
+            finalizarCarga();
             mostrar('Error de red o del servidor.', 'error');
           });
       });

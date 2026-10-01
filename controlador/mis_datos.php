@@ -24,14 +24,18 @@ if (empty($_SESSION['usuario']['id']) || $_SESSION['usuario']['rol'] !== 'alumno
 $db = Conexion::getInstancia()->getConexion();
 
 $stmt = $db->prepare(
-    "SELECT a.primer_nombre, a.otros_nombres, a.primer_apellido, a.otros_apellidos,
-            a.numero_documento, a.email, d.telefono_principal
-     FROM alumnos a
-     LEFT JOIN domicilios_alumno d ON d.id_alumno = a.id_alumno
-     WHERE a.id_alumno = :id_alumno
+    "SELECT primernombre    AS primer_nombre,
+            otrosnombres     AS otros_nombres,
+            primerapellido   AS primer_apellido,
+            otrosapellidos   AS otros_apellidos,
+            numerodocumento  AS numero_documento,
+            idemail          AS email,
+            telefonopricipal AS telefono_principal
+     FROM alumnos
+     WHERE numerodocumento = :id
      LIMIT 1"
 );
-$stmt->bindValue(':id_alumno', $_SESSION['usuario']['id'], PDO::PARAM_INT);
+$stmt->bindValue(':id', $_SESSION['usuario']['id'], PDO::PARAM_INT);
 $stmt->execute();
 
 $fila = $stmt->fetch();

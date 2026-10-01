@@ -3,63 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inicio - ISFT 182 Clementina</title>
-  <link rel="stylesheet" href="vista/estilo/estilo.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23f2b02e'/><text x='50' y='68' font-size='52' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%230b2340'>182</text></svg>">
+  <title>Inicio · Clementina · ISFT N.º 182</title>
+  <meta name="description" content="Plataforma de gestión académica del ISFT N.º 182 Clementina: mesas de examen, finales e historial.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vista/estilo/estilo.css?v=8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
-<body>
+<body data-page="inicio">
 
-  <header class="cabecera">
-    <div>
-      <h1>ISFT 182 Clementina</h1>
-      <p class="subtitulo">Sistema de gestión académica</p>
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <div class="app">
+    <div class="app__main">
+      <header class="topbar" id="topbar"></header>
+
+      <main id="contenido" class="content">
+
+        <!-- Bienvenida -->
+        <section class="welcome" aria-label="Bienvenida">
+          <div class="welcome__body">
+            <p class="welcome__eyebrow">Plataforma académica</p>
+            <h2 class="welcome__title">Hola, <span id="bienvenida-nombre">bienvenido</span></h2>
+            <p class="welcome__text" id="welcome-texto">
+              Este es tu espacio para gestionar finales, mesas de examen y tu situación académica.
+            </p>
+          </div>
+          <div class="welcome__actions" data-solo-invitado hidden>
+            <a class="btn btn--secondary" href="vista/login.html">Ingresar</a>
+          </div>
+        </section>
+
+        <!-- Accesos rápidos -->
+        <div class="row between mb-3">
+          <div>
+            <h2 class="card__title">Accesos rápidos</h2>
+            <p class="muted" style="font-size: .875rem;">Los módulos principales de la plataforma.</p>
+          </div>
+        </div>
+
+        <nav class="grid grid--modules" aria-label="Módulos de la plataforma">
+
+          <a class="module" href="vista/inscripcion_finales.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="calendar-plus"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Inscripción a finales</div>
+              <div class="module__desc">Anotate en las mesas finales de examen.</div>
+            </div>
+          </a>
+
+          <a class="module" href="vista/mis_finales.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="clipboard-list"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Mis finales</div>
+              <div class="module__desc">Consultá las mesas en las que estás inscripto.</div>
+            </div>
+          </a>
+
+          <a class="module" href="vista/historial_academico.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="file-search"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Historial académico</div>
+              <div class="module__desc">Materias, notas y regularidades.</div>
+            </div>
+          </a>
+
+          <a class="module" href="vista/inscripcion_finales.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="calendar-days"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Consultar cronograma de finales</div>
+              <div class="module__desc">Fechas y mesas de examen programadas.</div>
+            </div>
+          </a>
+
+          <a class="module" href="vista/inscripcion_carreras.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="school"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Inscripción a carreras</div>
+              <div class="module__desc">Alta de aspirantes e inscripción.</div>
+            </div>
+          </a>
+
+          <a class="module" href="vista/inscripcion_mesas.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="calendar-clock"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Inscripción a mesas</div>
+              <div class="module__desc">Elegí turno y materia para rendir.</div>
+            </div>
+          </a>
+
+        </nav>
+
+        <!-- Calendario de próximos finales (solo usuarios con sesión) -->
+        <section class="mt-6" data-solo-usuario hidden aria-label="Calendario de próximos finales">
+          <article class="card">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Calendario de próximos finales</h3>
+                <p class="card__subtitle">Mesas de examen programadas</p>
+              </div>
+              <span class="stat__icon stat__icon--neutral"><i data-lucide="calendar-days"></i></span>
+            </div>
+            <div class="card__body">
+              <div class="empty" style="padding: 8px 0 4px;">
+                <div class="empty__icon"><i data-lucide="clock"></i></div>
+                <p class="empty__title">Sin mesas publicadas</p>
+                <p class="empty__text">El calendario de finales se mostrará acá cuando esté disponible.</p>
+              </div>
+              <a class="btn btn--outline btn--block mt-4" href="vista/inscripcion_finales.html">Ver finales</a>
+            </div>
+          </article>
+        </section>
+
+      </main>
     </div>
-    <div class="cabecera-usuario">
-      <span id="nombre-usuario" class="usuario-nombre"></span>
-      <a class="boton boton-secundario" href="vista/login.html">Ingresar</a>
-    </div>
-  </header>
+  </div>
 
-  <main class="contenedor">
-    <h2 class="titulo-seccion">Menú principal</h2>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="vista/estilo/app.js?v=8"></script>
+  <script>
+    App.montarLayout({ protegida: false }).then(function (usuario) {
+      var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
+      var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
 
-    <div class="grilla-modulos">
+      soloUsuario.forEach(function (el) { el.hidden = !usuario; });
+      soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
 
-      <a class="modulo" href="vista/inscripcion_finales.html">
-        <span class="modulo-letra verde">IF</span>
-        <span class="modulo-nombre">Inscripción a finales</span>
-        <span class="modulo-desc">Inscripción a mesas finales de examen</span>
-      </a>
-
-      <a class="modulo" href="vista/mis_finales.html">
-        <span class="modulo-letra ambar">MF</span>
-        <span class="modulo-nombre">Mis finales</span>
-        <span class="modulo-desc">Consulta de tus mesas finales inscriptas</span>
-      </a>
-
-      <a class="modulo" href="vista/inscripcion_carreras.html">
-        <span class="modulo-letra azul">IC</span>
-        <span class="modulo-nombre">Inscripción a carreras</span>
-        <span class="modulo-desc">Alta de aspirantes e inscripción a carreras</span>
-      </a>
-
-      <a class="modulo" href="vista/mis_datos.html">
-        <span class="modulo-letra verde">MD</span>
-        <span class="modulo-nombre">Mis datos</span>
-        <span class="modulo-desc">Consulta y actualización de tus datos personales</span>
-      </a>
-
-      <a class="modulo" href="vista/historial_academico.html">
-        <span class="modulo-letra ambar">HA</span>
-        <span class="modulo-nombre">Historial académico</span>
-        <span class="modulo-desc">Consulta de tu historial académico</span>
-      </a>
-
-    </div>
-  </main>
-
-  <footer class="pie">ISFT 182 "Clementina" - Sistema de gestión académica</footer>
-
-  <script src="vista/estilo/app.js"></script>
+      if (usuario) {
+        var nombre = (usuario.nombre || '').trim();
+        document.getElementById('bienvenida-nombre').textContent = nombre || 'estudiante';
+        document.getElementById('welcome-texto').textContent =
+          'Gestioná tus finales, inscripciones y datos académicos desde un solo lugar.';
+      }
+    });
+  </script>
 </body>
 </html>

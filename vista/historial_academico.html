@@ -3,54 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial académico - ISFT 182 Clementina</title>
-  <link rel="stylesheet" href="estilo/estilo.css">
+  <title>Historial académico · Clementina · ISFT N.º 182</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
-<body>
+<body data-page="historial-academico" data-title="Historial académico" data-subtitle="Consulta de trayectoria">
 
-  <header class="cabecera">
-    <div>
-      <h1>Historial académico</h1>
-      <p class="subtitulo">ISFT 182 Clementina</p>
-    </div>
-    <div class="cabecera-usuario">
-      <span id="nombre-usuario" class="usuario-nombre"></span>
-      <a class="boton boton-secundario" href="../index.html">Volver al menú</a>
-    </div>
-  </header>
+  <a class="salto" href="#contenido">Saltar al contenido</a>
 
-  <main class="contenedor">
-    <div class="tarjeta">
-      <h2 class="titulo-seccion">Formulario de consulta</h2>
+  <div class="app">
 
-      <form id="form-historial" novalidate>
-        <div class="campo">
-          <label for="legajo">Legajo</label>
-          <input type="text" id="legajo" name="legajo" placeholder="Número de legajo">
+    <div class="app__main">
+      <header class="topbar" id="topbar"></header>
+
+      <main id="contenido" class="content content--narrow">
+
+        <div class="page-head">
+          <div>
+            <h2 class="page-head__title">Historial académico</h2>
+            <p class="page-head__text">Consultá materias aprobadas, regularidades y notas.</p>
+          </div>
         </div>
 
-        <div class="campo">
-          <label for="dni">DNI</label>
-          <input type="text" id="dni" name="dni" placeholder="Sin puntos">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <h3 class="card__title">Datos de la consulta</h3>
+              <p class="card__subtitle">Filtrá por legajo, DNI o carrera</p>
+            </div>
+            <span class="stat__icon"><i data-lucide="file-search"></i></span>
+          </div>
+          <div class="card__body">
+            <form id="form-historial" novalidate>
+
+              <div class="grid grid--2">
+                <div class="field field--icon">
+                  <label class="label" for="legajo">Legajo</label>
+                  <i data-lucide="hash" class="field__icon"></i>
+                  <input class="input" type="text" id="legajo" name="legajo" placeholder="Número de legajo" inputmode="numeric">
+                </div>
+
+                <div class="field field--icon">
+                  <label class="label" for="dni">DNI</label>
+                  <i data-lucide="credit-card" class="field__icon"></i>
+                  <input class="input" type="text" id="dni" name="dni" placeholder="Sin puntos" inputmode="numeric">
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="carrera">Carrera</label>
+                <select class="select" id="carrera" name="carrera">
+                  <option value="">Todas las carreras</option>
+                </select>
+              </div>
+
+              <p id="mensaje" class="mensaje" role="alert"></p>
+
+              <div class="mt-4">
+                <button type="submit" class="btn btn--primary">
+                  <i data-lucide="search"></i>Consultar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        <div class="campo">
-          <label for="carrera">Carrera</label>
-          <select id="carrera" name="carrera">
-            <option value="">Todas</option>
-          </select>
+        <div class="alert alert--info mt-4">
+          <i data-lucide="info"></i>
+          <div class="alert__body">La consulta de historial se habilitará próximamente.</div>
         </div>
 
-        <p id="mensaje" class="mensaje" role="alert"></p>
-
-        <button type="submit" class="boton boton-primario">Consultar</button>
-      </form>
+      </main>
     </div>
-  </main>
-
-  <footer class="pie">ISFT 182 "Clementina"</footer>
-
-  <script src="estilo/app.js"></script>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="estilo/app.js?v=8"></script>
   <script>
     (function () {
       'use strict';
@@ -62,12 +92,7 @@
         mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
       }
 
-      App.verificarSesion().then(function (usuario) {
-        if (usuario) {
-          document.getElementById('nombre-usuario').textContent =
-            usuario.nombre + ' ' + (usuario.apellido || '') + ' (' + App.nombreRol(usuario.rol) + ')';
-        }
-      });
+      App.montarLayout();
 
       document.getElementById('form-historial').addEventListener('submit', function (evento) {
         evento.preventDefault();

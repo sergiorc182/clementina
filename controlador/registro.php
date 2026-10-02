@@ -3,25 +3,14 @@
  * Controlador: Registro de alumnos
  *
  * Recibe POST con `nombre`, `apellido`, `dni`, `email`, `telefono` y
- * `password`. Crea el alumno en la tabla `alumnos` y guarda su teléfono
- * en `domicilios_alumno` (base local `clementina`, esquema normalizado).
+ * `password`, valida el formato y delega el alta en el modelo Alumno.
  * Devuelve JSON.
  */
 
-session_start();
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_base.php';
+require_once dirname(__DIR__) . '/modelo/Alumno.php';
 
-require_once dirname(__DIR__) . '/modelo/Conexion.php';
-
-function responder(array $datos): void
-{
-    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
-}
+requerirMetodo('POST');
 
 $nombre   = trim((string) ($_POST['nombre'] ?? ''));
 $apellido = trim((string) ($_POST['apellido'] ?? ''));
@@ -46,63 +35,30 @@ if (strlen($password) < 6) {
     responder(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.']);
 }
 
-$db = Conexion::getInstancia()->getConexion();
-
-// No permitir repetir email ni DNI.
-$stmt = $db->prepare("SELECT id_alumno FROM alumnos WHERE email = :email LIMIT 1");
-$stmt->bindValue(':email', $email);
-$stmt->execute();
-if ($stmt->fetch()) {
-    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese email.']);
-}
-
-$stmt = $db->prepare(
-    "SELECT id_alumno FROM alumnos
-     WHERE id_tipo_documento = 'DNI' AND numero_documento = :dni LIMIT 1"
-);
-$stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
-$stmt->execute();
-if ($stmt->fetch()) {
-    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese DNI.']);
-}
-
-$hash = password_hash($password, PASSWORD_DEFAULT);
-
 try {
-    $db->beginTransaction();
+    $alumnos = new Alumno();
 
-    $stmt = $db->prepare(
-        "INSERT INTO alumnos
-           (id_tipo_documento, numero_documento, primer_apellido,
-            primer_nombre, email, password_hash, alta_registro)
-         VALUES ('DNI', :dni, :apellido, :nombre, :email, :hash, NOW())"
-    );
-    $stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
-    $stmt->bindValue(':apellido', $apellido);
-    $stmt->bindValue(':nombre', $nombre);
-    $stmt->bindValue(':email', $email);
-    $stmt->bindValue(':hash', $hash);
-    $stmt->execute();
+    if ($alumnos->existeEmail($email)) {
+        responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese email.']);
+    }
 
-    $idAlumno = (int) $db->lastInsertId();
+    if ($alumnos->existeDni($dni)) {
+        responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese DNI.']);
+    }
 
-    $stmt = $db->prepare(
-        "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
-         VALUES (:id_alumno, :telefono)"
-    );
-    $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
-    $stmt->bindValue(':telefono', $telefono);
-    $stmt->execute();
-
-    $db->commit();
-
-    responder([
-        'ok'      => true,
-        'mensaje' => '¡Registro exitoso! Ya podés ingresar con tu email y contraseña.',
+    $alumnos->registrar([
+        'nombre'   => $nombre,
+        'apellido' => $apellido,
+        'dni'      => $dni,
+        'email'    => $email,
+        'telefono' => $telefono,
+        'hash'     => password_hash($password, PASSWORD_DEFAULT),
     ]);
 } catch (PDOException $e) {
-    if ($db->inTransaction()) {
-        $db->rollBack();
-    }
     responder(['ok' => false, 'mensaje' => 'Error al registrar. Intentá de nuevo.']);
 }
+
+responder([
+    'ok'      => true,
+    'mensaje' => '¡Registro exitoso! Ya podés ingresar con tu email y contraseña.',
+]);

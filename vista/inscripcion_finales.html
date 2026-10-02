@@ -24,7 +24,7 @@
         <div class="page-head">
           <div>
             <h2 class="page-head__title">Inscripción a finales</h2>
-            <p class="page-head__text">Anotate en las mesas finales de examen cuando el calendario esté disponible.</p>
+            <p class="page-head__text">Anotate en las mesas finales de examen del turno vigente.</p>
           </div>
           <div class="page-head__actions">
             <a class="btn btn--outline" href="mis_finales.html">
@@ -33,66 +33,63 @@
           </div>
         </div>
 
-        <div class="grid grid--2">
+        <div id="periodo" class="mb-4" aria-live="polite"></div>
 
-          <section class="card" aria-label="Mesas disponibles">
-            <div class="card__header">
-              <div>
-                <h3 class="card__title">Mesas disponibles</h3>
-                <p class="card__subtitle">Turno de examen vigente</p>
-              </div>
-              <span class="stat__icon"><i data-lucide="calendar-plus"></i></span>
+        <section class="card" aria-label="Materias para rendir">
+          <div class="card__header">
+            <div>
+              <h3 class="card__title">Materias para rendir</h3>
+              <p class="card__subtitle">Elegí el llamado y confirmá tu inscripción</p>
             </div>
-            <div class="card__body">
-              <div class="empty">
-                <div class="empty__icon"><i data-lucide="calendar-x"></i></div>
-                <p class="empty__title">No hay mesas publicadas</p>
-                <p class="empty__text">
-                  El calendario de finales se habilita por turno. Cuando esté
-                  disponible vas a poder inscribirte desde esta pantalla.
-                </p>
-              </div>
-            </div>
-          </section>
+            <span class="stat__icon"><i data-lucide="calendar-plus"></i></span>
+          </div>
+          <div class="card__body" id="materias">
+            <div class="skeleton skeleton--text" style="width: 30%"></div>
+            <div class="skeleton skeleton--line" style="width: 70%; margin-top: 14px;"></div>
+            <div class="skeleton skeleton--line" style="width: 55%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 62%; margin-top: 10px;"></div>
+          </div>
+        </section>
 
-          <aside class="card" aria-label="Cómo funciona">
-            <div class="card__header">
-              <div>
-                <h3 class="card__title">Cómo funciona</h3>
-                <p class="card__subtitle">Pasos de la inscripción</p>
-              </div>
+        <aside class="card mt-4" aria-label="Cómo funciona">
+          <div class="card__header">
+            <div>
+              <h3 class="card__title">Cómo funciona</h3>
+              <p class="card__subtitle">Pasos de la inscripción</p>
             </div>
-            <div class="card__body">
-              <ol class="data-list">
-                <li class="data-row">
-                  <span class="data-row__label"><i data-lucide="search"></i>Consultá las mesas publicadas</span>
-                  <span class="badge badge--neutral">1</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label"><i data-lucide="calendar-plus"></i>Inscribite dentro del período</span>
-                  <span class="badge badge--neutral">2</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label"><i data-lucide="check-circle-2"></i>Confirmá en “Mis finales”</span>
-                  <span class="badge badge--neutral">3</span>
-                </li>
-              </ol>
-              <div class="alert alert--info mt-4">
-                <i data-lucide="info"></i>
-                <div class="alert__body">Las inscripciones se habilitan según el turno vigente del instituto.</div>
-              </div>
+          </div>
+          <div class="card__body">
+            <ol class="data-list">
+              <li class="data-row">
+                <span class="data-row__label"><i data-lucide="search"></i>Buscá la materia que querés rendir</span>
+                <span class="badge badge--neutral">1</span>
+              </li>
+              <li class="data-row">
+                <span class="data-row__label"><i data-lucide="calendar-plus"></i>Elegí el llamado e inscribite dentro del período</span>
+                <span class="badge badge--neutral">2</span>
+              </li>
+              <li class="data-row">
+                <span class="data-row__label"><i data-lucide="check-circle-2"></i>Revisá tu inscripción en “Mis finales”</span>
+                <span class="badge badge--neutral">3</span>
+              </li>
+            </ol>
+            <div class="alert alert--info mt-4">
+              <i data-lucide="info"></i>
+              <div class="alert__body">Para rendir una materia tenés que tener aprobadas sus correlativas.</div>
             </div>
-          </aside>
-
-        </div>
+          </div>
+        </aside>
 
       </main>
     </div>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="estilo/app.js?v=8"></script>
+  <script src="js/finales.js?v=1"></script>
   <script>
-    App.montarLayout();
+    App.montarLayout().then(function (usuario) {
+      if (usuario) { Finales.iniciarInscripcion(); }
+    });
   </script>
 </body>
 </html>

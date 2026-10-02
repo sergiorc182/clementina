@@ -6,17 +6,9 @@
  * Lo usan las vistas para proteger las páginas del menú.
  */
 
-session_start();
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_base.php';
 
-if (!empty($_SESSION['usuario']['id'])) {
-    echo json_encode([
-        'ok'      => true,
-        'usuario' => $_SESSION['usuario'],
-    ], JSON_UNESCAPED_UNICODE);
-} else {
-    echo json_encode([
-        'ok'      => false,
-        'mensaje' => 'No autenticado.',
-    ], JSON_UNESCAPED_UNICODE);
-}
+responder([
+    'ok'      => true,
+    'usuario' => requerirSesion(),
+]);

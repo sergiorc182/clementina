@@ -10,7 +10,7 @@
  * y hash_equals() como respaldo para valores en texto plano.
  */
 
-require_once dirname(__DIR__) . '/modelo/Conexion.php';
+require_once __DIR__ . '/Conexion.php';
 
 class Usuario
 {

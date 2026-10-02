@@ -5,7 +5,7 @@
  * Destruye la sesión y la cookie, y responde { ok: true }.
  */
 
-session_start();
+require_once __DIR__ . '/_base.php';
 
 $_SESSION = [];
 
@@ -24,8 +24,7 @@ if (ini_get('session.use_cookies')) {
 
 session_destroy();
 
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode([
+responder([
     'ok'      => true,
     'mensaje' => 'Sesión cerrada.',
-], JSON_UNESCAPED_UNICODE);
+]);

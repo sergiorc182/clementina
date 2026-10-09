@@ -1,0 +1,68 @@
+/* =====================================================================
+   Comprobante de inscripción a finales (Mis finales).
+   En pantalla no se ve: aparece solo al imprimir o guardar como PDF.
+   Va en un archivo aparte para no tocar estilo.css, que es compartido.
+   ===================================================================== */
+
+.comprobante { display: none; }
+
+@media print {
+  @page { margin: 18mm; }
+
+  /* Siempre en claro, aunque la pantalla esté en modo noche */
+  :root { color-scheme: light; }
+  body { background: #fff; }
+
+  /* Se imprime únicamente el comprobante */
+  .topbar,
+  .toast-region,
+  .salto,
+  .content > *:not(.comprobante) { display: none !important; }
+
+  .content { max-width: none; padding: 0; }
+  .comprobante { display: block; color: #000; }
+
+  .comprobante__head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #000;
+  }
+  .comprobante__logo { flex: none; width: auto; height: 76px; }
+  .comprobante__head h1 { font-size: 1.25rem; color: #000; }
+  .comprobante__marca {
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #000;
+  }
+
+  .comprobante__datos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 24px;
+    margin: 0 0 20px;
+  }
+  .comprobante__datos dt {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #444;
+  }
+  .comprobante__datos dd { margin: 0; font-weight: 600; }
+
+  .comprobante .table th,
+  .comprobante .table td {
+    padding: 8px 10px;
+    border: 1px solid #999;
+    background: none;
+    color: #000;
+    white-space: normal;
+  }
+  .comprobante .table tr { break-inside: avoid; }
+}

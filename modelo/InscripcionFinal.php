@@ -29,7 +29,7 @@ class InscripcionFinal
     private const SIN_VERIFICAR = 'N';
 
     public const TURNOS   = [1 => 'Febrero', 2 => 'Agosto', 3 => 'Diciembre'];
-    public const LLAMADOS = [1 => 'Primer llamado', 2 => 'Segundo llamado'];
+    public const LLAMADOS = [1 => 'Primer llamado'];
 
     private $db;
     private $tipoDocumento;

@@ -99,6 +99,9 @@ class Historial
         $validadoExamen = strtoupper(trim((string) ($r['validadoexamen'] ?? '')));
         $fechaAprobacion = (string) ($r['fechaaprobacion'] ?? '');
 
+        $anioRegular = (int) ($r['anioregular'] ?? 0);
+        $anioRegularDisplay = ($anioRegular > 0) ? (string) $anioRegular : '—';
+
         // Determinación de la condición y badge
         $estadoTexto = 'En curso';
         $estadoBadge = 'badge--neutral';
@@ -114,8 +117,8 @@ class Historial
             $estadoTexto = 'Desaprobada';
             $estadoBadge = 'badge--error';
         } else {
-            // Nota es 0
-            if ($validadoRegular === 'V' || $validadoExamen === 'V') {
+            // Nota es 0 (pendiente de rendir final)
+            if ($anioRegular > 0 || $validadoRegular === 'V' || $validadoExamen === 'V' || $tipoAlumno === 'R') {
                 $estadoTexto = 'Regular';
                 $estadoBadge = 'badge--info';
             } elseif ($tipoAlumno === 'L') {
@@ -127,7 +130,7 @@ class Historial
             }
         }
 
-        // Formato de fecha
+        // Formato de fecha de aprobación del final
         $fechaFormateada = '—';
         if ($fechaAprobacion !== '' && $fechaAprobacion !== '0000-00-00') {
             $timestamp = strtotime($fechaAprobacion);
@@ -145,19 +148,20 @@ class Historial
         $notaDisplay = ($nota > 0) ? (string) $nota : '—';
 
         return [
-            'id_carrera'        => (int) $r['idcarrera'],
-            'carrera'           => trim((string) $r['nombrecarrera']),
-            'id_materia'        => (int) $r['idmateria'],
-            'materia'           => trim((string) $r['nombremateria']),
-            'anio_cursada'      => (int) $r['anio_cursada'],
-            'anio_regular'      => (int) ($r['anioregular'] ?? 0),
-            'nota'              => $nota,
-            'nota_display'      => $notaDisplay,
-            'estado_texto'      => $estadoTexto,
-            'estado_badge'      => $estadoBadge,
-            'fecha_aprobacion'  => $fechaFormateada,
-            'acta_texto'        => $actaTexto,
-            'tipo_alumno'       => $tipoAlumno,
+            'id_carrera'            => (int) $r['idcarrera'],
+            'carrera'               => trim((string) $r['nombrecarrera']),
+            'id_materia'            => (int) $r['idmateria'],
+            'materia'               => trim((string) $r['nombremateria']),
+            'anio_cursada'          => (int) $r['anio_cursada'],
+            'anio_regular'          => $anioRegular,
+            'anio_regular_display'  => $anioRegularDisplay,
+            'nota'                  => $nota,
+            'nota_display'          => $notaDisplay,
+            'estado_texto'          => $estadoTexto,
+            'estado_badge'          => $estadoBadge,
+            'fecha_aprobacion'      => $fechaFormateada,
+            'acta_texto'            => $actaTexto,
+            'tipo_alumno'           => $tipoAlumno,
         ];
     }
 }

@@ -113,11 +113,12 @@
                   <tr>
                     <th style="width: 70px;">Año</th>
                     <th>Materia</th>
-                    <th>Carrera</th>
+                    <th id="th-col-carrera">Carrera</th>
                     <th style="width: 130px;">Condición</th>
-                    <th style="width: 80px;" class="num">Nota</th>
-                    <th style="width: 110px;">Fecha</th>
-                    <th style="width: 130px;">Acta</th>
+                    <th style="width: 110px; text-align: center;">Año Reg.</th>
+                    <th style="width: 80px; text-align: center;" class="num">Nota</th>
+                    <th style="width: 125px;">Fecha Final</th>
+                    <th style="width: 120px;">Acta</th>
                   </tr>
                 </thead>
                 <tbody id="cuerpo-tabla">
@@ -211,13 +212,15 @@
 
           var anioTexto = m.anio_cursada ? (m.anio_cursada + '°') : '—';
           var carreraTexto = tieneMultiplesCarreras ? ('<td class="muted" style="font-size: 0.8125rem;">' + escapar(m.carrera) + '</td>') : '';
+          var anioRegTexto = m.anio_regular_display || (m.anio_regular > 0 ? m.anio_regular : '—');
 
           html += '<tr>' +
             '<td><span class="badge badge--neutral">' + anioTexto + '</span></td>' +
             '<td style="font-weight: 600;">' + escapar(m.materia) + '</td>' +
             carreraTexto +
             '<td><span class="badge ' + m.estado_badge + '">' + escapar(m.estado_texto) + '</span></td>' +
-            '<td class="num" style="font-size: 0.9375rem;">' + escapar(m.nota_display) + '</td>' +
+            '<td class="tnum muted" style="text-align: center;">' + escapar(anioRegTexto) + '</td>' +
+            '<td class="num" style="font-size: 0.9375rem; text-align: center;">' + escapar(m.nota_display) + '</td>' +
             '<td class="tnum muted">' + escapar(m.fecha_aprobacion) + '</td>' +
             '<td class="tnum muted">' + escapar(m.acta_texto) + '</td>' +
           '</tr>';
@@ -271,7 +274,7 @@
             var tieneMultiples = carreras.length > 1;
 
             // Ajustar visibilidad de columna Carrera en el encabezado
-            var thCarrera = tarjetaTabla.querySelector('th:nth-child(3)');
+            var thCarrera = document.getElementById('th-col-carrera');
             if (thCarrera) {
               thCarrera.style.display = tieneMultiples ? '' : 'none';
             }

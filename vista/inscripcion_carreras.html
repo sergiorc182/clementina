@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="estilo/estilo.css?v=8">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
-<body data-page="inscripcion-carreras" data-title="Inscripción a carreras" data-subtitle="Aspirantes e inscripción">
+<body data-page="inscripcion-carreras" data-title="Inscripción a carreras" data-subtitle="Matriculación institucional">
 
   <a class="salto" href="#contenido">Saltar al contenido</a>
 
@@ -21,41 +21,470 @@
 
       <main id="contenido" class="content content--narrow">
 
+        <!-- Encabezado de página -->
         <div class="page-head">
-          <div>
-            <h2 class="page-head__title">Inscripción a carreras</h2>
-            <p class="page-head__text">Alta de aspirantes e inscripción a las carreras del instituto.</p>
+          <div class="page-head__lead">
+            <a class="btn btn--ghost btn--icon" href="../index.html" aria-label="Volver al inicio" title="Volver al inicio">
+              <i data-lucide="arrow-left"></i>
+            </a>
+            <div>
+              <h2 class="page-head__title">Inscripción a carreras</h2>
+              <p class="page-head__text">Matriculación a las carreras de formación técnica superior del instituto.</p>
+            </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card__header">
-            <div>
-              <h3 class="card__title">Aspirantes</h3>
-              <p class="card__subtitle">Carga de datos e inscripción</p>
-            </div>
-            <span class="stat__icon"><i data-lucide="school"></i></span>
-          </div>
+        <p id="mensaje-alerta" class="mensaje" role="alert"></p>
+
+        <!-- Skeleton loader -->
+        <div class="card" id="cargando">
           <div class="card__body">
-            <div class="empty">
-              <div class="empty__icon"><i data-lucide="school"></i></div>
-              <p class="empty__title">Inscripciones cerradas</p>
-              <p class="empty__text">
-                La inscripción a carreras se habilita en los períodos definidos
-                por la institución. Cuando esté abierta, vas a poder cargar tus
-                datos desde acá.
-              </p>
+            <div class="skeleton skeleton--text" style="width: 30%"></div>
+            <div class="skeleton skeleton--line" style="width: 80%; margin-top: 16px;"></div>
+            <div class="skeleton skeleton--line" style="width: 60%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 70%; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- ESTADO 1: PERÍODO CERRADO (Mensaje Institucional Mejorado)    -->
+        <!-- ============================================================= -->
+        <div class="stack oculto" id="seccion-cerrado">
+          
+          <div class="alert alert--warning">
+            <i data-lucide="alert-triangle"></i>
+            <div class="alert__body">
+              <strong style="font-size: 1.0625rem;">¡Atención!</strong><br>
+              <span id="texto-alerta-cerrado">El período de inscripción a las carreras para el año 2027 está cerrado.</span>
             </div>
           </div>
+
+          <div class="card">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Información del Ciclo Lectivo</h3>
+                <p class="card__subtitle">Convocatoria y cronograma</p>
+              </div>
+              <span class="stat__icon"><i data-lucide="calendar"></i></span>
+            </div>
+            <div class="card__body">
+              <p style="font-size: 0.9375rem; color: var(--text); line-height: 1.6; margin-top: 0;">
+                El sistema de inscripciones para el próximo ciclo se habilitará en las fechas estipuladas por el calendario académico de la Dirección General de Cultura y Educación.
+              </p>
+
+              <div class="row mt-4 pt-3" style="border-top: 1px solid var(--border); gap: 24px;">
+                <div>
+                  <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Apertura prevista</div>
+                  <div style="font-weight: 700; font-size: 0.9375rem; color: var(--primary); margin-top: 2px;" id="info-fecha-inicio">—</div>
+                </div>
+                <div>
+                  <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Cierre previsto</div>
+                  <div style="font-weight: 700; font-size: 0.9375rem; color: var(--primary); margin-top: 2px;" id="info-fecha-fin">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documentación para ir preparando -->
+          <div class="card">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Documentación a reunir</h3>
+                <p class="card__subtitle">Podés ir preparando los siguientes requisitos</p>
+              </div>
+              <span class="stat__icon"><i data-lucide="clipboard-list"></i></span>
+            </div>
+            <div class="card__body">
+              <ul class="data-list" style="margin: 0; padding: 0; list-style: none;">
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="credit-card"></i>DNI vigente</span>
+                  <span class="muted" style="font-size: 0.8125rem;">Original y fotocopia legible</span>
+                </li>
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="file-text"></i>Título Secundario</span>
+                  <span class="muted" style="font-size: 0.8125rem;">Original y copia o constancia de trámite</span>
+                </li>
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="shield-check"></i>Certificado de Salud</span>
+                  <span class="muted" style="font-size: 0.8125rem;">Apto psicofísico emitido por institución médica</span>
+                </li>
+                <li class="data-row">
+                  <span class="data-row__label"><i data-lucide="user"></i>Fotos carnet</span>
+                  <span class="muted" style="font-size: 0.8125rem;">2 fotos 4x4 fondo blanco</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Canales de consulta -->
+          <div class="card">
+            <div class="card__body" style="padding: 16px 20px;">
+              <div class="row between" style="gap: 12px;">
+                <div class="row" style="gap: 10px;">
+                  <span class="stat__icon" style="background: var(--surface-3);"><i data-lucide="help-circle"></i></span>
+                  <div>
+                    <div style="font-size: 0.875rem; font-weight: 700; color: var(--text);">Preceptoría y Bedelía</div>
+                    <div class="muted" style="font-size: 0.8125rem;">Atención presencial: Lunes a Viernes de 18:30 a 21:30 hs.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- ESTADO 2: PERÍODO ABIERTO (Asistente de Inscripción Guiado)   -->
+        <!-- ============================================================= -->
+        <div class="stack oculto" id="seccion-abierto">
+
+          <!-- Barra de verificación de datos del alumno -->
+          <div class="card">
+            <div class="card__body" style="padding: 16px 20px;">
+              <div class="row between" style="gap: 14px;">
+                <div class="row" style="gap: 12px;">
+                  <span class="stat__icon" style="background: var(--surface-3);"><i data-lucide="user"></i></span>
+                  <div>
+                    <div style="font-size: 0.9375rem; font-weight: 700; color: var(--text);" id="alu-nombre">—</div>
+                    <div class="muted" style="font-size: 0.8125rem;">
+                      DNI: <span class="tnum" id="alu-dni">—</span> · <span id="alu-email">—</span>
+                    </div>
+                  </div>
+                </div>
+                <a class="btn btn--outline btn--sm" href="mis_datos.html" title="Verificar información">
+                  <i data-lucide="user"></i>Mis datos
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario de inscripción -->
+          <div class="card" id="tarjeta-formulario">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Postulación académica</h3>
+                <p class="card__subtitle" id="subtitulo-formulario">Ciclo Lectivo 2027</p>
+              </div>
+              <span class="stat__icon"><i data-lucide="school"></i></span>
+            </div>
+
+            <div class="card__body">
+              <form id="form-inscripcion" novalidate>
+
+                <!-- 1. Carrera -->
+                <div class="field">
+                  <label class="label" for="select-carrera">Carrera <span class="muted" style="font-weight: 400;">(requerido)</span></label>
+                  <select class="select" id="select-carrera" name="idcarrera" required>
+                    <option value="">Seleccioná una carrera...</option>
+                  </select>
+                  <p class="muted mt-2" style="font-size: 0.75rem;" id="carrera-info"></p>
+                </div>
+
+                <!-- 2. Sede -->
+                <div class="field mt-4">
+                  <label class="label" for="select-sede">Sede de cursada <span class="muted" style="font-weight: 400;">(requerido)</span></label>
+                  <select class="select" id="select-sede" name="idsede" required disabled>
+                    <option value="">Primero seleccioná la carrera...</option>
+                  </select>
+                </div>
+
+                <!-- 3. Turno -->
+                <div class="field mt-4">
+                  <label class="label" for="select-turno">Turno <span class="muted" style="font-weight: 400;">(requerido)</span></label>
+                  <select class="select" id="select-turno" name="idturno" required disabled>
+                    <option value="">Primero seleccioná la sede...</option>
+                  </select>
+                </div>
+
+                <div class="mt-6 pt-4" style="border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn btn--primary" id="btn-enviar-inscripcion" disabled>
+                    <i data-lucide="check-circle-2"></i>Confirmar inscripción
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+
+          <!-- Panel de éxito tras la confirmación -->
+          <div class="card oculto" id="panel-exito">
+            <div class="card__body" style="text-align: center; padding: 36px 20px;">
+              <span class="stat__icon stat__icon--success" style="width: 52px; height: 52px; margin: 0 auto 16px; font-size: 1.5rem; background: var(--success-soft); color: var(--success);">
+                <i data-lucide="check-circle-2"></i>
+              </span>
+              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text);">¡Inscripción registrada con éxito!</h3>
+              <p class="muted mt-2" style="font-size: 0.875rem; max-width: 50ch; margin-left: auto; margin-right: auto;">
+                Tu solicitud de matrícula quedó asentada bajo el número de trámite:
+              </p>
+              
+              <div class="tnum" style="display: inline-block; margin: 16px auto; padding: 8px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); font-weight: 700; font-size: 1.125rem; color: var(--primary);" id="exito-nro-tramite">
+                —
+              </div>
+
+              <div class="row" style="justify-content: center; gap: 12px; margin-top: 20px;">
+                <a class="btn btn--primary" id="btn-ver-comprobante" href="#" target="_blank">
+                  <i data-lucide="printer"></i>Ver comprobante imprimible
+                </a>
+                <a class="btn btn--outline" href="../index.html">
+                  Volver al inicio
+                </a>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </main>
     </div>
   </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="estilo/app.js?v=8"></script>
   <script>
-    App.montarLayout();
+    (function () {
+      'use strict';
+
+      var cargando = document.getElementById('cargando');
+      var seccionCerrado = document.getElementById('seccion-cerrado');
+      var seccionAbierto = document.getElementById('seccion-abierto');
+      var mensaje = document.getElementById('mensaje-alerta');
+
+      var selectCarrera = document.getElementById('select-carrera');
+      var selectSede = document.getElementById('select-sede');
+      var selectTurno = document.getElementById('select-turno');
+      var btnEnviar = document.getElementById('btn-enviar-inscripcion');
+      var carreraInfo = document.getElementById('carrera-info');
+      var tarjetaForm = document.getElementById('tarjeta-formulario');
+      var panelExito = document.getElementById('panel-exito');
+      var btnComprobante = document.getElementById('btn-ver-comprobante');
+
+      var sedesActuales = [];
+      var turnosPorSede = {};
+      var carrerasLista = [];
+      var anioInscripcion = 2027;
+
+      function mostrarMensaje(texto, tipo) {
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+      }
+
+      function cargarEstado() {
+        return fetch(App.controlador('inscripcion_carreras.php?accion=estado'))
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            cargando.classList.add('oculto');
+            if (!resp.ok) {
+              mostrarMensaje(resp.mensaje || 'Error al consultar estado de inscripción.', 'error');
+              return;
+            }
+
+            var param = resp.parametros || {};
+            anioInscripcion = param.anio_inscripcion || 2027;
+
+            // Datos del alumno
+            var alu = resp.alumno || {};
+            document.getElementById('alu-nombre').textContent = alu.nombre_completo || 'Estudiante';
+            document.getElementById('alu-dni').textContent = alu.dni || '—';
+            document.getElementById('alu-email').textContent = alu.email || '—';
+
+            carrerasLista = resp.carreras || [];
+
+            if (param.abierto) {
+              // ========================= MODO ABIERTO =========================
+              seccionAbierto.classList.remove('oculto');
+              seccionCerrado.classList.add('oculto');
+              document.getElementById('subtitulo-formulario').textContent = 'Ciclo Lectivo ' + anioInscripcion;
+              poblarCarreras(carrerasLista);
+            } else {
+              // ========================= MODO CERRADO =========================
+              seccionCerrado.classList.remove('oculto');
+              seccionAbierto.classList.add('oculto');
+              document.getElementById('texto-alerta-cerrado').textContent =
+                'El período de inscripción a las carreras para el año ' + anioInscripcion + ' está cerrado.';
+              document.getElementById('info-fecha-inicio').textContent = param.fecha_inicio || 'A confirmar';
+              document.getElementById('info-fecha-fin').textContent = param.fecha_fin || 'A confirmar';
+            }
+
+            App.iconos();
+          })
+          .catch(function () {
+            cargando.classList.add('oculto');
+            mostrarMensaje('Error de conexión con el servidor. Por favor, reintentá.', 'error');
+          });
+      }
+
+      function poblarCarreras(carreras) {
+        selectCarrera.innerHTML = '<option value="">Seleccioná una carrera...</option>';
+        for (var i = 0; i < carreras.length; i++) {
+          var c = carreras[i];
+          var opt = document.createElement('option');
+          opt.value = c.id_carrera;
+          opt.textContent = c.nombre_carrera + (c.ya_matriculado ? ' (Ya matriculado)' : '');
+          if (c.ya_matriculado) {
+            opt.disabled = true;
+          }
+          selectCarrera.appendChild(opt);
+        }
+      }
+
+      function alCambiarCarrera() {
+        var idCarrera = selectCarrera.value;
+        selectSede.innerHTML = '<option value="">Cargando sedes...</option>';
+        selectSede.disabled = true;
+        selectTurno.innerHTML = '<option value="">Primero seleccioná la sede...</option>';
+        selectTurno.disabled = true;
+        btnEnviar.disabled = true;
+        carreraInfo.textContent = '';
+
+        if (!idCarrera) {
+          selectSede.innerHTML = '<option value="">Primero seleccioná la carrera...</option>';
+          return;
+        }
+
+        var elegida = carrerasLista.find(function (it) { return String(it.id_carrera) === String(idCarrera); });
+        if (elegida && elegida.nro_resolucion) {
+          carreraInfo.textContent = 'Resolución Ministerial: ' + elegida.nro_resolucion + (elegida.titulo ? ' · Título: ' + elegida.titulo : '');
+        }
+
+        fetch(App.controlador('inscripcion_carreras.php?accion=sedes_turnos&carrera=' + encodeURIComponent(idCarrera)))
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            if (!resp.ok) {
+              mostrarMensaje(resp.mensaje || 'Error al obtener sedes de la carrera.', 'error');
+              return;
+            }
+
+            sedesActuales = resp.sedes || [];
+            turnosPorSede = resp.turnos || {};
+
+            if (sedesActuales.length === 0) {
+              selectSede.innerHTML = '<option value="">Sin sedes disponibles actualmente</option>';
+              return;
+            }
+
+            selectSede.innerHTML = '<option value="">Seleccioná una sede...</option>';
+            for (var s = 0; s < sedesActuales.length; s++) {
+              var optS = document.createElement('option');
+              optS.value = sedesActuales[s].id_sede;
+              optS.textContent = sedesActuales[s].nombre_sede;
+              selectSede.appendChild(optS);
+            }
+            selectSede.disabled = false;
+
+            // Si hay una sola sede, seleccionarla automáticamente
+            if (sedesActuales.length === 1) {
+              selectSede.value = sedesActuales[0].id_sede;
+              alCambiarSede();
+            }
+          })
+          .catch(function () {
+            mostrarMensaje('Error al consultar sedes disponibles.', 'error');
+          });
+      }
+
+      function alCambiarSede() {
+        var idSede = selectSede.value;
+        selectTurno.innerHTML = '<option value="">Seleccioná un turno...</option>';
+        selectTurno.disabled = true;
+        btnEnviar.disabled = true;
+
+        if (!idSede) {
+          selectTurno.innerHTML = '<option value="">Primero seleccioná la sede...</option>';
+          return;
+        }
+
+        var turnos = turnosPorSede[idSede] || [];
+        if (turnos.length === 0) {
+          selectTurno.innerHTML = '<option value="">Sin turnos disponibles en esta sede</option>';
+          return;
+        }
+
+        for (var t = 0; t < turnos.length; t++) {
+          var optT = document.createElement('option');
+          optT.value = turnos[t].id_turno;
+          optT.textContent = turnos[t].nombre_turno;
+          selectTurno.appendChild(optT);
+        }
+        selectTurno.disabled = false;
+
+        // Si hay un solo turno, preseleccionarlo
+        if (turnos.length === 1) {
+          selectTurno.value = turnos[0].id_turno;
+          alCambiarTurno();
+        }
+      }
+
+      function alCambiarTurno() {
+        var listo = selectCarrera.value && selectSede.value && selectTurno.value;
+        btnEnviar.disabled = !listo;
+      }
+
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
+
+        cargarEstado();
+
+        selectCarrera.addEventListener('change', alCambiarCarrera);
+        selectSede.addEventListener('change', alCambiarSede);
+        selectTurno.addEventListener('change', alCambiarTurno);
+
+        document.getElementById('form-inscripcion').addEventListener('submit', function (e) {
+          e.preventDefault();
+
+          var nombreCarrera = selectCarrera.options[selectCarrera.selectedIndex].text;
+          var nombreSede = selectSede.options[selectSede.selectedIndex].text;
+          var nombreTurno = selectTurno.options[selectTurno.selectedIndex].text;
+
+          App.confirmar({
+            titulo: '¿Confirmar inscripción a carrera?',
+            texto: 'Estás por inscribirte a ' + nombreCarrera + ' en ' + nombreSede + ' (Turno ' + nombreTurno + ') para el ciclo lectivo ' + anioInscripcion + '.',
+            confirmar: 'Sí, confirmar inscripción',
+            cancelar: 'Revisar',
+            tipo: 'info'
+          }).then(function (confirmado) {
+            if (!confirmado) { return; }
+
+            btnEnviar.disabled = true;
+            btnEnviar.textContent = 'Procesando...';
+
+            var formData = new FormData();
+            formData.append('idcarrera', selectCarrera.value);
+            formData.append('idsede', selectSede.value);
+            formData.append('idturno', selectTurno.value);
+
+            fetch(App.controlador('inscripcion_carreras.php'), {
+              method: 'POST',
+              body: formData
+            })
+              .then(function (res) { return res.json(); })
+              .then(function (resp) {
+                btnEnviar.textContent = 'Confirmar inscripción';
+                if (!resp.ok) {
+                  btnEnviar.disabled = false;
+                  mostrarMensaje(resp.mensaje || 'No se pudo registrar la inscripción.', 'error');
+                  return;
+                }
+
+                tarjetaForm.classList.add('oculto');
+                panelExito.classList.remove('oculto');
+                document.getElementById('exito-nro-tramite').textContent = resp.datos.tramite;
+                btnComprobante.href = 'comprobante_inscripcion.html?carrera=' + encodeURIComponent(selectCarrera.value);
+                App.iconos();
+                App.toast({
+                  tipo: 'success',
+                  titulo: '¡Inscripción registrada!',
+                  texto: 'Tu trámite ' + resp.datos.tramite + ' fue guardado exitosamente.'
+                });
+              })
+              .catch(function () {
+                btnEnviar.disabled = false;
+                btnEnviar.textContent = 'Confirmar inscripción';
+                mostrarMensaje('Error de red al procesar la inscripción. Por favor, reintentá.', 'error');
+              });
+          });
+        });
+      });
+    })();
   </script>
 </body>
 </html>

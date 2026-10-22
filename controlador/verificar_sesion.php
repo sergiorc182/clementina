@@ -1,22 +1,23 @@
 <?php
-/**
- * Controlador: Verificar sesión
- *
- * Devuelve JSON con los datos del usuario logueado o { ok: false }.
- * Lo usan las vistas para proteger las páginas del menú.
- */
-
 session_start();
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: application/json');
 
-if (!empty($_SESSION['usuario']['id'])) {
+if (isset($_SESSION['id_usuario'])) {
     echo json_encode([
-        'ok'      => true,
-        'usuario' => $_SESSION['usuario'],
-    ], JSON_UNESCAPED_UNICODE);
+        'ok' => true,
+        'usuario' => [
+            'id_usuario' => $_SESSION['id_usuario'],
+            'tipo' => $_SESSION['tipo_usuario'] ?? 'alumno',
+            'rol' => $_SESSION['rol'] ?? 'alumno',
+            'usuario' => $_SESSION['usuario'] ?? null,
+            'nombre' => $_SESSION['nombre'] ?? '',
+            'apellido' => $_SESSION['apellido'] ?? '',
+            'email' => $_SESSION['email'] ?? null,
+            'dni' => $_SESSION['dni'] ?? null,
+            'legajo' => $_SESSION['legajo'] ?? null
+        ]
+    ]);
 } else {
-    echo json_encode([
-        'ok'      => false,
-        'mensaje' => 'No autenticado.',
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => false, 'autenticado' => false]);
 }
+exit;

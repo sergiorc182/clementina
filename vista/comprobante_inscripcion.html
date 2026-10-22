@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprobante de Inscripción a Carrera · ISFT N.º 182</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+  <style>
+    .comprobante {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 40px;
+      box-shadow: var(--shadow-sm);
+    }
+    .comprobante__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .comprobante__inst {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+    .comprobante__sub {
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      margin-top: 4px;
+    }
+    .comprobante__tag {
+      text-align: right;
+    }
+    .comprobante__title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 20px 0 24px;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .comprobante__grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .comprobante__box {
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      background: var(--surface-2);
+    }
+    .comprobante__box-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-2);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    .comprobante__row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      margin-bottom: 8px;
+    }
+    .comprobante__label {
+      color: var(--text-2);
+    }
+    .comprobante__value {
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+    .comprobante__instrucciones {
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--r);
+      padding: 16px;
+      margin: 24px 0;
+      font-size: 0.8125rem;
+      background: var(--surface);
+    }
+    .comprobante__instrucciones h4 {
+      margin: 0 0 8px;
+      font-size: 0.875rem;
+      color: var(--primary);
+    }
+    .comprobante__instrucciones ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+    .comprobante__firmas {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 50px;
+      padding-top: 20px;
+    }
+    .comprobante__linea-firma {
+      border-top: 1px solid #777;
+      text-align: center;
+      padding-top: 8px;
+      font-size: 0.8125rem;
+      color: var(--text-2);
+    }
+    @media print {
+      body { background: #fff !important; }
+      .app__main header, .no-print, .btn, #topbar { display: none !important; }
+      .content { padding: 0 !important; max-width: 100% !important; }
+      .comprobante { border: none !important; box-shadow: none !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body data-page="comprobante-inscripcion" data-title="Comprobante de inscripción">
+
+  <div class="app">
+    <div class="app__main">
+      <header class="topbar no-print" id="topbar"></header>
+
+      <main class="content">
+
+        <!-- Barra de acciones superiores -->
+        <div class="row between mb-4 no-print" style="max-width: 800px; margin: 0 auto 20px;">
+          <a class="btn btn--outline btn--sm" href="inscripcion_carreras.html">
+            <i data-lucide="arrow-left"></i>Volver a Inscripción
+          </a>
+          <button type="button" class="btn btn--primary btn--sm" onclick="window.print()">
+            <i data-lucide="printer"></i>Imprimir / Guardar en PDF
+          </button>
+        </div>
+
+        <p id="mensaje-alerta" class="mensaje no-print" style="max-width: 800px; margin: 0 auto 20px;"></p>
+
+        <!-- Skeleton loader -->
+        <div class="card" id="cargando" style="max-width: 800px; margin: 0 auto;">
+          <div class="card__body">
+            <div class="skeleton skeleton--text" style="width: 30%"></div>
+            <div class="skeleton skeleton--line" style="width: 80%; margin-top: 16px;"></div>
+            <div class="skeleton skeleton--line" style="width: 60%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 90%; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Contenedor del Comprobante -->
+        <div class="comprobante oculto" id="bloque-comprobante">
+          
+          <div class="comprobante__head">
+            <div>
+              <div class="comprobante__inst">ISFT N.º 182 "Clementina"</div>
+              <div class="comprobante__sub">Dirección General de Cultura y Educación · Pcia. de Buenos Aires</div>
+              <div class="comprobante__sub">Plataforma Académica Institucional</div>
+            </div>
+            <div class="comprobante__tag">
+              <span class="badge badge--success" style="font-size: 0.8125rem;">PREINSCRIPCIÓN REGISTRADA</span>
+              <div class="tnum" style="margin-top: 6px; font-weight: 700; color: var(--primary);" id="comp-tramite">—</div>
+            </div>
+          </div>
+
+          <h3 class="comprobante__title">CONSTANCIA DE MATRICULACIÓN A CARRERA · CICLO LECTIVO <span id="comp-anio-ciclo">2027</span></h3>
+
+          <div class="comprobante__grid">
+            
+            <!-- Datos del Alumno -->
+            <div class="comprobante__box">
+              <div class="comprobante__box-title">Datos del Estudiante</div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Apellido y Nombre:</span>
+                <span class="comprobante__value" id="comp-nombre">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Documento (DNI):</span>
+                <span class="comprobante__value tnum" id="comp-dni">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Correo electrónico:</span>
+                <span class="comprobante__value" id="comp-email">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Teléfono:</span>
+                <span class="comprobante__value tnum" id="comp-telefono">—</span>
+              </div>
+            </div>
+
+            <!-- Datos Académicos -->
+            <div class="comprobante__box">
+              <div class="comprobante__box-title">Carrera y Asignación</div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Carrera:</span>
+                <span class="comprobante__value" id="comp-carrera">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Resolución:</span>
+                <span class="comprobante__value tnum" id="comp-resolucion">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Sede de cursada:</span>
+                <span class="comprobante__value" id="comp-sede">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Turno:</span>
+                <span class="comprobante__value" id="comp-turno">—</span>
+              </div>
+              <div class="comprobante__row">
+                <span class="comprobante__label">Fecha de trámite:</span>
+                <span class="comprobante__value tnum" id="comp-fecha">—</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Instrucciones de presentación de legajo -->
+          <div class="comprobante__instrucciones">
+            <h4>Requisitos para la confirmación de matrícula (Presentar en Preceptoría)</h4>
+            <ul>
+              <li>Documento Nacional de Identidad (original y fotocopia legible).</li>
+              <li>Título Secundario o Constancia de Título en trámite (original y fotocopia).</li>
+              <li>Certificado de aptitud médica / psicofísica.</li>
+              <li>2 fotos carnet 4x4 y copia firmada de esta constancia.</li>
+            </ul>
+          </div>
+
+          <!-- Firmas para impresión -->
+          <div class="comprobante__firmas">
+            <div class="comprobante__linea-firma">
+              Firma y aclaración del estudiante
+            </div>
+            <div class="comprobante__linea-firma">
+              Sello, firma y fecha de recepción (Preceptoría)
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="estilo/app.js?v=8"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var params = new URLSearchParams(window.location.search);
+      var idCarrera = params.get('carrera');
+
+      var cargando = document.getElementById('cargando');
+      var comprobante = document.getElementById('bloque-comprobante');
+      var mensaje = document.getElementById('mensaje-alerta');
+
+      function mostrarError(texto) {
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible mensaje-error no-print';
+        cargando.classList.add('oculto');
+      }
+
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
+
+        if (!idCarrera) {
+          mostrarError('No se especificó la carrera para emitir el comprobante.');
+          return;
+        }
+
+        fetch(App.controlador('inscripcion_carreras.php?accion=comprobante&carrera=' + encodeURIComponent(idCarrera)))
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            cargando.classList.add('oculto');
+            if (!resp.ok || !resp.detalle) {
+              mostrarError(resp.mensaje || 'No se encontró la inscripción para esta carrera.');
+              return;
+            }
+
+            var d = resp.detalle;
+            document.getElementById('comp-tramite').textContent = d.tramite;
+            document.getElementById('comp-anio-ciclo').textContent = d.anio_inscripcion;
+            document.getElementById('comp-nombre').textContent = d.alumno_nombre;
+            document.getElementById('comp-dni').textContent = d.dni;
+            document.getElementById('comp-email').textContent = d.email;
+            document.getElementById('comp-telefono').textContent = d.telefono;
+            document.getElementById('comp-carrera').textContent = d.carrera;
+            document.getElementById('comp-resolucion').textContent = d.resolucion;
+            document.getElementById('comp-sede').textContent = d.sede;
+            document.getElementById('comp-turno').textContent = d.turno;
+            document.getElementById('comp-fecha').textContent = d.fecha_alta;
+
+            comprobante.classList.remove('oculto');
+            App.iconos();
+          })
+          .catch(function () {
+            mostrarError('Error de comunicación al obtener los datos del comprobante.');
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

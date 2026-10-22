@@ -1,62 +1,40 @@
 <?php
-/**
- * Controlador: Login
- *
- * Recibe POST con `usuario` (email de alumno o usuario de personal)
- * y `password`. Devuelve JSON. Si las credenciales son válidas,
- * abre la sesión PHP y responde { ok: true, usuario: {...} }.
- */
-
 session_start();
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: application/json');
+require_once '../modelo/Usuario.php';
 
-require_once dirname(__DIR__) . '/modelo/Usuario.php';
-
-function responder(array $datos): void
-{
-    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido']);
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
-}
-
-$usuario  = trim((string) ($_POST['usuario'] ?? ''));
-$password = (string) ($_POST['password'] ?? '');
+$usuario = trim($_POST['usuario'] ?? '');
+$password = $_POST['password'] ?? '';
 
 if ($usuario === '' || $password === '') {
-    responder(['ok' => false, 'mensaje' => 'Ingresá usuario y contraseña.']);
+    echo json_encode(['ok' => false, 'mensaje' => 'Ingresá usuario y contraseña.']);
+    exit;
 }
 
-$modelo  = new Usuario();
-$persona = $modelo->buscarPorUsuario($usuario);
+$modelo = new Usuario();
+$resultado = $modelo->login($usuario, $password);
 
-if ($persona === null || !$modelo->verificarContraseña($persona['password'], $password)) {
-    responder(['ok' => false, 'mensaje' => 'Usuario o contraseña incorrectos.']);
+if (!$resultado['ok']) {
+    echo json_encode($resultado);
+    exit;
 }
 
-// Renovamos el ID de sesión para evitar session fixation.
-session_regenerate_id(true);
+$u = $resultado['usuario'];
 
-$nombre = trim(implode(' ', array_filter([
-    $persona['nombre'],
-    $persona['segundo_nombre'] ?? '',
-])));
-$apellido        = trim($persona['apellido']);
-$nombreCompleto  = trim($nombre . ' ' . $apellido);
+$_SESSION['id_usuario'] = $u['id'];
+$_SESSION['tipo_usuario'] = $u['tipo'];
+$_SESSION['rol'] = $u['rol'];
+$_SESSION['usuario'] = $u['dni'] ?: $u['email'];
+$_SESSION['nombre'] = $u['nombre'];
+$_SESSION['apellido'] = $u['apellido'];
+$_SESSION['email'] = $u['email'];
+$_SESSION['dni'] = $u['dni'];
+$_SESSION['legajo'] = $u['legajo'];
 
-$_SESSION['usuario'] = [
-    'rol'            => $persona['rol'],
-    'id'             => $persona['id'],
-    'usuario'        => $persona['usuario'],
-    'nombre'         => $nombre,
-    'apellido'       => $apellido,
-    'nombre_completo' => $nombreCompleto,
-];
-
-responder([
-    'ok'      => true,
-    'mensaje' => '¡Hola, ' . $nombreCompleto . '! Redirigiendo...',
-    'usuario' => $_SESSION['usuario'],
-]);
+echo json_encode(['ok' => true, 'mensaje' => 'Inicio de sesión exitoso.']);
+exit;

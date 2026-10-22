@@ -5,7 +5,7 @@
  *
  * Devuelve JSON con las carreras del alumno y su historial de materias
  * aprobadas/regularizadas.
- * La identidad (DNI) se obtiene de forma estricta desde la sesión activa.
+ * La identidad se obtiene de forma estricta desde la sesión activa.
  */
 
 session_start();
@@ -24,24 +24,29 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 // 1. Verificación de sesión activa
-if (empty($_SESSION['usuario']['id'])) {
+if (empty($_SESSION['id_usuario'])) {
     responder(['ok' => false, 'mensaje' => 'Sesión no válida o expirada. Por favor, iniciá sesión nuevamente.']);
 }
 
-$rol = $_SESSION['usuario']['rol'] ?? '';
+$rol = $_SESSION['rol'] ?? 'alumno';
+$modelo = new Historial();
 
-// 2. Determinación del DNI según el rol
+// 2. Determinación del alumno según el rol
 if ($rol === 'alumno') {
-    // Alumno: DNI siempre estrictamente de la sesión
-    $dni = (int) $_SESSION['usuario']['id'];
+    // Alumno: identidad siempre estrictamente de la sesión
+    $idAlumno = (int) $_SESSION['id_usuario'];
 } else {
-    // Personal administrativo: puede consultar su propio ID o un DNI recibido por GET
+    // Personal: puede consultar por DNI recibido por GET o su propia sesión
     $dniParam = isset($_GET['dni']) ? (int) $_GET['dni'] : 0;
-    $dni = $dniParam > 0 ? $dniParam : (int) $_SESSION['usuario']['id'];
+    if ($dniParam > 0) {
+        $idAlumno = $modelo->obtenerIdAlumnoPorDocumento($dniParam);
+    } else {
+        $idAlumno = (int) $_SESSION['id_usuario'];
+    }
 }
 
-if ($dni <= 0) {
-    responder(['ok' => false, 'mensaje' => 'No se pudo identificar el documento del alumno.']);
+if (empty($idAlumno)) {
+    responder(['ok' => false, 'mensaje' => 'No se pudo identificar al alumno.']);
 }
 
 // 3. Parámetro opcional de filtro por carrera
@@ -51,10 +56,8 @@ if (isset($_GET['carrera']) && $_GET['carrera'] !== '' && $_GET['carrera'] !== '
 }
 
 try {
-    $modelo = new Historial();
-
     // Obtener carreras en las que el alumno está matriculado o tiene historial
-    $carreras = $modelo->obtenerCarrerasDelAlumno($dni);
+    $carreras = $modelo->obtenerCarrerasDelAlumno($idAlumno);
 
     // Si tiene exactamente una sola carrera y no se pasó parámetro, seleccionarla por defecto
     if ($idCarrera === null && count($carreras) === 1) {
@@ -62,13 +65,18 @@ try {
     }
 
     // Obtener las materias del historial académico
-    $materias = $modelo->obtenerMateriasHistorial($dni, $idCarrera);
+    $materias = $modelo->obtenerMateriasHistorial($idAlumno, $idCarrera);
+
+    $nombreCompleto = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+    $documento = isset($_SESSION['dni']) && $_SESSION['dni'] !== null
+        ? (int) $_SESSION['dni']
+        : (int) ($_SESSION['usuario'] ?? 0);
 
     responder([
         'ok'         => true,
         'alumno'     => [
-            'dni'             => $dni,
-            'nombre_completo' => $_SESSION['usuario']['nombre_completo'] ?? '',
+            'dni'             => $documento,
+            'nombre_completo' => $nombreCompleto,
         ],
         'carreras'   => $carreras,
         'carrera_id' => $idCarrera,

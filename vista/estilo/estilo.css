@@ -343,6 +343,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .field { margin-bottom: var(--sp-4); }
 .field:last-child { margin-bottom: 0; }
 
+.form-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-5); }
+
 .label {
   display: block;
   margin-bottom: 6px;
@@ -1083,6 +1085,18 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .module__name { font-size: 0.9375rem; font-weight: 600; }
 .module__desc { font-size: 0.8125rem; color: var(--text-2); }
 
+/* Módulo interactivo (calendario de finales) */
+button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
+.module--btn:hover .module__arrow { transform: none; }
+
+.module__list { display: flex; flex-direction: column; }
+.module__item { display: flex; flex-direction: column; gap: 1px; padding: 8px 0; border-top: 1px solid var(--border); }
+.module__item:first-child { border-top: 0; padding-top: 2px; }
+.module__item-turno { font-size: 0.8125rem; font-weight: 600; color: var(--text); }
+.module__item-fecha { font-size: 0.78125rem; color: var(--text-2); }
+.module__item--muted { font-size: 0.8125rem; color: var(--text-3); }
+.module__more { font-size: 0.8125rem; font-weight: 600; color: var(--secondary); }
+
 /* Lista de datos (mis datos) */
 .data-list { display: flex; flex-direction: column; margin: 0; padding: 0; }
 .data-list dt,
@@ -1169,4 +1183,90 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   .toast-region { right: var(--sp-4); left: var(--sp-4); bottom: var(--sp-4); width: auto; }
   .card__footer { flex-direction: column-reverse; }
   .card__footer .btn { width: 100%; }
+}
+
+/* ------------------------------------------------------------------ */
+/* 20. Panel de administración (ABM)                                    */
+/* ------------------------------------------------------------------ */
+
+.admin {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+/* --- Barra lateral de entidades --- */
+.admin__nav {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--sp-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-height: calc(100vh - var(--topbar-h) - var(--sp-8));
+  overflow-y: auto;
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.admin__group { display: flex; flex-direction: column; gap: 2px; }
+.admin__group-title {
+  padding: 0 8px 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.admin__nav-item {
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--fast), color var(--fast);
+}
+.admin__nav-item:hover { background: var(--surface-2); }
+.admin__nav-item.is-active { background: var(--accent-soft); color: var(--accent-600); font-weight: 600; }
+
+/* --- Panel de la derecha --- */
+.admin__panel { min-width: 0; }
+.admin__panel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.admin__search { margin: 0; max-width: 260px; }
+.admin__search .field__icon { pointer-events: none; }
+
+/* --- Modal de formulario --- */
+.modal__dialog--wide { max-width: 760px; }
+.modal__form { display: flex; flex-direction: column; }
+.modal__head-text { flex: 1; min-width: 0; }
+.modal__close { margin-left: auto; }
+.field--full { grid-column: 1 / -1; }
+.text-danger { color: var(--error); }
+.btn--ghost.text-danger:hover:not(:disabled) { background: var(--error-soft); color: var(--error); }
+
+@media (max-width: 900px) {
+  .admin { grid-template-columns: 1fr; }
+  .admin__nav {
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .admin__group { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .admin__group-title { width: 100%; padding: 0; }
 }

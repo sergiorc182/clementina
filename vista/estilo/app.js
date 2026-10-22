@@ -73,9 +73,12 @@
     "mail": "<rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/>",
     "menu": "<line x1=\"4\" x2=\"20\" y1=\"12\" y2=\"12\"/><line x1=\"4\" x2=\"20\" y1=\"6\" y2=\"6\"/><line x1=\"4\" x2=\"20\" y1=\"18\" y2=\"18\"/>",
     "phone": "<path d=\"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z\"/>",
+    "pencil": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z\"/>",
+    "plus": "<path d=\"M12 5v14\"/><path d=\"M5 12h14\"/>",
     "school": "<path d=\"m4 6 8-4 8 4\"/><path d=\"m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2\"/><path d=\"M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4\"/><path d=\"M18 5v17\"/><path d=\"M6 5v17\"/><circle cx=\"12\" cy=\"9\" r=\"2\"/>",
     "search": "<circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/>",
     "shield-check": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/><path d=\"m9 12 2 2 4-4\"/>",
+    "trash-2": "<path d=\"M3 6h18\"/><path d=\"M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"/><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"/>",
     "user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/>",
     "x": "<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>",
     "x-circle": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"m15 9-6 6\"/><path d=\"m9 9 6 6\"/>"
@@ -235,8 +238,9 @@
       contenedor.innerHTML = html;
     },
 
-    _htmlUsuario: function () {
+    _htmlUsuario: function (usuario) {
       var v = this.vista.bind(this);
+      var esPreceptor = usuario && usuario.tipo === 'personal' && usuario.rol === 'preceptor';
       var html = '';
       html += '<div class="dropdown" id="dropdown-usuario">';
       html += '  <button type="button" class="user-chip" id="btn-usuario" aria-haspopup="true" aria-expanded="false">';
@@ -249,6 +253,9 @@
       html += '  </button>';
       html += '  <div class="dropdown__menu" role="menu">';
       html += '    <a class="dropdown__item" role="menuitem" href="' + v('mis_datos.html') + '"><i data-lucide="user"></i>Mis datos</a>';
+      if (esPreceptor) {
+        html += '    <a class="dropdown__item" role="menuitem" href="' + v('admin.html') + '"><i data-lucide="shield-check"></i>Panel de administración</a>';
+      }
       html += '    <div class="dropdown__divider"></div>';
       html += '    <button type="button" class="dropdown__item dropdown__item--danger" role="menuitem" id="btn-cerrar-sesion-menu"><i data-lucide="log-out"></i>Cerrar sesión</button>';
       html += '  </div>';
@@ -265,7 +272,7 @@
     pintarUsuario: function (usuario) {
       var contenedor = document.getElementById('topbar-acciones');
       if (contenedor && !document.getElementById('dropdown-usuario')) {
-        contenedor.innerHTML = this._htmlUsuario();
+        contenedor.innerHTML = this._htmlUsuario(usuario);
         this._conectarUsuario();
       }
 

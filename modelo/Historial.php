@@ -4,7 +4,7 @@
  * ISFT N.º 182 "Clementina"
  *
  * Consultas para obtener carreras e historial de materias cursadas/aprobadas
- * para el alumno autenticado.
+ * para el alumno autenticado (esquema normalizado).
  */
 
 require_once dirname(__DIR__) . '/modelo/Conexion.php';
@@ -21,23 +21,26 @@ class Historial
     /**
      * Obtiene las carreras asociadas al alumno (desde matriculacion o historial).
      *
-     * @param int $dni
+     * @param int $idAlumno
      * @return array
      */
-    public function obtenerCarrerasDelAlumno(int $dni): array
+    public function obtenerCarrerasDelAlumno(int $idAlumno): array
     {
-        $sql = "SELECT DISTINCT c.idcarrera, c.nombrecarrera, c.nombrecarreracorto, c.nroresol
+        $sql = "SELECT DISTINCT c.id_carrera AS idcarrera,
+                                 c.nombre_carrera AS nombrecarrera,
+                                 c.nombre_carrera_corto AS nombrecarreracorto,
+                                 c.nro_resolucion AS nroresol
                 FROM carreras c
-                WHERE c.idcarrera IN (
-                    SELECT m.idcarrera FROM matriculacion m WHERE m.numerodocumento = :dni1
+                WHERE c.id_carrera IN (
+                    SELECT m.id_carrera FROM matriculacion m WHERE m.id_alumno = :id1
                     UNION
-                    SELECT h.idcarrera FROM historialacademico h WHERE h.numerodocumento = :dni2
+                    SELECT h.id_carrera FROM historial_academico h WHERE h.id_alumno = :id2
                 )
-                ORDER BY c.nombrecarrera ASC";
+                ORDER BY c.nombre_carrera ASC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':dni1', $dni, PDO::PARAM_INT);
-        $stmt->bindValue(':dni2', $dni, PDO::PARAM_INT);
+        $stmt->bindValue(':id1', $idAlumno, PDO::PARAM_INT);
+        $stmt->bindValue(':id2', $idAlumno, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -46,39 +49,39 @@ class Historial
     /**
      * Obtiene el historial de materias del alumno para una o todas las carreras.
      *
-     * @param int $dni
+     * @param int $idAlumno
      * @param int|null $idCarrera
      * @return array
      */
-    public function obtenerMateriasHistorial(int $dni, ?int $idCarrera = null): array
+    public function obtenerMateriasHistorial(int $idAlumno, ?int $idCarrera = null): array
     {
-        $whereCarrera = ($idCarrera !== null && $idCarrera > 0) ? "AND h.idcarrera = :idcarrera" : "";
+        $whereCarrera = ($idCarrera !== null && $idCarrera > 0) ? "AND h.id_carrera = :idcarrera" : "";
 
         $sql = "SELECT 
-                    h.idcarrera,
-                    c.nombrecarrera,
-                    h.idmateria,
-                    m.nombremateria,
-                    COALESCE(cm.aniocursada, 1) AS anio_cursada,
-                    h.anioregular,
-                    h.fechaaprobacion,
-                    h.tomoacta,
-                    h.folioacta,
+                    h.id_carrera AS idcarrera,
+                    c.nombre_carrera AS nombrecarrera,
+                    h.id_materia AS idmateria,
+                    m.nombre_materia AS nombremateria,
+                    COALESCE(cm.anio_cursada, 1) AS anio_cursada,
+                    h.anio_regular AS anioregular,
+                    h.fecha_aprobacion AS fechaaprobacion,
+                    h.tomo_acta AS tomoacta,
+                    h.folio_acta AS folioacta,
                     h.nota,
-                    h.tipoalumno,
-                    h.validadoregular,
-                    h.validadoexamen,
+                    h.tipo_alumno AS tipoalumno,
+                    h.validado_regular AS validadoregular,
+                    h.validado_examen AS validadoexamen,
                     h.resolucion
-                FROM historialacademico h
-                INNER JOIN materias m ON h.idmateria = m.idmateria
-                INNER JOIN carreras c ON h.idcarrera = c.idcarrera
-                LEFT JOIN rel_carrera_materias cm ON (h.idcarrera = cm.idcarrera AND h.idmateria = cm.idmateria)
-                WHERE h.numerodocumento = :dni
+                FROM historial_academico h
+                INNER JOIN materias m ON h.id_materia = m.id_materia
+                INNER JOIN carreras c ON h.id_carrera = c.id_carrera
+                LEFT JOIN carrera_materias cm ON (h.id_carrera = cm.id_carrera AND h.id_materia = cm.id_materia)
+                WHERE h.id_alumno = :id
                   $whereCarrera
-                ORDER BY COALESCE(cm.aniocursada, 1) ASC, m.nombremateria ASC, h.fechaaprobacion DESC";
+                ORDER BY COALESCE(cm.anio_cursada, 1) ASC, m.nombre_materia ASC, h.fecha_aprobacion DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $idAlumno, PDO::PARAM_INT);
         if ($idCarrera !== null && $idCarrera > 0) {
             $stmt->bindValue(':idcarrera', $idCarrera, PDO::PARAM_INT);
         }
@@ -86,6 +89,18 @@ class Historial
 
         $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return array_map([$this, 'formatearRegistroHistorial'], $filas);
+    }
+
+    /**
+     * Resuelve el id de alumno a partir del número de documento (para el personal).
+     */
+    public function obtenerIdAlumnoPorDocumento(int $documento): ?int
+    {
+        $stmt = $this->db->prepare("SELECT id_alumno FROM alumnos WHERE numero_documento = :doc LIMIT 1");
+        $stmt->bindValue(':doc', $documento, PDO::PARAM_INT);
+        $stmt->execute();
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : (int) $id;
     }
 
     /**

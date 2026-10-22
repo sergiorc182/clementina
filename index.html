@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="vista/estilo/estilo.css?v=8">
+  <link rel="stylesheet" href="vista/estilo/estilo.css?v=10">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="inicio">
@@ -100,61 +100,136 @@
             </div>
           </a>
 
-          <a class="module" href="vista/inscripcion_mesas.html">
+          <button type="button" class="module module--btn" id="modulo-finales" data-solo-usuario hidden
+                  aria-expanded="false" aria-controls="finales-lista">
             <div class="module__head">
               <span class="module__icon"><i data-lucide="calendar-clock"></i></span>
-              <i data-lucide="arrow-right" class="module__arrow"></i>
+              <span class="module__arrow" id="finales-chevron"><i data-lucide="chevron-down"></i></span>
             </div>
             <div>
-              <div class="module__name">Inscripción a mesas</div>
-              <div class="module__desc">Elegí turno y materia para rendir.</div>
+              <div class="module__name">Calendario de próximos finales</div>
+              <div class="module__desc" id="finales-desc">Próximas mesas de examen programadas.</div>
             </div>
-          </a>
+            <div class="module__list" id="finales-lista">
+              <div class="module__item module__item--muted">Cargando finales…</div>
+            </div>
+            <div class="module__more oculto" id="finales-more">Ver todos</div>
+          </button>
 
         </nav>
-
-        <!-- Calendario de próximos finales (solo usuarios con sesión) -->
-        <section class="mt-6" data-solo-usuario hidden aria-label="Calendario de próximos finales">
-          <article class="card">
-            <div class="card__header">
-              <div>
-                <h3 class="card__title">Calendario de próximos finales</h3>
-                <p class="card__subtitle">Mesas de examen programadas</p>
-              </div>
-              <span class="stat__icon stat__icon--neutral"><i data-lucide="calendar-days"></i></span>
-            </div>
-            <div class="card__body">
-              <div class="empty" style="padding: 8px 0 4px;">
-                <div class="empty__icon"><i data-lucide="clock"></i></div>
-                <p class="empty__title">Sin mesas publicadas</p>
-                <p class="empty__text">El calendario de finales se mostrará acá cuando esté disponible.</p>
-              </div>
-              <a class="btn btn--outline btn--block mt-4" href="vista/inscripcion_finales.html">Ver finales</a>
-            </div>
-          </article>
-        </section>
 
       </main>
     </div>
   </div>
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script src="vista/estilo/app.js?v=8"></script>
+  <script src="vista/estilo/app.js?v=9"></script>
   <script>
-    App.montarLayout({ protegida: false }).then(function (usuario) {
-      var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
-      var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
+    (function () {
+      'use strict';
 
-      soloUsuario.forEach(function (el) { el.hidden = !usuario; });
-      soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
+      var VISIBLES = 2;
+      var finales = [];
+      var expandido = false;
 
-      if (usuario) {
-        var nombre = (usuario.nombre || '').trim();
-        document.getElementById('bienvenida-nombre').textContent = nombre || 'estudiante';
-        document.getElementById('welcome-texto').textContent =
-          'Gestioná tus finales, inscripciones y datos académicos desde un solo lugar.';
+      function formatearFecha(iso) {
+        if (!iso) { return ''; }
+        var partes = String(iso).substring(0, 10).split('-');
+        if (partes.length !== 3) { return iso; }
+        return partes[2] + '/' + partes[1] + '/' + partes[0];
       }
-    });
+
+      function rango(pm) {
+        var ini = formatearFecha(pm.fecha_inicio);
+        var fin = formatearFecha(pm.fecha_fin);
+        if (ini && fin) { return ini + ' al ' + fin; }
+        return ini || fin || 'Fecha a confirmar';
+      }
+
+      function fila(pm, oculto) {
+        var turno = pm.turno ? ('Turno ' + pm.turno) : 'Mesa de examen';
+        if (pm.anio_mesas) { turno += ' ' + pm.anio_mesas; }
+        return '' +
+          '<div class="module__item' + (oculto ? ' oculto' : '') + '">' +
+            '<span class="module__item-turno">' + turno + '</span>' +
+            '<span class="module__item-fecha">' + rango(pm) + '</span>' +
+          '</div>';
+      }
+
+      function pintar() {
+        var lista = document.getElementById('finales-lista');
+        var more = document.getElementById('finales-more');
+        var chevron = document.getElementById('finales-chevron');
+        var boton = document.getElementById('modulo-finales');
+        var expandible = finales.length > VISIBLES;
+
+        if (!finales.length) {
+          lista.innerHTML = '<div class="module__item module__item--muted">Sin mesas publicadas.</div>';
+        } else {
+          var html = '';
+          finales.forEach(function (pm, i) {
+            html += fila(pm, !expandido && i >= VISIBLES);
+          });
+          lista.innerHTML = html;
+        }
+
+        if (expandible) {
+          more.classList.remove('oculto');
+          more.textContent = expandido ? 'Ver menos' : ('Ver todos (' + finales.length + ')');
+          if (chevron) {
+            chevron.classList.remove('oculto');
+            chevron.style.transform = expandido ? 'rotate(180deg)' : '';
+          }
+        } else {
+          more.classList.add('oculto');
+          if (chevron) {
+            chevron.classList.add('oculto');
+            chevron.style.transform = '';
+          }
+        }
+
+        boton.setAttribute('aria-expanded', expandible && expandido ? 'true' : 'false');
+      }
+
+      function cargarFinales() {
+        fetch(App.controlador('get_proximos_finales.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            finales = Array.isArray(data) ? data : [];
+            pintar();
+          })
+          .catch(function () {
+            finales = [];
+            pintar();
+          });
+      }
+
+      document.getElementById('modulo-finales').addEventListener('click', function () {
+        if (finales.length > VISIBLES) {
+          expandido = !expandido;
+          pintar();
+        } else {
+          window.location.href = App.vista('inscripcion_finales.html');
+        }
+      });
+
+      App.montarLayout({ protegida: true }).then(function (usuario) {
+        var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
+        var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
+
+        soloUsuario.forEach(function (el) { el.hidden = !usuario; });
+        soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
+
+        if (usuario) {
+          var nombre = (usuario.nombre || '').trim();
+          document.getElementById('bienvenida-nombre').textContent = nombre || 'estudiante';
+          document.getElementById('welcome-texto').textContent =
+            'Gestioná tus finales, inscripciones y datos académicos desde un solo lugar.';
+          cargarFinales();
+          App.iconos();
+        }
+      });
+    })();
   </script>
 </body>
 </html>

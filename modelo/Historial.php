@@ -4,17 +4,10 @@
  * ISFT N.º 182 "Clementina"
  *
  * Consultas para obtener carreras e historial de materias cursadas/aprobadas
-<<<<<<< HEAD
  * para el alumno autenticado (esquema normalizado).
  */
 
 require_once dirname(__DIR__) . '/modelo/Conexion.php';
-=======
- * para el alumno autenticado.
- */
-
-require_once __DIR__ . '/Conexion.php';
->>>>>>> origin/InscripcionFinales
 
 class Historial
 {
@@ -27,19 +20,12 @@ class Historial
 
     /**
      * Obtiene las carreras asociadas al alumno (desde matriculacion o historial).
-<<<<<<< HEAD
      *
      * @param int $idAlumno
-=======
-     * Las columnas se devuelven con los nombres que espera la vista.
-     *
-     * @param int $idAlumno  alumnos.id_alumno
->>>>>>> origin/InscripcionFinales
      * @return array
      */
     public function obtenerCarrerasDelAlumno(int $idAlumno): array
     {
-<<<<<<< HEAD
         $sql = "SELECT DISTINCT c.id_carrera AS idcarrera,
                                  c.nombre_carrera AS nombrecarrera,
                                  c.nombre_carrera_corto AS nombrecarreracorto,
@@ -49,29 +35,12 @@ class Historial
                     SELECT m.id_carrera FROM matriculacion m WHERE m.id_alumno = :id1
                     UNION
                     SELECT h.id_carrera FROM historial_academico h WHERE h.id_alumno = :id2
-=======
-        $sql = "SELECT DISTINCT
-                    c.id_carrera           AS idcarrera,
-                    c.nombre_carrera       AS nombrecarrera,
-                    c.nombre_carrera_corto AS nombrecarreracorto,
-                    c.nro_resolucion       AS nroresol
-                FROM carreras c
-                WHERE c.id_carrera IN (
-                    SELECT m.id_carrera FROM matriculacion m WHERE m.id_alumno = :alumno1
-                    UNION
-                    SELECT h.id_carrera FROM historial_academico h WHERE h.id_alumno = :alumno2
->>>>>>> origin/InscripcionFinales
                 )
                 ORDER BY c.nombre_carrera ASC";
 
         $stmt = $this->db->prepare($sql);
-<<<<<<< HEAD
         $stmt->bindValue(':id1', $idAlumno, PDO::PARAM_INT);
         $stmt->bindValue(':id2', $idAlumno, PDO::PARAM_INT);
-=======
-        $stmt->bindValue(':alumno1', $idAlumno, PDO::PARAM_INT);
-        $stmt->bindValue(':alumno2', $idAlumno, PDO::PARAM_INT);
->>>>>>> origin/InscripcionFinales
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -80,11 +49,7 @@ class Historial
     /**
      * Obtiene el historial de materias del alumno para una o todas las carreras.
      *
-<<<<<<< HEAD
      * @param int $idAlumno
-=======
-     * @param int $idAlumno  alumnos.id_alumno
->>>>>>> origin/InscripcionFinales
      * @param int|null $idCarrera
      * @return array
      */
@@ -92,7 +57,6 @@ class Historial
     {
         $whereCarrera = ($idCarrera !== null && $idCarrera > 0) ? "AND h.id_carrera = :idcarrera" : "";
 
-<<<<<<< HEAD
         $sql = "SELECT 
                     h.id_carrera AS idcarrera,
                     c.nombre_carrera AS nombrecarrera,
@@ -107,41 +71,17 @@ class Historial
                     h.tipo_alumno AS tipoalumno,
                     h.validado_regular AS validadoregular,
                     h.validado_examen AS validadoexamen,
-=======
-        $sql = "SELECT
-                    h.id_carrera        AS idcarrera,
-                    c.nombre_carrera    AS nombrecarrera,
-                    h.id_materia        AS idmateria,
-                    m.nombre_materia    AS nombremateria,
-                    COALESCE(cm.anio_cursada, 1) AS anio_cursada,
-                    h.anio_regular      AS anioregular,
-                    h.fecha_aprobacion  AS fechaaprobacion,
-                    h.tomo_acta         AS tomoacta,
-                    h.folio_acta        AS folioacta,
-                    h.nota,
-                    h.tipo_alumno       AS tipoalumno,
-                    h.validado_regular  AS validadoregular,
-                    h.validado_examen   AS validadoexamen,
->>>>>>> origin/InscripcionFinales
                     h.resolucion
                 FROM historial_academico h
                 INNER JOIN materias m ON h.id_materia = m.id_materia
                 INNER JOIN carreras c ON h.id_carrera = c.id_carrera
                 LEFT JOIN carrera_materias cm ON (h.id_carrera = cm.id_carrera AND h.id_materia = cm.id_materia)
-<<<<<<< HEAD
                 WHERE h.id_alumno = :id
-=======
-                WHERE h.id_alumno = :alumno
->>>>>>> origin/InscripcionFinales
                   $whereCarrera
                 ORDER BY COALESCE(cm.anio_cursada, 1) ASC, m.nombre_materia ASC, h.fecha_aprobacion DESC";
 
         $stmt = $this->db->prepare($sql);
-<<<<<<< HEAD
         $stmt->bindValue(':id', $idAlumno, PDO::PARAM_INT);
-=======
-        $stmt->bindValue(':alumno', $idAlumno, PDO::PARAM_INT);
->>>>>>> origin/InscripcionFinales
         if ($idCarrera !== null && $idCarrera > 0) {
             $stmt->bindValue(':idcarrera', $idCarrera, PDO::PARAM_INT);
         }
@@ -152,7 +92,6 @@ class Historial
     }
 
     /**
-<<<<<<< HEAD
      * Resuelve el id de alumno a partir del número de documento (para el personal).
      */
     public function obtenerIdAlumnoPorDocumento(int $documento): ?int
@@ -165,8 +104,6 @@ class Historial
     }
 
     /**
-=======
->>>>>>> origin/InscripcionFinales
      * Enriquece y normaliza los datos del registro académico para el frontend.
      */
     private function formatearRegistroHistorial(array $r): array

@@ -412,12 +412,11 @@
   /* Mis finales                                                         */
   /* ------------------------------------------------------------------ */
 
-  /* Datos personales para el comprobante: mismo endpoint que "Mis datos". */
+  /* Datos personales para el comprobante: vienen en la misma respuesta de
+     inscripcion_finales.php (campo `alumno`), así no dependemos del
+     formato de "Mis datos". */
   function cargarAlumno() {
-    return fetch(App.controlador('mis_datos.php'))
-      .then(function (resp) { return resp.json(); })
-      .then(function (resp) { return resp.ok ? resp.datos : null; })
-      .catch(function () { return null; });
+    return Promise.resolve(null);
   }
 
   function unir() {
@@ -590,14 +589,14 @@
         }
 
         ultimo = datos;
-        alumno = respuestas[1];
+        alumno = datos.alumno || respuestas[1];
 
         var abierto = datos.periodo && datos.periodo.abierto;
         var hay = datos.inscripciones.length > 0;
         var condicion = condiciones(datos.materias);
 
         cajaPeriodo.innerHTML = alertaPeriodo(datos.periodo, datos.inscripciones.length);
-        cajaComprobante.innerHTML = hay ? comprobante(datos, respuestas[1], condicion) : '';
+        cajaComprobante.innerHTML = hay ? comprobante(datos, alumno, condicion) : '';
         habilitarComprobante(hay);
         bloquearInscripcion(
           !datos.periodo ? 'Todavía no hay un turno de finales publicado.'
@@ -617,7 +616,7 @@
               '<th>Carrera</th><th>Condición</th><th>Materia</th>' +
               '<th class="col-actions"></th></tr></thead><tbody>' +
               datos.inscripciones.map(function (i) {
-                return filaInscripcion(i, datos, respuestas[1],
+                return filaInscripcion(i, datos, alumno,
                   condicion[i.id_carrera + '-' + i.id_materia]);
               }).join('') +
             '</tbody></table></div>';

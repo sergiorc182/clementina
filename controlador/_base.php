@@ -25,13 +25,30 @@ function requerirMetodo(string $metodo): void
     }
 }
 
-/** Devuelve el usuario en sesión o corta el pedido si no hay ninguno. */
+/**
+ * Devuelve el usuario en sesión o corta el pedido si no hay ninguno.
+ * Lee la sesión que arma controlador/login.php (claves planas:
+ * id_usuario, tipo_usuario, rol, dni, ...) y la devuelve en un array.
+ */
 function requerirSesion(): array
 {
-    if (empty($_SESSION['usuario']['id'])) {
+    if (empty($_SESSION['id_usuario'])) {
         responder(['ok' => false, 'mensaje' => 'No autenticado.']);
     }
-    return $_SESSION['usuario'];
+
+    $nombre   = trim((string) ($_SESSION['nombre'] ?? ''));
+    $apellido = trim((string) ($_SESSION['apellido'] ?? ''));
+
+    return [
+        'id'              => (int) $_SESSION['id_usuario'],
+        'tipo'            => $_SESSION['tipo_usuario'] ?? 'alumno',
+        'rol'             => $_SESSION['rol'] ?? 'alumno',
+        'documento'       => $_SESSION['dni'] ?? null,
+        'legajo'          => $_SESSION['legajo'] ?? null,
+        'nombre'          => $nombre,
+        'apellido'        => $apellido,
+        'nombre_completo' => trim($nombre . ' ' . $apellido),
+    ];
 }
 
 /** Igual que requerirSesion(), pero además exige rol alumno. */

@@ -4,19 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis finales · Clementina · ISFT N.º 182</title>
-<<<<<<< HEAD
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilo/estilo.css?v=10">
-=======
   <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilo/estilo.css?v=14">
+  <link rel="stylesheet" href="estilo/estilo.css?v=15">
   <link rel="stylesheet" href="estilo/comprobante.css?v=3">
->>>>>>> origin/InscripcionFinales
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="mis-finales" data-title="Mis finales" data-subtitle="Inscripciones activas">
@@ -33,12 +26,6 @@
         <div class="page-head">
           <div>
             <h2 class="page-head__title">Mis finales</h2>
-<<<<<<< HEAD
-            <p class="page-head__text">Consultá las mesas en las que estás inscripto y su estado.</p>
-          </div>
-          <div class="page-head__actions">
-            <a class="btn btn--secondary" href="inscripcion_finales.html">
-=======
             <p class="page-head__text">Consultá las mesas en las que estás inscripto y descargá tu comprobante.</p>
           </div>
           <div class="page-head__actions">
@@ -51,75 +38,11 @@
               </button>
             </div>
             <a class="btn btn--primary" id="btn-inscribir" href="inscripcion_finales.html">
->>>>>>> origin/InscripcionFinales
               <i data-lucide="calendar-plus"></i>Inscribirme a un final
             </a>
           </div>
         </div>
 
-<<<<<<< HEAD
-        <div class="grid grid--2">
-
-          <section class="card" aria-label="Inscripciones a finales">
-            <div class="card__header">
-              <div>
-                <h3 class="card__title">Inscripciones</h3>
-                <p class="card__subtitle">Finales activos y su estado</p>
-              </div>
-              <span class="stat__icon"><i data-lucide="clipboard-list"></i></span>
-            </div>
-            <div class="card__body">
-              <div class="empty">
-                <div class="empty__icon"><i data-lucide="inbox"></i></div>
-                <p class="empty__title">Todavía no tenés inscripciones</p>
-                <p class="empty__text">
-                  Cuando te anotes a una mesa final, vas a poder verla acá con
-                  la fecha, el horario, el aula y su estado.
-                </p>
-                <div class="empty__action">
-                  <a class="btn btn--outline" href="inscripcion_finales.html">
-                    <i data-lucide="calendar-plus"></i>Ver mesas disponibles
-                  </a>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside class="card" aria-label="Estados de inscripción">
-            <div class="card__header">
-              <div>
-                <h3 class="card__title">Estados de inscripción</h3>
-                <p class="card__subtitle">Referencia visual</p>
-              </div>
-            </div>
-            <div class="card__body">
-              <ul class="data-list">
-                <li class="data-row">
-                  <span class="data-row__label">Disponible para inscribirse</span>
-                  <span class="badge badge--info">Disponible</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label">Inscripción confirmada</span>
-                  <span class="badge badge--success">Inscripto</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label">Mesa próxima a rendir</span>
-                  <span class="badge badge--accent">Próximo</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label">Período finalizado</span>
-                  <span class="badge badge--neutral">Cerrado</span>
-                </li>
-                <li class="data-row">
-                  <span class="data-row__label">Mesa dada de baja</span>
-                  <span class="badge badge--error">Cancelado</span>
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-        </div>
-=======
         <div id="periodo" class="mb-4" aria-live="polite"></div>
 
         <section class="card" aria-label="Inscripciones a finales">
@@ -139,24 +62,17 @@
 
         <!-- Comprobante: solo visible al imprimir / guardar como PDF -->
         <section class="comprobante" id="comprobante" aria-hidden="true"></section>
->>>>>>> origin/InscripcionFinales
 
       </main>
     </div>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-<<<<<<< HEAD
-  <script src="estilo/app.js?v=9"></script>
-  <script>
-    App.montarLayout();
-=======
-  <script src="estilo/app.js?v=12"></script>
-  <script src="js/finales.js?v=11"></script>
+  <script src="estilo/app.js?v=13"></script>
+  <script src="js/finales.js?v=12"></script>
   <script>
     App.montarLayout().then(function (usuario) {
       if (usuario) { Finales.iniciarMisFinales(); }
     });
->>>>>>> origin/InscripcionFinales
   </script>
 </body>
 </html>

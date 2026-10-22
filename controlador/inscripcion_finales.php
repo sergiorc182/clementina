@@ -3,7 +3,7 @@
  * Controlador: Inscripción a finales (alumno autenticado)
  *
  * GET   Devuelve el período de mesas, las materias que el alumno puede
- *       rendir y sus inscripciones del período.
+ *       rendir, sus inscripciones del período y sus datos personales.
  * POST  `accion` = inscribir | cancelar, con `id_carrera`, `id_materia`
  *       y, para inscribir, `id_llamado`.
  *
@@ -12,6 +12,7 @@
 
 require_once __DIR__ . '/_base.php';
 require_once dirname(__DIR__) . '/modelo/InscripcionFinal.php';
+require_once dirname(__DIR__) . '/modelo/Alumno.php';
 
 $usuario = requerirAlumno();
 
@@ -45,6 +46,8 @@ try {
         'llamados'      => InscripcionFinal::LLAMADOS,
         'materias'      => $finales->materias($periodo),
         'inscripciones' => $periodo ? $finales->inscripciones($periodo) : [],
+        // Datos personales para la tabla y el comprobante de "Mis finales"
+        'alumno'        => (new Alumno())->buscarPorId((int) $usuario['id']),
     ]);
 } catch (DomainException $e) {
     responder(['ok' => false, 'mensaje' => $e->getMessage()]);

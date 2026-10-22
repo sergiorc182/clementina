@@ -4,9 +4,10 @@
 -- Charset unificado en utf8mb4 para evitar problemas de acentos.
 -- =====================================================================
 
-CREATE DATABASE IF NOT EXISTS `CLEMENTINA`
+CREATE DATABASE IF NOT EXISTS `clementina`
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_general_ci;
+USE `clementina`;
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
@@ -16,7 +17,7 @@ SET NAMES utf8mb4;
 
 CREATE TABLE tipos_documento (
   id_tipo_documento VARCHAR(4) NOT NULL,
-  descripcion       VARCHAR(30) NOT NULL,
+  descripcion       VARCHAR(50) NOT NULL,  -- con 30 no entraba 'Documento Nacional de Identidad'
   PRIMARY KEY (id_tipo_documento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -441,10 +442,7 @@ INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
   ('PAS', 'Pasaporte');
 
 INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
-  ('A', 'Administrativo'),
-  ('D', 'Directivo'),
-  ('P', 'Docente'),
-  ('S', 'Preceptor');
+  ('A', 'Preceptor');
 
 -- País placeholder: alumnos.id_pais_nacimiento tiene DEFAULT 'ZZ' con FK a paises.
 INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES

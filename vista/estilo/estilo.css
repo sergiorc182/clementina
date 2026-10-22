@@ -343,11 +343,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .field { margin-bottom: var(--sp-4); }
 .field:last-child { margin-bottom: 0; }
 
-<<<<<<< HEAD
 .form-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-5); }
 
-=======
->>>>>>> origin/InscripcionFinales
 .label {
   display: block;
   margin-bottom: 6px;
@@ -1088,7 +1085,6 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .module__name { font-size: 0.9375rem; font-weight: 600; }
 .module__desc { font-size: 0.8125rem; color: var(--text-2); }
 
-<<<<<<< HEAD
 /* Módulo interactivo (calendario de finales) */
 button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
 .module--btn:hover .module__arrow { transform: none; }
@@ -1101,8 +1097,6 @@ button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
 .module__item--muted { font-size: 0.8125rem; color: var(--text-3); }
 .module__more { font-size: 0.8125rem; font-weight: 600; color: var(--secondary); }
 
-=======
->>>>>>> origin/InscripcionFinales
 /* Lista de datos (mis datos) */
 .data-list { display: flex; flex-direction: column; margin: 0; padding: 0; }
 .data-list dt,
@@ -1190,8 +1184,6 @@ button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
   .card__footer { flex-direction: column-reverse; }
   .card__footer .btn { width: 100%; }
 }
-<<<<<<< HEAD
-=======
 
 /* ------------------------------------------------------------------ */
 /* 20. Modo noche                                                       */
@@ -1361,4 +1353,3 @@ button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
   --btn-fg: var(--secondary);
   --btn-bd: var(--secondary);
 }
->>>>>>> origin/InscripcionFinales

@@ -441,10 +441,7 @@ INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
   ('PAS', 'Pasaporte');
 
 INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
-  ('A', 'Administrativo'),
-  ('D', 'Directivo'),
-  ('P', 'Docente'),
-  ('S', 'Preceptor');
+  ('A', 'Preceptor');
 
 -- País placeholder: alumnos.id_pais_nacimiento tiene DEFAULT 'ZZ' con FK a paises.
 INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES

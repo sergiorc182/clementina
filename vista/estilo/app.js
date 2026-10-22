@@ -150,7 +150,9 @@
 
     /* Texto legible del rol para mostrar en pantalla */
     nombreRol: function (rol) {
-      return rol === 'alumno' ? 'Alumno' : 'Personal';
+      if (rol === 'alumno') { return 'Alumno'; }
+      if (rol === 'preceptor') { return 'Preceptor'; }
+      return 'Personal';
     },
 
     /* ================================================================ */
@@ -240,7 +242,6 @@
 
     _htmlUsuario: function (usuario) {
       var v = this.vista.bind(this);
-      var esPreceptor = usuario && usuario.tipo === 'personal' && usuario.rol === 'preceptor';
       var html = '';
       html += '<div class="dropdown" id="dropdown-usuario">';
       html += '  <button type="button" class="user-chip" id="btn-usuario" aria-haspopup="true" aria-expanded="false">';
@@ -253,9 +254,6 @@
       html += '  </button>';
       html += '  <div class="dropdown__menu" role="menu">';
       html += '    <a class="dropdown__item" role="menuitem" href="' + v('mis_datos.html') + '"><i data-lucide="user"></i>Mis datos</a>';
-      if (esPreceptor) {
-        html += '    <a class="dropdown__item" role="menuitem" href="' + v('admin.html') + '"><i data-lucide="shield-check"></i>Panel de administración</a>';
-      }
       html += '    <div class="dropdown__divider"></div>';
       html += '    <button type="button" class="dropdown__item dropdown__item--danger" role="menuitem" id="btn-cerrar-sesion-menu"><i data-lucide="log-out"></i>Cerrar sesión</button>';
       html += '  </div>';

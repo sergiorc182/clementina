@@ -108,7 +108,7 @@ class Usuario {
                 if (!password_verify($password, $personal['password_hash'])) {
                     return ['ok' => false, 'mensaje' => 'La contraseña es incorrecta.'];
                 }
-                $roles = ['A' => 'administrador', 'D' => 'directivo', 'P' => 'docente', 'S' => 'preceptor'];
+                $roles = ['A' => 'preceptor'];
                 return [
                     'ok' => true,
                     'usuario' => [

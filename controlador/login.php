@@ -36,9 +36,13 @@ $nombre = trim(implode(' ', array_filter([
 $apellido       = trim($persona['apellido']);
 $nombreCompleto = trim($nombre . ' ' . $apellido);
 
+// `id` es la clave interna (alumnos.id_alumno). El documento se guarda
+// aparte para mostrarlo sin tener que volver a consultarlo.
 $_SESSION['usuario'] = [
     'rol'             => $persona['rol'],
     'id'              => $persona['id'],
+    'tipo_documento'  => $persona['tipo_documento'],
+    'documento'       => $persona['documento'],
     'usuario'         => $persona['usuario'],
     'nombre'          => $nombre,
     'apellido'        => $apellido,

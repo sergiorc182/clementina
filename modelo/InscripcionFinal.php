@@ -2,16 +2,18 @@
 /**
  * Modelo: Inscripción a finales.
  *
- * Reglas del módulo y acceso a datos. Trabaja sobre la base real
- * (`u714838186_desarrollo`), con sus tablas y columnas actuales:
+ * Reglas del módulo y acceso a datos. Trabaja sobre el esquema
+ * normalizado (docs/esquema_normalizado.sql):
  *
- *   parametros            período de mesas (año, turno, fechas, tope)
+ *   parametros_mesas      período de mesas (año, turno, fechas, tope)
  *   matriculacion         carreras en las que está el alumno
- *   rel_carrera_materias  materias de cada carrera
+ *   carrera_materias      materias de cada carrera
  *   materias / carreras   nombres
- *   historialacademico    materias aprobadas y regularidades
+ *   historial_academico   materias aprobadas y regularidades
  *   correlatividades      correlativas que hay que tener aprobadas
  *   inscripciones         inscripciones a mesas (acá se escribe)
+ *
+ * El alumno se identifica siempre por `alumnos.id_alumno`.
  *
  * Las reglas que no se cumplen se informan con DomainException, y el
  * controlador muestra ese mensaje tal cual al alumno.
@@ -29,18 +31,16 @@ class InscripcionFinal
     private const SIN_VERIFICAR = 'N';
 
     public const TURNOS   = [1 => 'Febrero', 2 => 'Agosto', 3 => 'Diciembre'];
-    public const LLAMADOS = [1 => 'Primer llamado', 2 => 'Segundo llamado'];
+    public const LLAMADOS = [1 => 'Primer llamado'];
 
     private $db;
-    private $tipoDocumento;
-    private $documento;
+    private $idAlumno;
 
-    /** Recibe la clave del alumno: tipo y número de documento. */
-    public function __construct(string $tipoDocumento, int $documento)
+    /** Recibe el id interno del alumno (alumnos.id_alumno). */
+    public function __construct(int $idAlumno)
     {
-        $this->db            = Conexion::getInstancia()->getConexion();
-        $this->tipoDocumento = $tipoDocumento;
-        $this->documento     = $documento;
+        $this->db       = Conexion::getInstancia()->getConexion();
+        $this->idAlumno = $idAlumno;
     }
 
     /* ------------------------------------------------------------------ */
@@ -48,18 +48,22 @@ class InscripcionFinal
     /* ------------------------------------------------------------------ */
 
     /**
-     * Período de mesas cargado en `parametros`.
+     * Período de mesas cargado en `parametros_mesas`.
+     * Si hay más de un registro, se usa el que está vigente hoy y, si
+     * ninguno lo está, el que empieza más tarde.
      * Devuelve null si todavía no hay ninguno configurado.
      */
     public function periodo(): ?array
     {
         $fila = $this->db->query(
-            "SELECT aniomesas        AS anio,
-                    idturnomesas     AS id_turno,
-                    fechainiciomesas AS fecha_inicio,
-                    fechafinmesas    AS fecha_fin,
-                    topemesas        AS tope
-             FROM parametros
+            "SELECT anio_mesas   AS anio,
+                    id_turno,
+                    fecha_inicio,
+                    fecha_fin,
+                    tope_mesas   AS tope
+             FROM parametros_mesas
+             ORDER BY (CURDATE() BETWEEN fecha_inicio AND fecha_fin) DESC,
+                      fecha_inicio DESC
              LIMIT 1"
         )->fetch();
 
@@ -93,25 +97,23 @@ class InscripcionFinal
     {
         $stmt = $this->db->prepare(
             "SELECT DISTINCT
-                    cm.idcarrera     AS id_carrera,
-                    c.nombrecarrera  AS carrera,
-                    cm.idmateria     AS id_materia,
-                    m.nombremateria  AS materia,
-                    cm.aniocursada   AS anio_cursada,
-                    h.anioregular    AS anio_regular
+                    cm.id_carrera,
+                    c.nombre_carrera AS carrera,
+                    cm.id_materia,
+                    m.nombre_materia AS materia,
+                    cm.anio_cursada,
+                    h.anio_regular
              FROM matriculacion mt
-             JOIN rel_carrera_materias cm ON cm.idcarrera = mt.idcarrera
-             JOIN materias m ON m.idmateria = cm.idmateria
-             JOIN carreras c ON c.idcarrera = cm.idcarrera
-             LEFT JOIN historialacademico h
-                    ON h.idtipodocumento = mt.idtipodocumento
-                   AND h.numerodocumento = mt.numerodocumento
-                   AND h.idcarrera = cm.idcarrera
-                   AND h.idmateria = cm.idmateria
-             WHERE mt.idtipodocumento = :tipo
-               AND mt.numerodocumento = :doc
+             JOIN carrera_materias cm ON cm.id_carrera = mt.id_carrera
+             JOIN materias m ON m.id_materia = cm.id_materia
+             JOIN carreras c ON c.id_carrera = cm.id_carrera
+             LEFT JOIN historial_academico h
+                    ON h.id_alumno = mt.id_alumno
+                   AND h.id_carrera = cm.id_carrera
+                   AND h.id_materia = cm.id_materia
+             WHERE mt.id_alumno = :alumno
                AND (h.nota IS NULL OR h.nota < :aprobado)
-             ORDER BY c.nombrecarrera, cm.aniocursada, m.nombremateria"
+             ORDER BY c.nombre_carrera, cm.anio_cursada, m.nombre_materia"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':aprobado', self::NOTA_APROBACION, PDO::PARAM_INT);
@@ -145,20 +147,19 @@ class InscripcionFinal
     public function inscripciones(array $periodo): array
     {
         $stmt = $this->db->prepare(
-            "SELECT i.idcarrera     AS id_carrera,
-                    c.nombrecarrera AS carrera,
-                    i.idmateria     AS id_materia,
-                    m.nombremateria AS materia,
-                    i.idllamado     AS id_llamado,
-                    i.fechahora     AS fecha_inscripcion
+            "SELECT i.id_carrera,
+                    c.nombre_carrera AS carrera,
+                    i.id_materia,
+                    m.nombre_materia AS materia,
+                    i.id_llamado,
+                    i.fecha_hora     AS fecha_inscripcion
              FROM inscripciones i
-             JOIN materias m ON m.idmateria = i.idmateria
-             JOIN carreras c ON c.idcarrera = i.idcarrera
-             WHERE i.idtipodedocumento = :tipo
-               AND i.iddocumento = :doc
+             JOIN materias m ON m.id_materia = i.id_materia
+             JOIN carreras c ON c.id_carrera = i.id_carrera
+             WHERE i.id_alumno = :alumno
                AND i.anio = :anio
-               AND i.idturno = :turno
-             ORDER BY i.idllamado, m.nombremateria"
+               AND i.id_turno = :turno
+             ORDER BY i.id_llamado, m.nombre_materia"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
@@ -217,19 +218,14 @@ class InscripcionFinal
             );
         }
 
-        // Los datos personales se copian desde `alumnos` porque la tabla
-        // `inscripciones` actual los guarda en columnas propias.
+        // Los datos personales ya no se copian: se leen de `alumnos` con JOIN.
         $stmt = $this->db->prepare(
             "INSERT INTO inscripciones
-               (idtipodedocumento, iddocumento, primernombre, otrosnombres,
-                primerapellido, otrosapellidos, idemail, idcarrera, idmateria,
-                anio, idturno, idllamado, estado, verificada, fechahora)
-             SELECT a.idtipodocumento, a.numerodocumento, a.primernombre, a.otrosnombres,
-                    a.primerapellido, a.otrosapellidos, a.idemail, :carrera, :materia,
-                    :anio, :turno, :llamado, :estado, :verificada, NOW()
-             FROM alumnos a
-             WHERE a.idtipodocumento = :tipo AND a.numerodocumento = :doc
-             LIMIT 1"
+               (id_alumno, id_carrera, id_materia, anio, id_turno,
+                id_llamado, estado, verificada, fecha_hora)
+             VALUES
+               (:alumno, :carrera, :materia, :anio, :turno,
+                :llamado, :estado, :verificada, NOW())"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
@@ -256,12 +252,11 @@ class InscripcionFinal
 
         $stmt = $this->db->prepare(
             "DELETE FROM inscripciones
-             WHERE idtipodedocumento = :tipo
-               AND iddocumento = :doc
-               AND idcarrera = :carrera
-               AND idmateria = :materia
+             WHERE id_alumno = :alumno
+               AND id_carrera = :carrera
+               AND id_materia = :materia
                AND anio = :anio
-               AND idturno = :turno"
+               AND id_turno = :turno"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
@@ -293,28 +288,26 @@ class InscripcionFinal
 
     /**
      * Correlativas que el alumno todavía no aprobó, agrupadas por
-     * "idcarrera-idmateria" => [nombres de las materias que faltan].
+     * "id_carrera-id_materia" => [nombres de las materias que faltan].
      */
     private function correlativasPendientes(): array
     {
         $stmt = $this->db->prepare(
             "SELECT DISTINCT
-                    co.idcarrera    AS id_carrera,
-                    co.idmateria    AS id_materia,
-                    m.nombremateria AS correlativa
+                    co.id_carrera,
+                    co.id_materia,
+                    m.nombre_materia AS correlativa
              FROM matriculacion mt
-             JOIN correlatividades co ON co.idcarrera = mt.idcarrera
-             JOIN materias m ON m.idmateria = co.idmateriacorrelativa
-             LEFT JOIN historialacademico h
-                    ON h.idtipodocumento = mt.idtipodocumento
-                   AND h.numerodocumento = mt.numerodocumento
-                   AND h.idcarrera = co.idcarrera
-                   AND h.idmateria = co.idmateriacorrelativa
+             JOIN correlatividades co ON co.id_carrera = mt.id_carrera
+             JOIN materias m ON m.id_materia = co.id_materia_correlativa
+             LEFT JOIN historial_academico h
+                    ON h.id_alumno = mt.id_alumno
+                   AND h.id_carrera = co.id_carrera
+                   AND h.id_materia = co.id_materia_correlativa
                    AND h.nota >= :aprobado
-             WHERE mt.idtipodocumento = :tipo
-               AND mt.numerodocumento = :doc
-               AND h.idmateria IS NULL
-             ORDER BY m.nombremateria"
+             WHERE mt.id_alumno = :alumno
+               AND h.id_materia IS NULL
+             ORDER BY m.nombre_materia"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':aprobado', self::NOTA_APROBACION, PDO::PARAM_INT);
@@ -340,8 +333,7 @@ class InscripcionFinal
 
     private function bindAlumno(PDOStatement $stmt): void
     {
-        $stmt->bindValue(':tipo', $this->tipoDocumento);
-        $stmt->bindValue(':doc', $this->documento, PDO::PARAM_INT);
+        $stmt->bindValue(':alumno', $this->idAlumno, PDO::PARAM_INT);
     }
 
     /** Normaliza una fecha de la base; null si está vacía o es 0000-00-00. */

@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historial académico · Clementina · ISFT N.º 182</title>
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilo/estilo.css?v=8">
+  <link rel="stylesheet" href="estilo/estilo.css?v=14">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="historial-academico" data-title="Historial académico" data-subtitle="Consulta de trayectoria">
@@ -19,84 +20,331 @@
     <div class="app__main">
       <header class="topbar" id="topbar"></header>
 
-      <main id="contenido" class="content content--narrow">
+      <main id="contenido" class="content">
 
+        <!-- Encabezado de página -->
         <div class="page-head">
-          <div>
-            <h2 class="page-head__title">Historial académico</h2>
-            <p class="page-head__text">Consultá materias aprobadas, regularidades y notas.</p>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__header">
+          <div class="page-head__lead">
+            <a class="btn btn--ghost btn--icon" href="../index.html" aria-label="Volver al inicio" title="Volver al inicio">
+              <i data-lucide="arrow-left"></i>
+            </a>
             <div>
-              <h3 class="card__title">Datos de la consulta</h3>
-              <p class="card__subtitle">Filtrá por legajo, DNI o carrera</p>
+              <h2 class="page-head__title">Historial académico</h2>
+              <p class="page-head__text">Materias aprobadas, regularidades, notas finales y actas registradas.</p>
             </div>
-            <span class="stat__icon"><i data-lucide="file-search"></i></span>
-          </div>
-          <div class="card__body">
-            <form id="form-historial" novalidate>
-
-              <div class="grid grid--2">
-                <div class="field field--icon">
-                  <label class="label" for="legajo">Legajo</label>
-                  <i data-lucide="hash" class="field__icon"></i>
-                  <input class="input" type="text" id="legajo" name="legajo" placeholder="Número de legajo" inputmode="numeric">
-                </div>
-
-                <div class="field field--icon">
-                  <label class="label" for="dni">DNI</label>
-                  <i data-lucide="credit-card" class="field__icon"></i>
-                  <input class="input" type="text" id="dni" name="dni" placeholder="Sin puntos" inputmode="numeric">
-                </div>
-              </div>
-
-              <div class="field">
-                <label class="label" for="carrera">Carrera</label>
-                <select class="select" id="carrera" name="carrera">
-                  <option value="">Todas las carreras</option>
-                </select>
-              </div>
-
-              <p id="mensaje" class="mensaje" role="alert"></p>
-
-              <div class="mt-4">
-                <button type="submit" class="btn btn--primary">
-                  <i data-lucide="search"></i>Consultar
-                </button>
-              </div>
-            </form>
           </div>
         </div>
 
-        <div class="alert alert--info mt-4">
-          <i data-lucide="info"></i>
-          <div class="alert__body">La consulta de historial se habilitará próximamente.</div>
+        <p id="mensaje-alerta" class="mensaje" role="alert"></p>
+
+        <!-- Skeleton loader inicial -->
+        <div class="card" id="cargando">
+          <div class="card__body">
+            <div class="skeleton skeleton--text" style="width: 25%"></div>
+            <div class="skeleton skeleton--line" style="width: 85%; margin-top: 16px;"></div>
+            <div class="skeleton skeleton--line" style="width: 70%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 90%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 60%; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Contenedor principal de datos -->
+        <div class="stack oculto" id="seccion-principal">
+
+          <!-- Barra de información del alumno y filtro de carrera -->
+          <div class="card">
+            <div class="card__body" style="padding: 16px 20px;">
+              <div class="row between" style="gap: 16px;">
+                <div class="row" style="gap: 14px;">
+                  <span class="stat__icon" style="background: var(--surface-3);"><i data-lucide="user"></i></span>
+                  <div>
+                    <div style="font-size: 0.9375rem; font-weight: 700; color: var(--text);" id="info-alumno-nombre">—</div>
+                    <div class="muted" style="font-size: 0.8125rem;">
+                      DNI: <span class="tnum" id="info-alumno-dni">—</span>
+                      <span id="sep-carrera" class="oculto"> · </span>
+                      <span id="info-carrera-fija" class="oculto" style="font-weight: 600; color: var(--primary);"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Selector de carrera (visible si el alumno tiene múltiples carreras) -->
+                <div id="contenedor-filtro-carrera" class="oculto" style="min-width: 260px;">
+                  <label for="select-carrera" class="label" style="font-size: 0.75rem; margin-bottom: 4px;">Filtrar por carrera</label>
+                  <select class="select" id="select-carrera" aria-label="Seleccionar carrera">
+                    <option value="todas">Todas las carreras</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Mini estadísticas -->
+              <div class="row mt-4 pt-3" style="border-top: 1px solid var(--border); gap: 20px;" id="resumen-estadisticas">
+                <div style="font-size: 0.8125rem;">
+                  <span class="muted">Total registradas: </span>
+                  <strong class="tnum" id="stat-total">0</strong>
+                </div>
+                <div style="font-size: 0.8125rem;">
+                  <span class="muted">Aprobadas / Promocionadas: </span>
+                  <strong class="tnum" style="color: var(--success);" id="stat-aprobadas">0</strong>
+                </div>
+                <div style="font-size: 0.8125rem;">
+                  <span class="muted">Regularizadas: </span>
+                  <strong class="tnum" style="color: var(--info);" id="stat-regulares">0</strong>
+                </div>
+                <div style="font-size: 0.8125rem;" id="contenedor-promedio">
+                  <span class="muted">Promedio (con aplazos): </span>
+                  <strong class="tnum" id="stat-promedio">—</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de materias -->
+          <div class="card" id="tarjeta-tabla">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Trayectoria y calificaciones</h3>
+                <p class="card__subtitle" id="subtitulo-carrera">Detalle de materias y condición</p>
+              </div>
+              <span class="stat__icon"><i data-lucide="file-text"></i></span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table" aria-label="Historial de materias">
+                <thead>
+                  <tr>
+                    <th style="width: 70px;">Año</th>
+                    <th>Materia</th>
+                    <th id="th-col-carrera">Carrera</th>
+                    <th style="width: 130px;">Condición</th>
+                    <th style="width: 110px; text-align: center;">Año Reg.</th>
+                    <th style="width: 80px; text-align: center;" class="num">Nota</th>
+                    <th style="width: 125px;">Fecha Final</th>
+                    <th style="width: 120px;">Acta</th>
+                  </tr>
+                </thead>
+                <tbody id="cuerpo-tabla">
+                  <!-- Se completa dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Estado vacío si no hay materias -->
+          <div class="card oculto" id="estado-vacio">
+            <div class="card__body">
+              <div class="empty">
+                <div class="empty__icon"><i data-lucide="file-search"></i></div>
+                <h3 class="empty__title">Sin registros académicos</h3>
+                <p class="empty__text" id="texto-estado-vacio">
+                  Todavía no tenés materias cargadas en el historial académico para esta carrera.
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </main>
     </div>
   </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script src="estilo/app.js?v=8"></script>
+  <script src="estilo/app.js?v=12"></script>
   <script>
     (function () {
       'use strict';
 
-      var mensaje = document.getElementById('mensaje');
+      var mensaje = document.getElementById('mensaje-alerta');
+      var cargando = document.getElementById('cargando');
+      var seccionPrincipal = document.getElementById('seccion-principal');
+      var cuerpoTabla = document.getElementById('cuerpo-tabla');
+      var estadoVacio = document.getElementById('estado-vacio');
+      var tarjetaTabla = document.getElementById('tarjeta-tabla');
+      var selectCarrera = document.getElementById('select-carrera');
+      var contenedorFiltro = document.getElementById('contenedor-filtro-carrera');
+      var infoCarreraFija = document.getElementById('info-carrera-fija');
+      var sepCarrera = document.getElementById('sep-carrera');
 
-      function mostrar(texto, tipo) {
+      var datosHistorial = null;
+
+      function mostrarMensaje(texto, tipo) {
         mensaje.textContent = texto;
         mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
       }
 
-      App.montarLayout();
+      function ocultarMensaje() {
+        mensaje.textContent = '';
+        mensaje.className = 'mensaje';
+      }
 
-      document.getElementById('form-historial').addEventListener('submit', function (evento) {
-        evento.preventDefault();
-        mostrar('La consulta de historial se habilitará próximamente.', 'error');
+      function renderizarTabla(materias, tieneMultiplesCarreras) {
+        cuerpoTabla.innerHTML = '';
+
+        if (!materias || materias.length === 0) {
+          tarjetaTabla.classList.add('oculto');
+          estadoVacio.classList.remove('oculto');
+          return;
+        }
+
+        estadoVacio.classList.add('oculto');
+        tarjetaTabla.classList.remove('oculto');
+
+        // Métricas
+        var total = materias.length;
+        var aprobadas = 0;
+        var regulares = 0;
+        var sumaNotas = 0;
+        var cantNotas = 0;
+
+        var html = '';
+        for (var i = 0; i < materias.length; i++) {
+          var m = materias[i];
+
+          if (m.nota >= 4) {
+            aprobadas++;
+          }
+          if (m.estado_texto === 'Regular') {
+            regulares++;
+          }
+          if (m.nota > 0) {
+            sumaNotas += m.nota;
+            cantNotas++;
+          }
+
+          var anioTexto = m.anio_cursada ? (m.anio_cursada + '°') : '—';
+          var carreraTexto = tieneMultiplesCarreras ? ('<td class="muted" style="font-size: 0.8125rem;">' + escapar(m.carrera) + '</td>') : '';
+          var anioRegTexto = m.anio_regular_display || (m.anio_regular > 0 ? m.anio_regular : '—');
+
+          html += '<tr>' +
+            '<td><span class="badge badge--neutral">' + anioTexto + '</span></td>' +
+            '<td style="font-weight: 600;">' + escapar(m.materia) + '</td>' +
+            carreraTexto +
+            '<td><span class="badge ' + m.estado_badge + '">' + escapar(m.estado_texto) + '</span></td>' +
+            '<td class="tnum muted" style="text-align: center;">' + escapar(anioRegTexto) + '</td>' +
+            '<td class="num" style="font-size: 0.9375rem; text-align: center;">' + escapar(m.nota_display) + '</td>' +
+            '<td class="tnum muted">' + escapar(m.fecha_aprobacion) + '</td>' +
+            '<td class="tnum muted">' + escapar(m.acta_texto) + '</td>' +
+          '</tr>';
+        }
+
+        cuerpoTabla.innerHTML = html;
+
+        // Actualizar estadísticas
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-aprobadas').textContent = aprobadas;
+        document.getElementById('stat-regulares').textContent = regulares;
+        if (cantNotas > 0) {
+          var promedio = (sumaNotas / cantNotas).toFixed(2);
+          document.getElementById('stat-promedio').textContent = promedio;
+          document.getElementById('contenedor-promedio').classList.remove('oculto');
+        } else {
+          document.getElementById('stat-promedio').textContent = '—';
+        }
+      }
+
+      function escapar(texto) {
+        return String(texto == null ? '' : texto)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function cargarHistorial(idCarrera) {
+        var url = App.controlador('historial_academico.php');
+        if (idCarrera && idCarrera !== 'todas') {
+          url += '?carrera=' + encodeURIComponent(idCarrera);
+        }
+
+        return fetch(url)
+          .then(function (res) { return res.json(); })
+          .then(function (respuesta) {
+            if (!respuesta.ok) {
+              mostrarMensaje(respuesta.mensaje || 'No se pudo obtener el historial académico.', 'error');
+              return;
+            }
+
+            datosHistorial = respuesta;
+
+            // Datos del alumno
+            var al = respuesta.alumno || {};
+            document.getElementById('info-alumno-dni').textContent = al.dni || '—';
+
+            var carreras = respuesta.carreras || [];
+            var tieneMultiples = carreras.length > 1;
+
+            // Ajustar visibilidad de columna Carrera en el encabezado
+            var thCarrera = document.getElementById('th-col-carrera');
+            if (thCarrera) {
+              thCarrera.style.display = tieneMultiples ? '' : 'none';
+            }
+
+            if (carreras.length === 1) {
+              // Una sola carrera: mostrarla fija
+              infoCarreraFija.textContent = carreras[0].nombrecarrera;
+              infoCarreraFija.classList.remove('oculto');
+              sepCarrera.classList.remove('oculto');
+              contenedorFiltro.classList.add('oculto');
+              document.getElementById('subtitulo-carrera').textContent = carreras[0].nombrecarrera;
+            } else if (tieneMultiples) {
+              // Múltiples carreras: poblar select
+              infoCarreraFija.classList.add('oculto');
+              sepCarrera.classList.add('oculto');
+              contenedorFiltro.classList.remove('oculto');
+
+              var valorActual = selectCarrera.value;
+              selectCarrera.innerHTML = '<option value="todas">Todas las carreras (' + carreras.length + ')</option>';
+              for (var c = 0; c < carreras.length; c++) {
+                var opt = document.createElement('option');
+                opt.value = carreras[c].idcarrera;
+                opt.textContent = carreras[c].nombrecarrera;
+                if (String(carreras[c].idcarrera) === String(respuesta.carrera_id)) {
+                  opt.selected = true;
+                }
+                selectCarrera.appendChild(opt);
+              }
+
+              var nombreSeleccionada = 'Todas las carreras';
+              if (respuesta.carrera_id) {
+                var enc = carreras.find(function(item) { return String(item.idcarrera) === String(respuesta.carrera_id); });
+                if (enc) { nombreSeleccionada = enc.nombrecarrera; }
+              }
+              document.getElementById('subtitulo-carrera').textContent = nombreSeleccionada;
+            }
+
+            renderizarTabla(respuesta.materias || [], tieneMultiples && (!idCarrera || idCarrera === 'todas'));
+          })
+          .catch(function (err) {
+            mostrarMensaje('Error de comunicación con el servidor. Por favor, reintentá.', 'error');
+          });
+      }
+
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
+
+        // Mostrar nombre del alumno tomado de la sesión
+        var nombreComp = (usuario.nombre || '') + ' ' + (usuario.apellido || '');
+        document.getElementById('info-alumno-nombre').textContent = nombreComp.trim() || usuario.usuario || 'Estudiante';
+
+        cargarHistorial()
+          .finally(function () {
+            cargando.classList.add('oculto');
+            seccionPrincipal.classList.remove('oculto');
+            App.iconos();
+          });
+
+        selectCarrera.addEventListener('change', function () {
+          var val = selectCarrera.value;
+          cargando.classList.remove('oculto');
+          tarjetaTabla.classList.add('oculto');
+          estadoVacio.classList.add('oculto');
+
+          cargarHistorial(val).finally(function () {
+            cargando.classList.add('oculto');
+            App.iconos();
+          });
+        });
       });
     })();
   </script>

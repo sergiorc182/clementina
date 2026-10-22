@@ -11,21 +11,13 @@
  */
 
 require_once __DIR__ . '/_base.php';
-require_once dirname(__DIR__) . '/modelo/Alumno.php';
 require_once dirname(__DIR__) . '/modelo/InscripcionFinal.php';
 
 $usuario = requerirAlumno();
 
 try {
-    $alumno = (new Alumno())->buscarPorDocumento((int) $usuario['id']);
-    if ($alumno === null) {
-        responder(['ok' => false, 'mensaje' => 'No se encontraron tus datos de alumno.']);
-    }
-
-    $finales = new InscripcionFinal(
-        (string) $alumno['tipo_documento'],
-        (int) $alumno['numero_documento']
-    );
+    // El alumno se identifica por su id interno, que viene de la sesión.
+    $finales = new InscripcionFinal((int) $usuario['id']);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accion    = (string) ($_POST['accion'] ?? '');

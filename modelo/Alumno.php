@@ -2,15 +2,9 @@
 /**
  * Modelo: Alumno.
  *
- * Datos personales y alta de alumnos. Reúne las consultas que antes
- * estaban escritas dentro de los controladores mis_datos y registro.
- *
- * OJO: buscarPorDocumento() usa las columnas de la base real
- * (`numerodocumento`, `idemail`, ...), igual que el login. Los métodos
- * de registro conservan las consultas originales, que apuntan al
- * esquema normalizado (`id_alumno`, `email`, `password_hash`,
- * `domicilios_alumno`): contra la base real no funcionan hasta que se
- * migre el esquema o se reescriban con las columnas actuales.
+ * Datos personales y alta de alumnos sobre el esquema normalizado
+ * (docs/esquema_normalizado.sql): el alumno se identifica por
+ * `alumnos.id_alumno` y el teléfono vive en `domicilios_alumno`.
  */
 
 require_once __DIR__ . '/Conexion.php';
@@ -25,33 +19,59 @@ class Alumno
     }
 
     /**
-     * Datos personales del alumno por número de documento.
+     * Datos personales del alumno por su id interno.
      * Devuelve null si no existe.
      */
-    public function buscarPorDocumento(int $documento): ?array
+    public function buscarPorId(int $idAlumno): ?array
     {
+        // Un alumno puede tener más de un domicilio: se toma el primero cargado.
         $stmt = $this->db->prepare(
-            "SELECT idtipodocumento  AS tipo_documento,
-                    primernombre     AS primer_nombre,
-                    otrosnombres     AS otros_nombres,
-                    primerapellido   AS primer_apellido,
-                    otrosapellidos   AS otros_apellidos,
-                    numerodocumento  AS numero_documento,
-                    idemail          AS email,
-                    telefonopricipal AS telefono_principal
-             FROM alumnos
-             WHERE numerodocumento = :doc
+            "SELECT a.id_tipo_documento  AS tipo_documento,
+                    a.primer_nombre,
+                    a.otros_nombres,
+                    a.primer_apellido,
+                    a.otros_apellidos,
+                    a.numero_documento,
+                    a.legajo,
+                    a.email,
+                    (SELECT d.telefono_principal
+                       FROM domicilios_alumno d
+                      WHERE d.id_alumno = a.id_alumno
+                      ORDER BY d.id_domicilio
+                      LIMIT 1)           AS telefono_principal
+             FROM alumnos a
+             WHERE a.id_alumno = :id
              LIMIT 1"
         );
-        $stmt->bindValue(':doc', $documento, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $idAlumno, PDO::PARAM_INT);
         $stmt->execute();
 
         $fila = $stmt->fetch();
         return $fila ?: null;
     }
 
+    /**
+     * Id interno del alumno a partir del número de documento
+     * (se prioriza DNI si el número existe con más de un tipo).
+     * Devuelve null si no existe.
+     */
+    public function idPorDocumento(int $documento): ?int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id_alumno FROM alumnos
+             WHERE numero_documento = :doc
+             ORDER BY (id_tipo_documento = 'DNI') DESC
+             LIMIT 1"
+        );
+        $stmt->bindValue(':doc', $documento, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : (int) $id;
+    }
+
     /* ------------------------------------------------------------------ */
-    /* Registro (esquema normalizado, ver nota de cabecera)               */
+    /* Registro                                                            */
     /* ------------------------------------------------------------------ */
 
     public function existeEmail(string $email): bool

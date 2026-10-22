@@ -5,10 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio · Clementina · ISFT N.º 182</title>
   <meta name="description" content="Plataforma de gestión académica del ISFT N.º 182 Clementina: mesas de examen, finales e historial.">
+<<<<<<< HEAD
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="vista/estilo/estilo.css?v=10">
+=======
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vista/estilo/estilo.css?v=14">
+>>>>>>> origin/InscripcionFinales
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="inicio">
@@ -23,6 +31,10 @@
 
         <!-- Bienvenida -->
         <section class="welcome" aria-label="Bienvenida">
+<<<<<<< HEAD
+=======
+          <img class="welcome__logo" src="vista/estilo/logo-isft182.svg?v=3" alt="Escudo del I.S.F.T. N.º 182" width="96" height="104">
+>>>>>>> origin/InscripcionFinales
           <div class="welcome__body">
             <p class="welcome__eyebrow">Plataforma académica</p>
             <h2 class="welcome__title">Hola, <span id="bienvenida-nombre">bienvenido</span></h2>
@@ -100,6 +112,7 @@
             </div>
           </a>
 
+<<<<<<< HEAD
           <button type="button" class="module module--btn" id="modulo-finales" data-solo-usuario hidden
                   aria-expanded="false" aria-controls="finales-lista">
             <div class="module__head">
@@ -118,11 +131,48 @@
 
         </nav>
 
+=======
+          <a class="module" href="vista/inscripcion_mesas.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="calendar-clock"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Inscripción a mesas</div>
+              <div class="module__desc">Elegí turno y materia para rendir.</div>
+            </div>
+          </a>
+
+        </nav>
+
+        <!-- Calendario de próximos finales (solo usuarios con sesión) -->
+        <section class="mt-6" data-solo-usuario hidden aria-label="Calendario de próximos finales">
+          <article class="card">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Calendario de próximos finales</h3>
+                <p class="card__subtitle">Mesas de examen programadas</p>
+              </div>
+              <span class="stat__icon stat__icon--neutral"><i data-lucide="calendar-days"></i></span>
+            </div>
+            <div class="card__body">
+              <div class="empty" style="padding: 8px 0 4px;">
+                <div class="empty__icon"><i data-lucide="clock"></i></div>
+                <p class="empty__title">Sin mesas publicadas</p>
+                <p class="empty__text">El calendario de finales se mostrará acá cuando esté disponible.</p>
+              </div>
+              <a class="btn btn--outline btn--block mt-4" href="vista/inscripcion_finales.html">Ver finales</a>
+            </div>
+          </article>
+        </section>
+
+>>>>>>> origin/InscripcionFinales
       </main>
     </div>
   </div>
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+<<<<<<< HEAD
   <script src="vista/estilo/app.js?v=9"></script>
   <script>
     (function () {
@@ -230,6 +280,24 @@
         }
       });
     })();
+=======
+  <script src="vista/estilo/app.js?v=12"></script>
+  <script>
+    App.montarLayout({ protegida: false }).then(function (usuario) {
+      var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
+      var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
+
+      soloUsuario.forEach(function (el) { el.hidden = !usuario; });
+      soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
+
+      if (usuario) {
+        var nombre = (usuario.nombre || '').trim();
+        document.getElementById('bienvenida-nombre').textContent = nombre || 'estudiante';
+        document.getElementById('welcome-texto').textContent =
+          'Gestioná tus finales, inscripciones y datos académicos desde un solo lugar.';
+      }
+    });
+>>>>>>> origin/InscripcionFinales
   </script>
 </body>
 </html>

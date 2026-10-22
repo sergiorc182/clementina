@@ -4,10 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis datos · Clementina · ISFT N.º 182</title>
+<<<<<<< HEAD
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="estilo/estilo.css?v=10">
+=======
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=14">
+>>>>>>> origin/InscripcionFinales
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="mis-datos" data-title="Mis datos" data-subtitle="Información personal">
@@ -45,16 +53,25 @@
           </div>
         </div>
 
+<<<<<<< HEAD
         <!-- Datos editables -->
+=======
+        <!-- Datos -->
+>>>>>>> origin/InscripcionFinales
         <div class="card oculto" id="tarjeta-datos">
           <div class="card__header">
             <div>
               <h3 class="card__title">Datos personales</h3>
+<<<<<<< HEAD
               <p class="card__subtitle">Editá tus datos y guardá los cambios</p>
+=======
+              <p class="card__subtitle">Datos del alumno</p>
+>>>>>>> origin/InscripcionFinales
             </div>
             <span class="stat__icon"><i data-lucide="user"></i></span>
           </div>
           <div class="card__body">
+<<<<<<< HEAD
             <form id="form-datos" novalidate>
               <div class="grid grid--2">
                 <div class="field">
@@ -147,6 +164,30 @@
                 </button>
               </div>
             </form>
+=======
+            <dl class="data-list" id="lista-datos">
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="user"></i>Nombre</dt>
+                <dd class="data-row__value" id="dato-nombre">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="user"></i>Apellido</dt>
+                <dd class="data-row__value" id="dato-apellido">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="hash"></i>DNI</dt>
+                <dd class="data-row__value" id="dato-dni">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="mail"></i>Email</dt>
+                <dd class="data-row__value" id="dato-email">—</dd>
+              </div>
+              <div class="data-row">
+                <dt class="data-row__label"><i data-lucide="phone"></i>Teléfono</dt>
+                <dd class="data-row__value" id="dato-telefono">—</dd>
+              </div>
+            </dl>
+>>>>>>> origin/InscripcionFinales
           </div>
         </div>
 
@@ -154,7 +195,11 @@
     </div>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+<<<<<<< HEAD
   <script src="estilo/app.js?v=9"></script>
+=======
+  <script src="estilo/app.js?v=12"></script>
+>>>>>>> origin/InscripcionFinales
   <script>
     (function () {
       'use strict';
@@ -162,16 +207,22 @@
       var mensaje = document.getElementById('mensaje');
       var cargando = document.getElementById('cargando');
       var tarjeta = document.getElementById('tarjeta-datos');
+<<<<<<< HEAD
       var form = document.getElementById('form-datos');
       var btnGuardar = document.getElementById('btn-guardar');
+=======
+>>>>>>> origin/InscripcionFinales
 
       function mostrar(texto, tipo) {
         mensaje.textContent = texto;
         mensaje.className = 'mensaje mensaje-visible ' + (tipo === 'ok' ? 'mensaje-exito' : 'mensaje-error');
+<<<<<<< HEAD
         window.clearTimeout(mostrar._t);
         mostrar._t = window.setTimeout(function () {
           mensaje.className = 'mensaje';
         }, 5000);
+=======
+>>>>>>> origin/InscripcionFinales
       }
 
       function finalizarCarga() {
@@ -179,6 +230,7 @@
         App.iconos();
       }
 
+<<<<<<< HEAD
       function setValor(id, v) {
         document.getElementById(id).value = (v === null || v === undefined) ? '' : v;
       }
@@ -326,6 +378,36 @@
         if (!usuario) { return; }
         recargar()
           .then(finalizarCarga)
+=======
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
+
+        if (usuario.rol !== 'alumno') {
+          finalizarCarga();
+          mostrar('Solo los alumnos tienen datos personales en este módulo.', 'error');
+          return;
+        }
+
+        fetch(App.controlador('mis_datos.php'))
+          .then(function (resp) { return resp.json(); })
+          .then(function (resultado) {
+            if (!resultado.ok) {
+              finalizarCarga();
+              mostrar(resultado.mensaje, 'error');
+              return;
+            }
+            var d = resultado.datos;
+            var nombre   = (d.primer_nombre || '') + (d.otros_nombres ? ' ' + d.otros_nombres : '');
+            var apellido = (d.primer_apellido || '') + (d.otros_apellidos ? ' ' + d.otros_apellidos : '');
+            document.getElementById('dato-nombre').textContent = nombre.trim() || '—';
+            document.getElementById('dato-apellido').textContent = apellido.trim() || '—';
+            document.getElementById('dato-dni').textContent = d.numero_documento || '—';
+            document.getElementById('dato-email').textContent = d.email || '—';
+            document.getElementById('dato-telefono').textContent = d.telefono_principal || '—';
+            finalizarCarga();
+            tarjeta.classList.remove('oculto');
+          })
+>>>>>>> origin/InscripcionFinales
           .catch(function () {
             finalizarCarga();
             mostrar('Error de red o del servidor.', 'error');

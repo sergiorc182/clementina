@@ -343,8 +343,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .field { margin-bottom: var(--sp-4); }
 .field:last-child { margin-bottom: 0; }
 
+<<<<<<< HEAD
 .form-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-5); }
 
+=======
+>>>>>>> origin/InscripcionFinales
 .label {
   display: block;
   margin-bottom: 6px;
@@ -1085,6 +1088,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .module__name { font-size: 0.9375rem; font-weight: 600; }
 .module__desc { font-size: 0.8125rem; color: var(--text-2); }
 
+<<<<<<< HEAD
 /* Módulo interactivo (calendario de finales) */
 button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
 .module--btn:hover .module__arrow { transform: none; }
@@ -1097,6 +1101,8 @@ button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
 .module__item--muted { font-size: 0.8125rem; color: var(--text-3); }
 .module__more { font-size: 0.8125rem; font-weight: 600; color: var(--secondary); }
 
+=======
+>>>>>>> origin/InscripcionFinales
 /* Lista de datos (mis datos) */
 .data-list { display: flex; flex-direction: column; margin: 0; padding: 0; }
 .data-list dt,
@@ -1184,3 +1190,175 @@ button.module { width: 100%; font: inherit; text-align: left; cursor: pointer; }
   .card__footer { flex-direction: column-reverse; }
   .card__footer .btn { width: 100%; }
 }
+<<<<<<< HEAD
+=======
+
+/* ------------------------------------------------------------------ */
+/* 20. Modo noche                                                       */
+/* ------------------------------------------------------------------ */
+/* Se activa con <html data-theme="dark"> (botón de la barra superior).
+   Solo redefine los tokens y los pocos colores que estaban fijos.     */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --primary:        #1F4468;
+  --primary-700:    #19395A;
+  --primary-600:    #285580;
+  --secondary:      #3B82F6;
+  --secondary-600:  #2563EB;
+  --secondary-soft: #17294A;
+  --accent:         #2DD4BF;
+  --accent-600:     #5EEAD4;
+  --accent-soft:    #0F2F2D;
+
+  --bg:             #0F1722;
+  --surface:        #17212E;
+  --surface-2:      #1C2836;
+  --surface-3:      #223041;
+
+  --text:           #E6ECF4;
+  --text-2:         #9FB0C3;
+  --text-3:         #6F8196;
+
+  --border:         #2A3848;
+  --border-strong:  #3A4A5E;
+
+  --success:        #4ADE80;
+  --success-soft:   #10291C;
+  --success-border: #1F5135;
+  --warning:        #FBBF24;
+  --warning-soft:   #33240B;
+  --warning-border: #5C4313;
+  --error:          #F87171;
+  --error-soft:     #351516;
+  --error-border:   #6B2426;
+  --info:           #60A5FA;
+  --info-soft:      #13233F;
+  --info-border:    #1E3A6B;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
+}
+
+/* --primary se usa de fondo; donde hacía de color de texto va el texto normal */
+[data-theme="dark"] .btn--outline { --btn-fg: var(--text); }
+[data-theme="dark"] .btn.is-loading.btn--outline::after,
+[data-theme="dark"] .btn.is-loading.btn--ghost::after { color: var(--text); }
+[data-theme="dark"] .module__icon { color: var(--text); }
+[data-theme="dark"] .btn--danger { --btn-bg: #DC2626; --btn-bd: #DC2626; }
+
+[data-theme="dark"] .topbar { background: rgba(23, 33, 46, 0.85); }
+[data-theme="dark"] .input:hover,
+[data-theme="dark"] .select:hover,
+[data-theme="dark"] .textarea:hover { border-color: #4B5D73; }
+[data-theme="dark"] .badge--accent { border-color: #115E59; }
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, var(--surface-3) 25%, #2B3B4F 37%, var(--surface-3) 63%);
+  background-size: 400% 100%;
+}
+
+[data-theme="dark"] .alert--info    { color: #BFDBFE; }
+[data-theme="dark"] .alert--success,
+[data-theme="dark"] .mensaje-exito  { color: #BBF7D0; }
+[data-theme="dark"] .alert--warning { color: #FDE68A; }
+[data-theme="dark"] .alert--error,
+[data-theme="dark"] .mensaje-error  { color: #FECACA; }
+
+/* ------------------------------------------------------------------ */
+/* 21. Celulares                                                        */
+/* ------------------------------------------------------------------ */
+/* Ajustes para uso con el dedo; el resto del responsive está en la 19. */
+
+@media (max-width: 720px) {
+  /* Con 16px iOS no hace zoom al tocar un campo */
+  .input,
+  .select,
+  .textarea { font-size: 16px; }
+
+  /* Botones cómodos para tocar y a todo el ancho */
+  .btn--sm { min-height: 40px; padding: 8px 14px; font-size: 0.875rem; }
+  .page-head__actions { width: 100%; }
+  .page-head__actions .btn,
+  .page-head__actions > .input-group { flex: 1 1 100%; }
+  .exam-item__side .btn,
+  .exam-item__side .select,
+  .table-wrap--stack .table .col-actions .btn { flex: 1; }
+
+  /* Más lugar para el contenido en pantallas angostas */
+  .card__header,
+  .card__body { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+  .exam-item { padding: var(--sp-4); }
+
+  /* Tablas en tarjetas: la columna principal (.col-main) va arriba */
+  .table-wrap--stack .table tr { display: flex; flex-direction: column; }
+  .table-wrap--stack .table td.col-main {
+    order: -1;
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9375rem;
+    text-align: left;
+  }
+  .table-wrap--stack .table td.col-main::before { display: none; }
+}
+
+@media (max-width: 380px) {
+  .modal__footer { flex-direction: column-reverse; }
+  .modal__footer .btn { width: 100%; }
+}
+
+/* ------------------------------------------------------------------ */
+/* 22. Escudo institucional                                             */
+/* ------------------------------------------------------------------ */
+
+.welcome__logo {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: auto;
+  height: 104px;
+}
+.welcome__logo + .welcome__body { flex: 1 1 240px; }
+
+/* Escudo en la barra superior (reemplaza a la marca "C") */
+.brand__logo { flex: none; width: auto; height: 40px; }
+
+@media (max-width: 720px) {
+  .welcome { gap: var(--sp-4); }
+  .welcome__logo { height: 72px; }
+  .welcome__logo + .welcome__body { flex-basis: 160px; }
+}
+
+/* ------------------------------------------------------------------ */
+/* 23. Barra de filtros                                                 */
+/* ------------------------------------------------------------------ */
+/* Botones de filtro, desplegable y buscador en una sola fila, todos del
+   mismo alto que un botón normal.                                      */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.toolbar .select { width: auto; flex: none; }
+.toolbar .field { flex: 1 1 200px; margin: 0; }
+.toolbar .select,
+.toolbar .input { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+.toolbar .field--icon .field__icon { bottom: 11px; }
+
+@media (max-width: 720px) {
+  .toolbar .select { flex: 1 1 100%; }
+}
+
+/* Filtro elegido: resaltado suave. El color lleno queda solo para las acciones. */
+.btn[aria-pressed="true"],
+.btn[aria-pressed="true"]:hover:not(:disabled) {
+  --btn-bg: var(--secondary-soft);
+  --btn-fg: var(--secondary);
+  --btn-bd: var(--secondary);
+}
+>>>>>>> origin/InscripcionFinales

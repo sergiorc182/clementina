@@ -88,7 +88,7 @@ class InscripcionFinal
         ];
     }
 
-    /**
+/**
      * Materias que el alumno todavía no aprobó, de las carreras en las
      * que está matriculado. Cada una indica su condición, las
      * correlativas que le faltan y si ya está inscripto en el período.
@@ -102,11 +102,16 @@ class InscripcionFinal
                     cm.id_materia,
                     m.nombre_materia AS materia,
                     cm.anio_cursada,
-                    h.anio_regular
+                    h.anio_regular,
+                    COALESCE(md.comision, 'A') AS comision
              FROM matriculacion mt
              JOIN carrera_materias cm ON cm.id_carrera = mt.id_carrera
              JOIN materias m ON m.id_materia = cm.id_materia
              JOIN carreras c ON c.id_carrera = cm.id_carrera
+             LEFT JOIN matriculacion_detalle md 
+                    ON md.id_alumno = mt.id_alumno 
+                   AND md.id_carrera = cm.id_carrera 
+                   AND md.id_materia = cm.id_materia
              LEFT JOIN historial_academico h
                     ON h.id_alumno = mt.id_alumno
                    AND h.id_carrera = cm.id_carrera
@@ -135,6 +140,7 @@ class InscripcionFinal
                 'materia'      => $fila['materia'],
                 'anio_cursada' => (int) $fila['anio_cursada'],
                 'condicion'    => ((int) $fila['anio_regular']) > 0 ? 'Regular' : 'Libre',
+                'comision'     => $fila['comision'], // <-- Comisión específica por materia (ej. A o B)
                 'correlativas' => $pendientes[$clave] ?? [],
                 'llamado'      => $inscriptas[$clave] ?? null,
             ];
@@ -143,7 +149,7 @@ class InscripcionFinal
         return $materias;
     }
 
-    /** Inscripciones del alumno en el período indicado. */
+ /** Inscripciones del alumno en el período indicado. */
     public function inscripciones(array $periodo): array
     {
         $stmt = $this->db->prepare(
@@ -152,6 +158,7 @@ class InscripcionFinal
                     i.id_materia,
                     m.nombre_materia AS materia,
                     i.id_llamado,
+                    i.comision,      -- <-- Agregamos la comisión de la inscripción
                     i.fecha_hora     AS fecha_inscripcion
              FROM inscripciones i
              JOIN materias m ON m.id_materia = i.id_materia
@@ -176,6 +183,7 @@ class InscripcionFinal
                 'materia'           => $fila['materia'],
                 'id_llamado'        => $idLlamado,
                 'llamado'           => self::LLAMADOS[$idLlamado] ?? ('Llamado ' . $idLlamado),
+                'comision'          => $fila['comision'] ?? 'A', // <-- Devolvemos la comisión al array
                 'fecha_inscripcion' => $fila['fecha_inscripcion'],
             ];
         }
@@ -183,11 +191,7 @@ class InscripcionFinal
         return $inscripciones;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Acciones                                                            */
-    /* ------------------------------------------------------------------ */
-
-    /**
+   /**
      * Inscribe al alumno en una materia y llamado del período vigente.
      * Lanza DomainException si no se cumple alguna regla.
      */
@@ -222,10 +226,10 @@ class InscripcionFinal
         $stmt = $this->db->prepare(
             "INSERT INTO inscripciones
                (id_alumno, id_carrera, id_materia, anio, id_turno,
-                id_llamado, estado, verificada, fecha_hora)
+                id_llamado, comision, estado, verificada, fecha_hora)
              VALUES
                (:alumno, :carrera, :materia, :anio, :turno,
-                :llamado, :estado, :verificada, NOW())"
+                :llamado, :comision, :estado, :verificada, NOW())"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
@@ -233,6 +237,7 @@ class InscripcionFinal
         $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
         $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
         $stmt->bindValue(':llamado', $idLlamado, PDO::PARAM_INT);
+        $stmt->bindValue(':comision', $materia['comision'], PDO::PARAM_STR); // <-- Guardamos la comisión de la materia
         $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
         $stmt->bindValue(':verificada', self::SIN_VERIFICAR);
         $stmt->execute();
@@ -241,7 +246,6 @@ class InscripcionFinal
             throw new DomainException('No se pudo registrar la inscripción.');
         }
     }
-
     /**
      * Da de baja la inscripción del alumno a una materia del período
      * vigente. Solo se puede mientras la inscripción esté abierta.

@@ -4,7 +4,17 @@
  * Todas las conexiones del sistema pasan por acá.
  */
 
-require_once dirname(__DIR__) . '/config/config.php';
+$archivoConfig = dirname(__DIR__) . '/config/config.php';
+if (!is_file($archivoConfig)) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'ok'      => false,
+        'mensaje' => 'Falta config/config.php. Copiá config/config.example.php como config/config.php.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+require_once $archivoConfig;
 
 class Conexion
 {

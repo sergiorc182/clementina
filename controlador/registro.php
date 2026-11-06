@@ -1,37 +1,50 @@
 <?php
 /**
- * Controlador: Registro de alumnos
+ * Controlador: Registro de alumnos.
  *
- * Recibe POST con `nombre`, `apellido`, `dni`, `email`, `telefono` y
- * `password`. Crea el alumno en la tabla `alumnos` y guarda su teléfono
- * en `domicilios_alumno` (base local `clementina`, esquema normalizado).
- * Devuelve JSON.
+ * Recibe POST (FormData) con:
+ *   obligatorios: primer_nombre, primer_apellido, dni, email, password
+ *   opcionales:   otros_nombres, otros_apellidos, telefono, password2
+ * Crea el alumno en `alumnos` (tipo de documento DNI) y, si viene teléfono,
+ * lo guarda en `domicilios_alumno.telefono_principal`. Devuelve JSON.
+ * Las consultas están en modelo/Alumno.php.
  */
 
-session_start();
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_base.php';
+require_once dirname(__DIR__) . '/modelo/Alumno.php';
 
-require_once dirname(__DIR__) . '/modelo/Conexion.php';
+// Un warning/notice de PHP en pantalla rompería el JSON que espera el fetch.
+ini_set('display_errors', '0');
 
-function responder(array $datos): void
-{
-    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
-    exit;
+requerirMetodo('POST');
+
+$primerNombre    = trim((string) ($_POST['primer_nombre'] ?? ''));
+$otrosNombres    = trim((string) ($_POST['otros_nombres'] ?? ''));
+$primerApellido  = trim((string) ($_POST['primer_apellido'] ?? ''));
+$otrosApellidos  = trim((string) ($_POST['otros_apellidos'] ?? ''));
+$dni             = trim((string) ($_POST['dni'] ?? ''));
+$email           = strtolower(trim((string) ($_POST['email'] ?? '')));
+$telefono        = trim((string) ($_POST['telefono'] ?? ''));
+$password        = (string) ($_POST['password'] ?? '');
+$password2       = $_POST['password2'] ?? null; // opcional: solo se compara si llega
+
+if ($primerNombre === '' || $primerApellido === '' || $dni === '' || $email === '' || $password === '') {
+    responder(['ok' => false, 'mensaje' => 'Completá los campos obligatorios.']);
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
-}
-
-$nombre   = trim((string) ($_POST['nombre'] ?? ''));
-$apellido = trim((string) ($_POST['apellido'] ?? ''));
-$dni      = trim((string) ($_POST['dni'] ?? ''));
-$email    = strtolower(trim((string) ($_POST['email'] ?? '')));
-$telefono = trim((string) ($_POST['telefono'] ?? ''));
-$password = (string) ($_POST['password'] ?? '');
-
-if ($nombre === '' || $apellido === '' || $email === '' || $telefono === '' || $password === '') {
-    responder(['ok' => false, 'mensaje' => 'Completá todos los campos.']);
+// Largos máximos de las columnas VARCHAR(40) / VARCHAR(255) / VARCHAR(45).
+$largos = [
+    'El primer nombre'    => [$primerNombre, 40],
+    'Los otros nombres'   => [$otrosNombres, 40],
+    'El primer apellido'  => [$primerApellido, 40],
+    'Los otros apellidos' => [$otrosApellidos, 40],
+    'El email'            => [$email, 255],
+    'El teléfono'         => [$telefono, 45],
+];
+foreach ($largos as $campo => [$valor, $max]) {
+    if (mb_strlen($valor) > $max) {
+        responder(['ok' => false, 'mensaje' => "$campo no puede superar los $max caracteres."]);
+    }
 }
 
 if (!preg_match('/^\d{6,8}$/', $dni)) {
@@ -46,63 +59,48 @@ if (strlen($password) < 6) {
     responder(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.']);
 }
 
-$db = Conexion::getInstancia()->getConexion();
-
-// No permitir repetir email ni DNI.
-$stmt = $db->prepare("SELECT id_alumno FROM alumnos WHERE email = :email LIMIT 1");
-$stmt->bindValue(':email', $email);
-$stmt->execute();
-if ($stmt->fetch()) {
-    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese email.']);
+if ($password2 !== null && (string) $password2 !== $password) {
+    responder(['ok' => false, 'mensaje' => 'Las contraseñas no coinciden.']);
 }
-
-$stmt = $db->prepare(
-    "SELECT id_alumno FROM alumnos
-     WHERE id_tipo_documento = 'DNI' AND numero_documento = :dni LIMIT 1"
-);
-$stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
-$stmt->execute();
-if ($stmt->fetch()) {
-    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese DNI.']);
-}
-
-$hash = password_hash($password, PASSWORD_DEFAULT);
 
 try {
-    $db->beginTransaction();
+    $alumno = new Alumno();
 
-    $stmt = $db->prepare(
-        "INSERT INTO alumnos
-           (id_tipo_documento, numero_documento, primer_apellido,
-            primer_nombre, email, password_hash, alta_registro)
-         VALUES ('DNI', :dni, :apellido, :nombre, :email, :hash, NOW())"
-    );
-    $stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
-    $stmt->bindValue(':apellido', $apellido);
-    $stmt->bindValue(':nombre', $nombre);
-    $stmt->bindValue(':email', $email);
-    $stmt->bindValue(':hash', $hash);
-    $stmt->execute();
+    if ($alumno->existeEmail($email)) {
+        responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese email.']);
+    }
+    if ($alumno->existeDni($dni)) {
+        responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese DNI.']);
+    }
 
-    $idAlumno = (int) $db->lastInsertId();
-
-    $stmt = $db->prepare(
-        "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
-         VALUES (:id_alumno, :telefono)"
-    );
-    $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
-    $stmt->bindValue(':telefono', $telefono);
-    $stmt->execute();
-
-    $db->commit();
+    $alumno->registrar([
+        'primer_nombre'   => $primerNombre,
+        'otros_nombres'   => $otrosNombres,
+        'primer_apellido' => $primerApellido,
+        'otros_apellidos' => $otrosApellidos,
+        'dni'             => $dni,
+        'email'           => $email,
+        'telefono'        => $telefono,
+        'hash'            => password_hash($password, PASSWORD_DEFAULT),
+    ]);
 
     responder([
         'ok'      => true,
-        'mensaje' => '¡Registro exitoso! Ya podés ingresar con tu email y contraseña.',
+        'mensaje' => '¡Registro exitoso! Ya podés ingresar con tu DNI o email y tu contraseña.',
     ]);
 } catch (PDOException $e) {
-    if ($db->inTransaction()) {
-        $db->rollBack();
+    error_log('[registro] ' . $e->getMessage());
+
+    // 1062 = clave única duplicada (carrera entre dos registros simultáneos).
+    if (($e->errorInfo[1] ?? null) === 1062) {
+        $msg = stripos($e->getMessage(), 'email') !== false
+            ? 'Ya existe una cuenta con ese email.'
+            : 'Ya existe una cuenta con ese DNI.';
+        responder(['ok' => false, 'mensaje' => $msg]);
+    }
+    // 1452 = falla una clave foránea: falta 'DNI' en tipos_documento o 'ZZ' en paises.
+    if (($e->errorInfo[1] ?? null) === 1452) {
+        responder(['ok' => false, 'mensaje' => 'La base no tiene cargados los catálogos básicos (tipos_documento "DNI" / paises "ZZ"). Revisá el log de PHP.']);
     }
     responder(['ok' => false, 'mensaje' => 'Error al registrar. Intentá de nuevo.']);
 }

@@ -107,32 +107,44 @@ CREATE TABLE sedes (
   PRIMARY KEY (id_sede)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------
+-- Datos base obligatorios (el sistema falla sin ellos).
+-- INSERT IGNORE: se puede volver a correr sin duplicar ni pisar nada.
+--   * 'DNI'  -> lo usa el registro de alumnos (alumnos.id_tipo_documento, FK).
+--   * 'ZZ'   -> valor por defecto de alumnos.id_pais_nacimiento (FK).
+-- ---------------------------------------------------------------------
+INSERT IGNORE INTO tipos_documento (id_tipo_documento, descripcion)
+VALUES ('DNI', 'Documento Nacional de Identidad');
+
+INSERT IGNORE INTO paises (id_pais, iso3, nombre, nacionalidad, orden)
+VALUES ('ZZ', 'ZZZ', 'Sin especificar', 'Sin especificar', 1000);
+
 -- =====================================================================
 -- 2. PERSONAS
 -- =====================================================================
 
 CREATE TABLE alumnos (
-  id_alumno                  BIGINT NOT NULL AUTO_INCREMENT,
-  id_tipo_documento          VARCHAR(4) NOT NULL,
-  numero_documento           BIGINT NOT NULL,
-  legajo                     VARCHAR(45) DEFAULT NULL,
-  primer_apellido            VARCHAR(40) NOT NULL,
-  otros_apellidos            VARCHAR(40) DEFAULT NULL,
-  primer_nombre              VARCHAR(40) NOT NULL,
-  otros_nombres              VARCHAR(40) DEFAULT NULL,
-  email                      VARCHAR(255) NOT NULL,
-  fecha_nacimiento           DATE DEFAULT NULL,
-  sexo                       CHAR(1) DEFAULT NULL,
-  id_pais_nacimiento         CHAR(2) DEFAULT 'ZZ',
-  id_localidad_nacimiento    INT DEFAULT NULL,
+  id_alumno                   BIGINT NOT NULL AUTO_INCREMENT,
+  id_tipo_documento           VARCHAR(4) NOT NULL,
+  numero_documento            BIGINT NOT NULL,
+  legajo                      VARCHAR(45) DEFAULT NULL,
+  primer_apellido             VARCHAR(40) NOT NULL,
+  otros_apellidos             VARCHAR(40) DEFAULT NULL,
+  primer_nombre               VARCHAR(40) NOT NULL,
+  otros_nombres               VARCHAR(40) DEFAULT NULL,
+  email                       VARCHAR(255) NOT NULL,
+  fecha_nacimiento            DATE DEFAULT NULL,
+  sexo                        CHAR(1) DEFAULT NULL,
+  id_pais_nacimiento          CHAR(2) DEFAULT 'ZZ',
+  id_localidad_nacimiento     INT DEFAULT NULL,
   lugar_nacimiento_extranjero VARCHAR(100) DEFAULT NULL,
-  estado_civil               CHAR(1) DEFAULT NULL,
+  estado_civil                CHAR(1) DEFAULT NULL,
   cantidad_hijos              SMALLINT DEFAULT 0,
   cantidad_familiares_a_cargo SMALLINT DEFAULT 0,
   password_hash               VARCHAR(255) DEFAULT NULL COMMENT 'Hash (bcrypt/argon2), nunca texto plano',
-  alta_registro                DATETIME DEFAULT NULL,
-  confirmacion_registro        DATETIME DEFAULT NULL,
-  fecha_ultima_actualizacion   DATETIME DEFAULT NULL,
+  alta_registro               DATETIME DEFAULT NULL,
+  confirmacion_registro       DATETIME DEFAULT NULL,
+  fecha_ultima_actualizacion  DATETIME DEFAULT NULL,
   PRIMARY KEY (id_alumno),
   UNIQUE KEY uq_alumno_documento (id_tipo_documento, numero_documento),
   UNIQUE KEY uq_alumno_email (email),
@@ -149,17 +161,17 @@ CREATE TABLE alumnos (
 -- Domicilio separado del alumno (antes mezclado en la misma tabla,
 -- con codigo postal y provincia redundantes respecto de la localidad).
 CREATE TABLE domicilios_alumno (
-  id_domicilio                     BIGINT NOT NULL AUTO_INCREMENT,
-  id_alumno                        BIGINT NOT NULL,
-  calle                            VARCHAR(45) DEFAULT NULL,
-  numero                           INT DEFAULT NULL,
-  piso                             VARCHAR(3) DEFAULT NULL,
-  depto                            VARCHAR(3) DEFAULT NULL,
-  id_localidad                     INT DEFAULT NULL,
-  id_codigo_postal                 BIGINT DEFAULT NULL,
-  telefono_principal                VARCHAR(45) DEFAULT NULL,
-  telefono_alternativo               VARCHAR(45) DEFAULT NULL,
-  telefono_alternativo_referencia    VARCHAR(45) DEFAULT NULL,
+  id_domicilio                    BIGINT NOT NULL AUTO_INCREMENT,
+  id_alumno                       BIGINT NOT NULL,
+  calle                           VARCHAR(45) DEFAULT NULL,
+  numero                          INT DEFAULT NULL,
+  piso                            VARCHAR(3) DEFAULT NULL,
+  depto                           VARCHAR(3) DEFAULT NULL,
+  id_localidad                    INT DEFAULT NULL,
+  id_codigo_postal                BIGINT DEFAULT NULL,
+  telefono_principal              VARCHAR(45) DEFAULT NULL,
+  telefono_alternativo            VARCHAR(45) DEFAULT NULL,
+  telefono_alternativo_referencia VARCHAR(45) DEFAULT NULL,
   PRIMARY KEY (id_domicilio),
   KEY fk_domicilio_alumno (id_alumno),
   KEY fk_domicilio_localidad (id_localidad),
@@ -173,11 +185,11 @@ CREATE TABLE domicilios_alumno (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE personal (
-  id_personal      INT NOT NULL AUTO_INCREMENT,
-  apellidos        VARCHAR(100) NOT NULL,
-  nombres          VARCHAR(100) NOT NULL,
-  usuario_sistema  VARCHAR(50) NOT NULL,
-  password_hash    VARCHAR(255) DEFAULT NULL COMMENT 'Hash (bcrypt/argon2), nunca texto plano',
+  id_personal     INT NOT NULL AUTO_INCREMENT,
+  apellidos       VARCHAR(100) NOT NULL,
+  nombres         VARCHAR(100) NOT NULL,
+  usuario_sistema VARCHAR(50) NOT NULL,
+  password_hash   VARCHAR(255) DEFAULT NULL COMMENT 'Hash (bcrypt/argon2), nunca texto plano',
   id_tipo_personal CHAR(1) NOT NULL,
   PRIMARY KEY (id_personal),
   UNIQUE KEY uq_personal_usuario (usuario_sistema),
@@ -248,8 +260,8 @@ CREATE TABLE carrera_materias (
 -- Consolida correlatividades + Enfermeria_corr + tabla_de_correlatividades_upload.
 -- Estas dos últimas se eliminan una vez migrados sus datos aquí.
 CREATE TABLE correlatividades (
-  id_carrera            INT NOT NULL,
-  id_materia            INT NOT NULL,
+  id_carrera             INT NOT NULL,
+  id_materia             INT NOT NULL,
   id_materia_correlativa INT NOT NULL,
   PRIMARY KEY (id_carrera, id_materia, id_materia_correlativa),
   KEY fk_corr_materia_correlativa (id_carrera, id_materia_correlativa),
@@ -278,30 +290,6 @@ CREATE TABLE carrera_sede_turno (
 -- =====================================================================
 -- 4. TRANSACCIONAL
 -- =====================================================================
-
--- Ya no duplica nombre/apellido/email del alumno: se obtienen con JOIN.
-CREATE TABLE inscripciones (
-  id_inscripcion BIGINT NOT NULL AUTO_INCREMENT,
-  id_alumno      BIGINT NOT NULL,
-  id_carrera     INT NOT NULL,
-  id_materia     INT NOT NULL,
-  anio           INT NOT NULL,
-  id_turno       INT NOT NULL COMMENT '1=Febrero 2=Agosto 3=Diciembre',
-  id_llamado     TINYINT NOT NULL COMMENT '1=Primero 2=Segundo',
-  estado         CHAR(1) NOT NULL,
-  verificada     CHAR(1) NOT NULL,
-  fecha_hora     DATETIME NOT NULL COMMENT 'Fecha y hora de la inscripción',
-  PRIMARY KEY (id_inscripcion),
-  KEY fk_insc_alumno (id_alumno),
-  KEY fk_insc_carrera_materia (id_carrera, id_materia),
-  KEY fk_insc_turno (id_turno),
-  CONSTRAINT fk_insc_alumno FOREIGN KEY (id_alumno)
-    REFERENCES alumnos (id_alumno),
-  CONSTRAINT fk_insc_carrera_materia FOREIGN KEY (id_carrera, id_materia)
-    REFERENCES carrera_materias (id_carrera, id_materia),
-  CONSTRAINT fk_insc_turno FOREIGN KEY (id_turno)
-    REFERENCES turnos (id_turno)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE matriculacion (
   id_alumno        BIGINT NOT NULL,
@@ -333,12 +321,37 @@ CREATE TABLE matriculacion_detalle (
   anio_matriculacion INT NOT NULL,
   id_materia         INT NOT NULL,
   tipo_asistencia    VARCHAR(3) DEFAULT NULL COMMENT '1=Presencial 2=Libre 3=Vocacional',
+  comision           VARCHAR(5) DEFAULT 'A' COMMENT 'Comisión asignada para esta materia (ej. A, B)',
   PRIMARY KEY (id_alumno, id_carrera, anio_matriculacion, id_materia),
   KEY fk_matrdet_carrera_materia (id_carrera, id_materia),
   CONSTRAINT fk_matrdet_matriculacion FOREIGN KEY (id_alumno, id_carrera)
     REFERENCES matriculacion (id_alumno, id_carrera),
   CONSTRAINT fk_matrdet_carrera_materia FOREIGN KEY (id_carrera, id_materia)
     REFERENCES carrera_materias (id_carrera, id_materia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE inscripciones (
+  id_inscripcion BIGINT NOT NULL AUTO_INCREMENT,
+  id_alumno      BIGINT NOT NULL,
+  id_carrera     INT NOT NULL,
+  id_materia     INT NOT NULL,
+  anio           INT NOT NULL,
+  id_turno       INT NOT NULL COMMENT '1=Febrero 2=Agosto 3=Diciembre',
+  id_llamado     TINYINT NOT NULL COMMENT '1=Primero 2=Segundo',
+  comision       VARCHAR(5) DEFAULT 'A' COMMENT 'Comisión con la que se inscribe a la mesa',
+  estado         CHAR(1) NOT NULL,
+  verificada     CHAR(1) NOT NULL,
+  fecha_hora     DATETIME NOT NULL COMMENT 'Fecha y hora de la inscripción',
+  PRIMARY KEY (id_inscripcion),
+  KEY fk_insc_alumno (id_alumno),
+  KEY fk_insc_carrera_materia (id_carrera, id_materia),
+  KEY fk_insc_turno (id_turno),
+  CONSTRAINT fk_insc_alumno FOREIGN KEY (id_alumno)
+    REFERENCES alumnos (id_alumno),
+  CONSTRAINT fk_insc_carrera_materia FOREIGN KEY (id_carrera, id_materia)
+    REFERENCES carrera_materias (id_carrera, id_materia),
+  CONSTRAINT fk_insc_turno FOREIGN KEY (id_turno)
+    REFERENCES turnos (id_turno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE historial_academico (
@@ -389,20 +402,20 @@ CREATE TABLE parametros_mesas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE parametros_inscripcion (
-  id_registro               INT NOT NULL,
-  anio_inscripcion_carrera  INT DEFAULT NULL,
-  fecha_inicio              DATE DEFAULT NULL,
-  fecha_fin                 DATE DEFAULT NULL,
+  id_registro              INT NOT NULL,
+  anio_inscripcion_carrera INT DEFAULT NULL,
+  fecha_inicio             DATE DEFAULT NULL,
+  fecha_fin                DATE DEFAULT NULL,
   PRIMARY KEY (id_registro)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE parametros_matriculacion (
-  id_registro                 INT NOT NULL,
-  anio_matriculacion          INT DEFAULT NULL,
-  fecha_inicio                DATE DEFAULT NULL,
-  fecha_fin                   DATE DEFAULT NULL,
-  carpeta_vista_alumno        VARCHAR(45) DEFAULT NULL,
-  carpeta_vista_preceptoria   VARCHAR(45) DEFAULT NULL,
+  id_registro               INT NOT NULL,
+  anio_matriculacion        INT DEFAULT NULL,
+  fecha_inicio              DATE DEFAULT NULL,
+  fecha_fin                 DATE DEFAULT NULL,
+  carpeta_vista_alumno      VARCHAR(45) DEFAULT NULL,
+  carpeta_vista_preceptoria VARCHAR(45) DEFAULT NULL,
   PRIMARY KEY (id_registro)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -413,53 +426,3 @@ CREATE TABLE aspirantes_parametros (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
-
--- =====================================================================
--- Tablas del esquema original que se ELIMINAN por ser staging/duplicadas
--- una vez migrados sus datos:
---   - Enfermeria_corr                 -> correlatividades
---   - tabla_de_correlatividades_upload -> correlatividades
---   - provinciapostallocalidad         -> codigos_postales
---   - interurbanos                     -> codigos_area_telefonicos
---   - rel_carrera_materias             -> carrera_materias
---   - rel_carreras_sedes_turnos        -> carrera_sede_turno
---   - parametros                       -> parametros_generales/mesas/
---                                          inscripcion/matriculacion
--- =====================================================================
-
--- =====================================================================
--- DATOS DE PRUEBA (opcionales)
--- Contraseña en claro de ambos usuarios: 123456
--- Hash bcrypt ($2y$10$...) generado con password_hash(); sirve para
--- probar el login antes de migrar los datos reales (ver análisis H).
--- Order: primero los catálogos que referencian los INSERT de abajo.
--- =====================================================================
-
-INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
-  ('DNI', 'Documento Nacional de Identidad'),
-  ('LC',  'Libreta Cívica'),
-  ('LE',  'Libreta de Enrolamiento'),
-  ('PAS', 'Pasaporte');
-
-INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
-  ('A', 'Preceptor');
-
--- País placeholder: alumnos.id_pais_nacimiento tiene DEFAULT 'ZZ' con FK a paises.
-INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES
-  ('ZZ', 'ZZZ', 'No especificado', 'No especificada', 1000);
-
--- Usuario alumno de prueba -> login con email: alumno@clementina.edu.ar
-INSERT INTO alumnos
-  (id_tipo_documento, numero_documento, legajo, primer_apellido,
-   primer_nombre, email, password_hash)
-VALUES
-  ('DNI', 12345678, '2024-DNI-12345678', 'González',
-   'María', 'alumno@clementina.edu.ar',
-   '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq');
-
--- Usuario personal de prueba -> login con usuario de sistema: admin
-INSERT INTO personal
-  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
-VALUES
-  ('Pérez', 'Juan Carlos', 'admin',
-   '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq', 'A');

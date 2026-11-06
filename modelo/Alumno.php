@@ -91,43 +91,67 @@ class Alumno
             "SELECT id_alumno FROM alumnos
              WHERE id_tipo_documento = 'DNI' AND numero_documento = :dni LIMIT 1"
         );
-        $stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
+        $stmt->bindValue(':dni', (int) $dni, PDO::PARAM_INT);
         $stmt->execute();
 
         return (bool) $stmt->fetch();
     }
 
     /**
-     * Crea el alumno y guarda su teléfono, todo en una transacción.
-     * Espera las claves nombre, apellido, dni, email, telefono y hash.
+     * Crea el alumno (DNI) y, si hay teléfono, su fila en domicilios_alumno,
+     * todo en una transacción. Devuelve el id_alumno nuevo.
+     *
+     * Claves esperadas en $datos: primer_nombre, otros_nombres,
+     * primer_apellido, otros_apellidos, dni, email, telefono, hash.
+     * Los opcionales vacíos se guardan como NULL. Si hay un duplicado
+     * (email o DNI) lanza PDOException con SQLSTATE 23000.
      */
     public function registrar(array $datos): int
     {
+        $nulo = static function ($v) {
+            $v = trim((string) ($v ?? ''));
+            return $v === '' ? null : $v;
+        };
+
+        // Mismo formato de legajo que modelo/Usuario.php.
+        $legajo = date('Y') . '-DNI-' . $datos['dni'];
+
         try {
             $this->db->beginTransaction();
 
             $stmt = $this->db->prepare(
                 "INSERT INTO alumnos
-                   (id_tipo_documento, numero_documento, primer_apellido,
-                    primer_nombre, email, password_hash, alta_registro)
-                 VALUES ('DNI', :dni, :apellido, :nombre, :email, :hash, NOW())"
+                   (id_tipo_documento, numero_documento, legajo,
+                    primer_apellido, otros_apellidos,
+                    primer_nombre, otros_nombres,
+                    email, password_hash, alta_registro)
+                 VALUES ('DNI', :dni, :legajo,
+                         :primer_apellido, :otros_apellidos,
+                         :primer_nombre, :otros_nombres,
+                         :email, :hash, NOW())"
             );
-            $stmt->bindValue(':dni', $datos['dni'], PDO::PARAM_INT);
-            $stmt->bindValue(':apellido', $datos['apellido']);
-            $stmt->bindValue(':nombre', $datos['nombre']);
+            $stmt->bindValue(':dni', (int) $datos['dni'], PDO::PARAM_INT);
+            $stmt->bindValue(':legajo', $legajo);
+            $stmt->bindValue(':primer_apellido', $datos['primer_apellido']);
+            $stmt->bindValue(':otros_apellidos', $nulo($datos['otros_apellidos'] ?? null));
+            $stmt->bindValue(':primer_nombre', $datos['primer_nombre']);
+            $stmt->bindValue(':otros_nombres', $nulo($datos['otros_nombres'] ?? null));
             $stmt->bindValue(':email', $datos['email']);
             $stmt->bindValue(':hash', $datos['hash']);
             $stmt->execute();
 
             $idAlumno = (int) $this->db->lastInsertId();
 
-            $stmt = $this->db->prepare(
-                "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
-                 VALUES (:id_alumno, :telefono)"
-            );
-            $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
-            $stmt->bindValue(':telefono', $datos['telefono']);
-            $stmt->execute();
+            $telefono = $nulo($datos['telefono'] ?? null);
+            if ($telefono !== null) {
+                $stmt = $this->db->prepare(
+                    "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
+                     VALUES (:id_alumno, :telefono)"
+                );
+                $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
+                $stmt->bindValue(':telefono', $telefono);
+                $stmt->execute();
+            }
 
             $this->db->commit();
 

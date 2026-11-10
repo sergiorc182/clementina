@@ -7,7 +7,7 @@
  * y registrar la matrícula del alumno en el ciclo lectivo correspondiente.
  */
 
-session_start();
+require_once __DIR__ . '/_sesion.php';
 header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/modelo/InscripcionCarrera.php';

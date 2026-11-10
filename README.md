@@ -25,7 +25,7 @@ Orden del MVC
 Inscripción a finales
 
 - `modelo/InscripcionFinal.php`: período de mesas, materias que puede rendir el alumno, inscribir y cancelar.
-- `controlador/inscripcion_finales.php`: por GET devuelve período, materias e inscripciones. Por POST recibe `accion=inscribir` o `accion=cancelar`.
+- `controlador/inscripcion_finales.php`: por GET devuelve período, materias e inscripciones (`?vista=mis` usa el período con inscripciones activas para "Mis finales"). Por POST recibe `accion=inscribir` o `accion=cancelar`.
 - `vista/inscripcion_finales.html` y `vista/mis_finales.html` ya no son pantallas vacías.
 - `vista/js/finales.js`: lo que comparten las dos pantallas.
 
@@ -33,9 +33,9 @@ Reglas que aplicamos:
 
 - La inscripción solo funciona entre las fechas cargadas en `parametros_mesas`.
 - Se listan las materias de las carreras donde el alumno está matriculado y que todavía no aprobó (nota menor a 4).
-- No deja inscribirse si falta aprobar alguna correlativa, y muestra cuáles.
+- No se exigen correlativas: el alumno puede inscribirse a cualquier materia pendiente, sea regular o libre.
 - Hay un solo llamado por turno (antes eran dos, ver más abajo).
-- Respeta el tope de mesas del turno.
+- No hay un tope fijo de mesas: puede anotarse en todas las materias que necesite rendir.
 - Se puede cancelar mientras la inscripción esté abierta.
 
 ## Segunda tanda de cambios (8/10)
@@ -47,15 +47,16 @@ Mis finales
 - Se unificó con el comprobante de inscripción, que ya no es un módulo aparte. Hay un botón "Comprobante" que abre el diálogo de impresión del navegador, y desde ahí se imprime o se guarda como PDF. En esta rama no estaba el generador de PDF del sistema viejo, así que se armó de cero. Los estilos de impresión están en `vista/estilo/comprobante.css` y solo se cargan en esta pantalla.
 - Las inscripciones se muestran en una tabla con las columnas del sistema viejo: tipo de documento, documento, legajo, carrera, condición y materia. En celular cada fila pasa a ser una tarjeta con la materia arriba.
 - El legajo sale de `alumnos.legajo` (ver la tercera tanda).
+- Si el turno vigente está cerrado, muestra el último turno con inscripciones activas para no perder el comprobante; si el alumno no tiene inscripciones, muestra el mismo turno que la pantalla de inscripción.
 - Botón "Compartir": en el celular abre el menú de compartir con un resumen en texto de las mesas, en la compu lo copia al portapapeles. Los navegadores solo lo permiten con HTTPS o en localhost.
-- Si el alumno llegó al tope de mesas o el turno está cerrado, "Inscribirme a un final" queda apagado y al pasar el mouse dice por qué.
+- Si el turno está cerrado, "Inscribirme a un final" queda apagado y al pasar el mouse dice por qué.
 
 Inscripción a finales
 
 - Las materias se muestran en lista, separadas por año de cursada. Si el alumno está en más de una carrera, el título de cada grupo también dice la carrera.
 - Filtros: "Todas", "Puedo rendir" y "Ya me anoté", con la cantidad de cada uno, más un desplegable por año y un buscador por nombre. El buscador aparece con más de 8 materias y el desplegable si hay más de un año.
-- Antes de inscribir pide confirmación, y avisa si va como regular o libre y cuántas mesas le quedan.
-- Con el tope alcanzado los botones "Inscribirme" quedan deshabilitados.
+- Antes de inscribir pide confirmación y avisa si va como regular o libre.
+- No hay tope fijo: los botones "Inscribirme" no se deshabilitan por cantidad de mesas.
 - Se sacó el segundo llamado. `LLAMADOS` en `modelo/InscripcionFinal.php` quedó con uno solo y la pantalla ya no muestra el selector. Si en algún momento vuelve a haber más de uno, alcanza con agregarlo a esa constante y el selector vuelve a aparecer.
 
 En las dos pantallas
@@ -91,21 +92,43 @@ Ahora todo el código usa la base de `docs/esquema_normalizado.sql`.
 - El alumno se identifica por `alumnos.id_alumno`. En la sesión, `id` pasa a ser ese id, y se agregaron `tipo_documento` y `documento` para mostrarlos sin volver a consultar.
 - Login: busca por `email` o `numero_documento` y compara contra `password_hash`.
 - `modelo/Alumno.php`: `buscarPorDocumento()` pasó a `buscarPorId()`, que ahora también trae el legajo (con eso se completa la columna en Mis finales) y el teléfono desde `domicilios_alumno`. Se agregó `idPorDocumento()`.
-- `modelo/InscripcionFinal.php`: las mismas reglas, con las tablas nuevas (`parametros_mesas`, `carrera_materias`, `historial_academico`). La inscripción ya no copia nombre y email del alumno, guarda solo `id_alumno`. Si hay más de un registro en `parametros_mesas`, se usa el vigente y, si no hay ninguno vigente, el más reciente.
+- `modelo/InscripcionFinal.php`: las mismas reglas, con las tablas nuevas (`parametros_mesas`, `carrera_materias`, `historial_academico`). La inscripción ya no copia nombre y email del alumno, guarda solo `id_alumno`. Si hay más de un registro en `parametros_mesas`, se usa el vigente y, si no hay ninguno vigente, el próximo a abrir; si ya pasaron todos, el último cerrado.
 - Historial académico: se trajo lo que subió lore a `main` (modelo, controlador y las dos vistas) y se adaptó a la base nueva. El controlador usa `_base.php` como el resto y, si falla la base, el detalle queda en el log y al alumno le aparece un mensaje común. El personal consulta un alumno pasando `?dni=`.
-- `docs/clementina_local_prueba.sql` ahora tiene la estructura del esquema normalizado más datos de prueba. Usuario: `prueba@clementina.test` (o DNI 30111222), clave `prueba123`.
+- `docs/datos_prueba_finales.sql` agrega datos de prueba para las pantallas de finales (carreras, materias, matrícula, historial y períodos de mesas). La tabla `correlatividades` puede seguir existiendo en el esquema, pero el módulo de finales ya no la usa. Se importa después de `docs/esquema_normalizado.sql`. Usuarios de prueba: `alumno@clementina.edu.ar` (o DNI 12345678), clave `123456`; y `admin`, clave `123456`.
 
 Para avisar al grupo:
 
 - `esquema_normalizado.sql` no se importa entero: `tipos_documento.descripcion` es `VARCHAR(30)` y "Documento Nacional de Identidad" tiene 31 letras, así que el INSERT de ejemplo falla. Hay que agrandar la columna o acortar el texto. En la base de prueba lo acortamos.
 - `turnos` la usan las mesas (1 Febrero, 2 Agosto, 3 Diciembre) y también `matriculacion` (que parece ser turno de cursada). Conviene separarlas en dos tablas.
 
+## Cuarta tanda: sesión, datos, comprobantes y nuevo régimen de finales
+
+- Sesión persistente: `controlador/_sesion.php` centraliza el inicio de sesión, configura la cookie PHP por 30 días (`clementina_user` con los datos visibles y `clementina_auth` firmada criptográficamente con HMAC-SHA256) para restaurar la sesión automáticamente aunque el navegador se cierre o el servidor recicle el archivo de sesión.
+- Autocompletado de datos: Al iniciar sesión o volver al sitio, los datos del usuario se cargan inmediatamente en barra superior y bienvenida desde cookies / localStorage sin parpadeos.
+- “Mis datos”: Ahora guarda y muestra `id_pais_nacimiento` y `id_provincia_nacimiento` (en tabla `alumnos`), permitiendo seleccionar país de origen, provincia y localidad en cascada dinámica. Los catálogos están en `docs/datos_ubicaciones.sql` (14 países, las 24 provincias argentinas y 36 localidades).
+- Iconos funcionales: Se añadieron las definiciones SVG de `printer` y `save` en `vista/estilo/app.js` y se verificó que todos los botones de acción tengan sus iconos y funciones vinculadas.
+- Inscripción a finales y régimen de correlativas:
+  - Se dio de baja de manera definitiva el sistema de correlatividades en el backend (`InscripcionFinal.php`) y en el frontend (`finales.js`), dado que en el régimen actual ya no rige. Todas las materias pendientes quedan habilitadas.
+  - El tope máximo de mesas se adaptó para que el alumno pueda rendir todo lo que tenga regularizado o las materias que decida rendir libres, eliminando el límite restrictivo arbitrario.
+- Historial académico:
+  - Botón “Comprobante” con vista de impresión y exportación en PDF (`comprobante.css`), adaptado para emitir la constancia institucional con datos del alumno, estadísticas y trayectoria.
+  - Botón “Compartir” para portapapeles o Web Share API.
+  - Barra de filtros por condición (Todas, Aprobadas, Regulares, Desaprobadas) con contadores en vivo y buscador en tiempo real insensible a tildes.
+  - Diseño responsivo adaptativo que transforma las filas en tarjetas legibles en dispositivos móviles (`table-wrap--stack`).
+- Corrección de escritura: Se corrigieron los caracteres dañados por doble codificación UTF-8 (mojibake) y erratas ortográficas en todas las vistas.
+- Versiones de cache busting actualizadas (`app.js?v=14`, `finales.js?v=16`, `estilo.css?v=15`).
+
+## Probar en local
+
+1. Iniciar MySQL/MariaDB y revisar `config/config.php` (por defecto: base `clementina`, usuario `root`, sin clave).
+2. Importar `docs/esquema_normalizado.sql`, después `docs/datos_ubicaciones.sql` (países, provincias y localidades de “Mis datos”) y, si hace falta datos para las pantallas de finales, `docs/datos_prueba_finales.sql`.
+3. Levantar el servidor desde la raíz del proyecto:
+   `C:\xampp\php\php.exe -S 127.0.0.1:8000 -t .`
+4. Abrir `http://127.0.0.1:8000/vista/login.html` e ingresar con `alumno@clementina.edu.ar` / `123456`.
+
 ## Pendiente
 
-- Probar todo contra la base normalizada ya cargada con los datos reales. Se probó con la base de prueba (claro, noche y celular), pero todavía no con los datos migrados.
-- `config/config.php` está subido con la clave de la base. Habría que cambiarla y sacar el archivo del repo. (importante)
-- Confirmar con el profe si los libres se pueden anotar igual que los regulares. Hoy pueden, solo se muestra la condición. Ojo que "Libre" es cualquiera que no tenga año de regularidad cargado, incluso si nunca cursó la materia.
-- Fecha, hora y aula de cada mesa. Hoy no hay de dónde sacarlas. Cuando estén en la base van en la lista de inscripciones y en el comprobante.
-- La tabla `inscripciones` tiene la columna `verificada`, que se graba en `N` y no se lee en ningún lado. Falta definir quién la cambia para poder mostrar ese estado al alumno.
-- El historial en celular: la tabla se corta a la derecha y hay que deslizar. Pasarla a tarjetas como en inscripción.
-- Darle una pasada en modo noche a Historial académico, Inscripción a carreras e Inscripción a mesas. Usan los mismos componentes, pero no se revisaron una por una.
+- Probar todo contra la base normalizada cargada con los datos reales de producción cuando se complete la migración institucional.
+- `config/config.php` está subido con la clave de la base. Conviene aislarla en variables de entorno o archivo fuera del repositorio.
+- Fecha, hora y aula específicas por materia cuando se carguen en el esquema de mesas.
+- Definir la interfaz de gestión institucional para el estado `verificada` de la tabla `inscripciones`.

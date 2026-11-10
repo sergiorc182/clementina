@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesas de examen · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="mesas">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+      <main id="contenido" class="admin-content">
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title">Mesas de examen</h1>
+            <p class="page-head__text">Períodos de inscripción a finales configurados en el sistema.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body" id="lista-mesas">
+            <div class="empty">
+              <div class="empty__icon"><i data-lucide="calendar-days" class="icon"></i></div>
+              <div class="empty__title">Cargando períodos…</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="../../vista/estilo/app.js?v=13"></script>
+  <script src="estilo/app-admin.js?v=1"></script>
+  <script>
+    (function () {
+      'use strict';
+      AppAdmin.montarAdmin({ titulo: 'Mesas de examen', subtitulo: 'Períodos configurados' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+          cargarMesas();
+        });
+
+      function cargarMesas() {
+        fetch(AppAdmin.controladorAdmin('dashboard.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { return; }
+            var mesas = res.data.mesas || {};
+            var contenedor = document.getElementById('lista-mesas');
+            if (mesas.estado === 'sin_datos') {
+              contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No hay períodos de mesas configurados.</p>';
+              return;
+            }
+            var estadoBadge = mesas.estado === 'abierto' ? 'badge--success' : mesas.estado === 'proximo' ? 'badge--info' : 'badge--warning';
+            var estadoTexto = mesas.estado === 'abierto' ? 'Abierto' : mesas.estado === 'proximo' ? 'Próximo' : 'Cerrado';
+            contenedor.innerHTML =
+              '<div class="data-list">' +
+              fila('Turno',         (mesas.turno || '—') + ' ' + (mesas.anio_mesas || '')) +
+              fila('Estado',        '<span class="badge ' + estadoBadge + '">' + estadoTexto + '</span>') +
+              fila('Inicio',        fmtFecha(mesas.fecha_inicio)) +
+              fila('Cierre',        fmtFecha(mesas.fecha_fin)) +
+              fila('Tope de mesas', mesas.tope_mesas ? mesas.tope_mesas + ' mesas por alumno' : '—') +
+              '</div>';
+            App.iconos();
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudieron cargar las mesas.' });
+          });
+      }
+
+      function fila(label, value) {
+        return '<div class="data-row"><dt class="data-row__label">' + label + '</dt><dd class="data-row__value">' + value + '</dd></div>';
+      }
+      function fmtFecha(iso) {
+        if (!iso) { return '—'; }
+        var p = String(iso).substring(0, 10).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+      }
+    })();
+  </script>
+</body>
+</html>

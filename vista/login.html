@@ -173,7 +173,7 @@
       <p class="auth-form__foot">Sistema de gestión académica de alumnos y personal</p>
     </section>
   </div>
-  <script src="estilo/app.js?v=13"></script>
+  <script src="estilo/app.js?v=14"></script>
   <script>
     (function () {
       'use strict';
@@ -201,9 +201,22 @@
         el.className = 'mensaje';
       }
 
+      // Pre-cargar último usuario recordado
+      try {
+        var guardado = localStorage.getItem('clementina_ultimo_usuario');
+        if (guardado) {
+          var inputUsr = document.getElementById('usuario');
+          if (inputUsr && !inputUsr.value) { inputUsr.value = guardado; }
+        }
+      } catch (e) {}
+
       App.verificarSesion(false).then(function (usuario) {
         if (usuario) {
-          window.location.href = App.raiz() + '/index.html';
+          if (usuario.tipo === 'personal') {
+            window.location.href = App.raiz() + '/clementina-preceptores/index.html';
+          } else {
+            window.location.href = App.raiz() + '/index.html';
+          }
         }
       });
 
@@ -239,9 +252,20 @@
           .then(function (resp) { return resp.json(); })
           .then(function (resultado) {
             if (resultado.ok) {
+              try {
+                localStorage.setItem('clementina_ultimo_usuario', usuario);
+                if (resultado.usuario) {
+                  localStorage.setItem('clementina_usuario', JSON.stringify(resultado.usuario));
+                }
+              } catch (e) {}
               mostrarMensaje(mensajeLogin, resultado.mensaje, 'ok');
               setTimeout(function () {
-                window.location.href = App.raiz() + '/index.html';
+                // Redirigir según el tipo de usuario devuelto por el servidor
+                if (resultado.redirigir === 'admin') {
+                  window.location.href = App.raiz() + '/clementina-preceptores/index.html';
+                } else {
+                  window.location.href = App.raiz() + '/index.html';
+                }
               }, 450);
             } else {
               mostrarMensaje(mensajeLogin, resultado.mensaje, 'error');

@@ -16,6 +16,10 @@ require_once dirname(__DIR__) . '/modelo/Alumno.php';
 
 $usuario = requerirAlumno();
 
+if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'POST'], true)) {
+    responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
+}
+
 try {
     // El alumno se identifica por su id interno, que viene de la sesión.
     $finales = new InscripcionFinal((int) $usuario['id']);
@@ -25,20 +29,26 @@ try {
         $idCarrera = (int) ($_POST['id_carrera'] ?? 0);
         $idMateria = (int) ($_POST['id_materia'] ?? 0);
 
+        if ($accion !== 'inscribir' && $accion !== 'cancelar') {
+            responder(['ok' => false, 'mensaje' => 'Acción no válida.']);
+        }
+
+        if ($idCarrera <= 0 || $idMateria <= 0) {
+            responder(['ok' => false, 'mensaje' => 'Faltan datos de la materia.']);
+        }
+
         if ($accion === 'inscribir') {
             $finales->inscribir($idCarrera, $idMateria, (int) ($_POST['id_llamado'] ?? 0));
             responder(['ok' => true, 'mensaje' => 'Inscripción registrada.']);
         }
 
-        if ($accion === 'cancelar') {
-            $finales->cancelar($idCarrera, $idMateria);
-            responder(['ok' => true, 'mensaje' => 'Inscripción cancelada.']);
-        }
-
-        responder(['ok' => false, 'mensaje' => 'Acción no válida.']);
+        $finales->cancelar($idCarrera, $idMateria);
+        responder(['ok' => true, 'mensaje' => 'Inscripción cancelada.']);
     }
 
-    $periodo = $finales->periodo();
+    $periodo = (($_GET['vista'] ?? '') === 'mis')
+        ? $finales->periodoMisFinales()
+        : $finales->periodo();
 
     responder([
         'ok'            => true,
@@ -54,4 +64,7 @@ try {
 } catch (PDOException $e) {
     error_log('inscripcion_finales: ' . $e->getMessage());
     responder(['ok' => false, 'mensaje' => 'Error al consultar la base de datos.']);
+} catch (Throwable $e) {
+    error_log('inscripcion_finales: ' . $e->getMessage());
+    responder(['ok' => false, 'mensaje' => 'Ocurrió un error inesperado. Intentá de nuevo.']);
 }

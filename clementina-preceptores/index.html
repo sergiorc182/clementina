@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="description" content="Panel administrativo de preceptores y directivos del ISFT N.º 182.">
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="vista/estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="dashboard">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <!-- ==================== CONTENIDO ==================== -->
+    <div class="admin-main">
+
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <!-- Bienvenida -->
+        <section class="welcome" aria-label="Bienvenida" style="margin-bottom: var(--sp-6);">
+          <img class="welcome__logo" src="../vista/estilo/logo-isft182.svg?v=3" alt="Escudo del I.S.F.T. N.º 182" width="96" height="104">
+          <div class="welcome__body">
+            <p class="welcome__eyebrow">Panel administrativo</p>
+            <h1 class="welcome__title">Bienvenido/a, <span id="bienvenida-nombre">—</span></h1>
+            <p class="welcome__text">Gestioná alumnos, inscripciones y actividad académica del ISFT 182.</p>
+          </div>
+        </section>
+
+        <!-- Estadísticas -->
+        <div class="stats-grid" id="stats-grid" aria-label="Estadísticas institucionales">
+          <div class="stat">
+            <div class="stat__icon"><i data-lucide="user" class="icon"></i></div>
+            <div><div class="stat__label">Alumnos registrados</div>
+            <div class="stat__value skeleton skeleton--line" style="width:60px;height:28px;margin-top:4px;"></div></div>
+          </div>
+          <div class="stat">
+            <div class="stat__icon stat__icon--accent"><i data-lucide="school" class="icon"></i></div>
+            <div><div class="stat__label">Alumnos activos</div>
+            <div class="stat__value skeleton skeleton--line" style="width:60px;height:28px;margin-top:4px;"></div></div>
+          </div>
+          <div class="stat">
+            <div class="stat__icon"><i data-lucide="calendar-check" class="icon"></i></div>
+            <div><div class="stat__label">Inscripciones activas</div>
+            <div class="stat__value skeleton skeleton--line" style="width:60px;height:28px;margin-top:4px;"></div></div>
+          </div>
+          <div class="stat">
+            <div class="stat__icon stat__icon--neutral"><i data-lucide="clipboard-list" class="icon"></i></div>
+            <div><div class="stat__label">Materias aprobadas</div>
+            <div class="stat__value skeleton skeleton--line" style="width:60px;height:28px;margin-top:4px;"></div></div>
+          </div>
+        </div>
+
+        <!-- Alerta período de mesas -->
+        <div id="alerta-mesas" class="alert alert--info mt-4 mb-6" hidden>
+          <i data-lucide="calendar-days" class="icon"></i>
+          <div class="alert__body">
+            <div class="alert__title" id="alerta-mesas-titulo">Período de inscripción</div>
+            <p id="alerta-mesas-texto"></p>
+          </div>
+        </div>
+
+        <!-- Dos columnas -->
+        <div class="dashboard-cols" id="dashboard-cols">
+
+          <!-- Carreras -->
+          <div class="card">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Carreras</div>
+                <div class="card__subtitle">Alumnos matriculados por carrera</div>
+              </div>
+              <a href="vista/carreras.html" class="btn btn--ghost btn--sm">
+                <i data-lucide="arrow-right" class="icon--sm"></i>Ver todas
+              </a>
+            </div>
+            <div class="card__body" id="lista-carreras">
+              <div class="skeleton skeleton--line mb-3"></div>
+              <div class="skeleton skeleton--line mb-3"></div>
+              <div class="skeleton skeleton--line"></div>
+            </div>
+          </div>
+
+          <!-- Accesos rápidos -->
+          <div class="card">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Accesos rápidos</div>
+                <div class="card__subtitle">Módulos frecuentes del panel</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <nav class="grid grid--2" style="gap:var(--sp-2);" aria-label="Accesos rápidos">
+
+                <a class="module" href="vista/alumnos.html">
+                  <div class="module__head">
+                    <span class="module__icon"><i data-lucide="user" class="icon"></i></span>
+                    <i data-lucide="arrow-right" class="module__arrow icon--sm"></i>
+                  </div>
+                  <div class="module__name">Alumnos</div>
+                  <div class="module__desc">Buscar y consultar legajos</div>
+                </a>
+
+                <a class="module" href="vista/historial.html">
+                  <div class="module__head">
+                    <span class="module__icon"><i data-lucide="file-search" class="icon"></i></span>
+                    <i data-lucide="arrow-right" class="module__arrow icon--sm"></i>
+                  </div>
+                  <div class="module__name">Historial</div>
+                  <div class="module__desc">Consultar por DNI</div>
+                </a>
+
+                <a class="module" href="vista/inscripciones.html">
+                  <div class="module__head">
+                    <span class="module__icon"><i data-lucide="calendar-check" class="icon"></i></span>
+                    <i data-lucide="arrow-right" class="module__arrow icon--sm"></i>
+                  </div>
+                  <div class="module__name">Inscripciones</div>
+                  <div class="module__desc">Ver inscripciones a finales</div>
+                </a>
+
+                <a class="module" href="vista/mesas.html">
+                  <div class="module__head">
+                    <span class="module__icon"><i data-lucide="calendar-days" class="icon"></i></span>
+                    <i data-lucide="arrow-right" class="module__arrow icon--sm"></i>
+                  </div>
+                  <div class="module__name">Mesas</div>
+                  <div class="module__desc">Períodos de examen</div>
+                </a>
+
+              </nav>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../vista/estilo/app.js?v=13"></script>
+  <script src="vista/estilo/app-admin.js?v=1"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      AppAdmin.montarAdmin({ titulo: 'Dashboard', subtitulo: 'Resumen institucional' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+          var nombre = (usuario.nombre || '').split(' ')[0] || 'usuario';
+          document.getElementById('bienvenida-nombre').textContent = nombre;
+          cargarEstadisticas();
+        });
+
+      function cargarEstadisticas() {
+        fetch(AppAdmin.controladorAdmin('dashboard.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje || 'No se pudieron cargar las estadísticas.' }); return; }
+            pintarEstadisticas(res.data);
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Sin conexión', texto: 'No se pudo conectar con el servidor.' });
+          });
+      }
+
+      function pintarEstadisticas(data) {
+        var grid = document.getElementById('stats-grid');
+        var alumnos      = data.alumnos       || {};
+        var inscripciones= data.inscripciones  || {};
+        var historial    = data.historial      || {};
+
+        grid.innerHTML =
+          stat('user',           'Alumnos registrados',   alumnos.total         || 0, 'En el sistema') +
+          stat('school',         'Alumnos activos',        alumnos.activos       || 0, 'Con matriculación', 'accent') +
+          stat('calendar-check', 'Inscripciones activas',  inscripciones.activas || 0, 'Este turno') +
+          stat('clipboard-list', 'Materias aprobadas',     historial.aprobadas   || 0, 'En total', 'neutral');
+        App.iconos(grid);
+
+        // Alerta período de mesas
+        var mesas = data.mesas || {};
+        if (mesas.estado && mesas.estado !== 'sin_datos') {
+          var alerta    = document.getElementById('alerta-mesas');
+          var alertaTit = document.getElementById('alerta-mesas-titulo');
+          var alertaTxt = document.getElementById('alerta-mesas-texto');
+          alerta.hidden = false;
+          if (mesas.estado === 'abierto') {
+            alerta.className = 'alert alert--success mt-4 mb-6';
+            alertaTit.textContent = 'Inscripción a finales abierta';
+            alertaTxt.textContent = 'Turno ' + (mesas.turno || '') + ' ' + (mesas.anio_mesas || '') +
+              ' · Hasta el ' + fmtFecha(mesas.fecha_fin) + ' · Tope: ' + (mesas.tope_mesas || '—') + ' mesas/alumno.';
+          } else if (mesas.estado === 'proximo') {
+            alerta.className = 'alert alert--info mt-4 mb-6';
+            alertaTit.textContent = 'Próximo período de inscripción';
+            alertaTxt.textContent = 'Turno ' + (mesas.turno || '') + ' ' + (mesas.anio_mesas || '') +
+              ' · Abre el ' + fmtFecha(mesas.fecha_inicio) + '.';
+          } else {
+            alerta.className = 'alert alert--warning mt-4 mb-6';
+            alertaTit.textContent = 'Período de inscripción cerrado';
+            alertaTxt.textContent = 'Último turno: ' + (mesas.turno || '') + ' ' + (mesas.anio_mesas || '') +
+              ' · Cerró el ' + fmtFecha(mesas.fecha_fin) + '.';
+          }
+          App.iconos(alerta);
+        }
+
+        // Lista de carreras
+        var listaCar = document.getElementById('lista-carreras');
+        var carreras = Array.isArray(data.carreras) ? data.carreras : [];
+        var maxMat   = carreras.reduce(function (mx, c) { return Math.max(mx, parseInt(c.matriculados) || 0); }, 1);
+
+        if (!carreras.length) {
+          listaCar.innerHTML = '<p class="muted" style="font-size:.875rem;">Sin carreras registradas.</p>';
+        } else {
+          listaCar.innerHTML = carreras.map(function (c) {
+            var mat = parseInt(c.matriculados) || 0;
+            var pct = Math.round((mat / maxMat) * 100);
+            return '<div class="carrera-row">' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div class="carrera-row__name">' + esc(c.nombre_carrera) + '</div>' +
+                '<div class="mini-bar"><div class="mini-bar__fill" style="width:' + pct + '%"></div></div>' +
+              '</div>' +
+              '<span class="carrera-row__count">' + mat + '</span>' +
+            '</div>';
+          }).join('');
+        }
+      }
+
+      function stat(icon, label, value, meta, variant) {
+        var cls = variant === 'accent' ? ' stat__icon--accent' : variant === 'neutral' ? ' stat__icon--neutral' : '';
+        return '<div class="stat">' +
+          '<div class="stat__icon' + cls + '"><i data-lucide="' + icon + '" class="icon"></i></div>' +
+          '<div><div class="stat__label">' + esc(label) + '</div>' +
+          '<div class="stat__value">' + value + '</div>' +
+          '<div class="stat__meta">' + esc(meta) + '</div></div>' +
+        '</div>';
+      }
+
+      function fmtFecha(iso) {
+        if (!iso) { return '—'; }
+        var p = String(iso).substring(0, 10).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+      }
+
+      function esc(txt) {
+        return String(txt == null ? '' : txt)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+
+    })();
+  </script>
+</body>
+</html>

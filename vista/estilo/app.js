@@ -77,6 +77,8 @@
     "pencil": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z\"/>",
     "phone": "<path d=\"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z\"/>",
     "plus": "<path d=\"M12 5v14\"/><path d=\"M5 12h14\"/>",
+    "printer": "<polyline points=\"6 9 6 2 18 2 18 9\"/><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"/><rect width=\"12\" height=\"8\" x=\"6\" y=\"14\"/>",
+    "save": "<path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><polyline points=\"17 21 17 13 7 13 7 21\"/><polyline points=\"7 3 7 8 15 8\"/>",
     "school": "<path d=\"m4 6 8-4 8 4\"/><path d=\"m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2\"/><path d=\"M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4\"/><path d=\"M18 5v17\"/><path d=\"M6 5v17\"/><circle cx=\"12\" cy=\"9\" r=\"2\"/>",
     "search": "<circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/>",
     "share-2": "<circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/><line x1=\"8.59\" x2=\"15.42\" y1=\"13.51\" y2=\"17.49\"/><line x1=\"15.41\" x2=\"8.59\" y1=\"6.51\" y2=\"10.49\"/>",
@@ -145,11 +147,33 @@
     /* Cierra la sesión y redirige al login */
     cerrarSesion: function () {
       var self = this;
+      try {
+        document.cookie = 'clementina_user=; Max-Age=0; path=/;';
+        document.cookie = 'clementina_auth=; Max-Age=0; path=/;';
+        localStorage.removeItem('clementina_usuario');
+      } catch (e) {}
       return fetch(this.controlador('cerrar_sesion.php'), { method: 'POST' })
         .catch(function () { /* no importa el resultado */ })
         .then(function () {
           window.location.href = self.vista('login.html');
         });
+    },
+
+    /* Lee los datos del usuario guardados en cookies o almacenamiento local */
+    obtenerUsuarioCookie: function () {
+      try {
+        var match = document.cookie.match(/(?:^|;\s*)clementina_user=([^;]+)/);
+        if (match) {
+          return JSON.parse(decodeURIComponent(match[1]));
+        }
+      } catch (e) {}
+      try {
+        var local = localStorage.getItem('clementina_usuario');
+        if (local) {
+          return JSON.parse(local);
+        }
+      } catch (e) {}
+      return null;
     },
 
     /* Texto legible del rol para mostrar en pantalla */
@@ -214,9 +238,21 @@
       this._montarTopbar();
       this._conectarUI();
 
+      var usuarioCookie = this.obtenerUsuarioCookie();
+      if (usuarioCookie) {
+        this.pintarUsuario(usuarioCookie);
+        var bNom = document.getElementById('bienvenida-nombre');
+        if (bNom && usuarioCookie.nombre) {
+          bNom.textContent = usuarioCookie.nombre;
+        }
+      }
+
       var sesion = this.verificarSesion(protegida);
       return sesion.then(function (usuario) {
         if (usuario) {
+          try {
+            localStorage.setItem('clementina_usuario', JSON.stringify(usuario));
+          } catch (e) {}
           self.pintarUsuario(usuario);
         } else {
           self.pintarInvitado();

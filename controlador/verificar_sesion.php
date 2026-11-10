@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/_sesion.php';
 header('Content-Type: application/json');
 
 if (isset($_SESSION['id_usuario'])) {

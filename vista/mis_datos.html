@@ -115,7 +115,7 @@
                 </div>
                 <div class="field">
                   <label class="label" for="id_provincia">Provincia</label>
-                  <select class="select" id="id_provincia">
+                  <select class="select" id="id_provincia" name="id_provincia">
                     <option value="">Cargando…</option>
                   </select>
                 </div>
@@ -155,7 +155,7 @@
     </div>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script src="estilo/app.js?v=13"></script>
+  <script src="estilo/app.js?v=14"></script>
   <script>
     (function () {
       'use strict';
@@ -284,15 +284,25 @@
               cargarSelect(document.getElementById('id_pais_nacimiento'), App.controlador('get_paises.php'), 'Sin países cargados'),
               cargarProvincias()
             ]).then(function () {
-              return cargarLocalidades('', d.id_localidad_nacimiento);
-            }).then(function () {
               document.getElementById('id_pais_nacimiento').value = d.id_pais_nacimiento || '';
+              var idProv = d.id_provincia || '';
+              document.getElementById('id_provincia').value = idProv;
+              return cargarLocalidades(idProv, d.id_localidad_nacimiento);
+            }).then(function () {
               precargar(d);
               tarjeta.classList.remove('oculto');
               App.iconos();
             });
           });
       }
+
+      document.getElementById('id_pais_nacimiento').addEventListener('change', function () {
+        var esExtranjero = this.value && this.value !== 'AR';
+        var campoExt = document.getElementById('lugar_nacimiento_extranjero');
+        if (esExtranjero && !campoExt.value) {
+          campoExt.focus();
+        }
+      });
 
       document.getElementById('id_provincia').addEventListener('change', function () {
         cargarLocalidades(this.value, '');

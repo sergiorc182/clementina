@@ -5,9 +5,10 @@
  * Destruye la sesión y la cookie, y responde { ok: true }.
  */
 
-session_start();
+require_once __DIR__ . '/_sesion.php';
 
 $_SESSION = [];
+eliminarCookieAutenticacion();
 
 if (ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();

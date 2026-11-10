@@ -9,6 +9,7 @@
   'use strict';
 
   var ENDPOINT = App.controlador('inscripcion_finales.php');
+  var ENDPOINT_MIS = ENDPOINT + '?vista=mis';
 
   /* ------------------------------------------------------------------ */
   /* Utilidades                                                          */
@@ -46,8 +47,8 @@
     return String(texto).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
-  function cargar() {
-    return fetch(ENDPOINT).then(function (resp) { return resp.json(); });
+  function cargar(url) {
+    return fetch(url || ENDPOINT).then(function (resp) { return resp.json(); });
   }
 
   function enviar(datos) {
@@ -93,9 +94,8 @@
     }
 
     var cupo = '';
-    if (periodo.tope > 0) {
-      cupo = ' Llevás ' + cantidad + ' de ' + periodo.tope + ' mesas' +
-             (cantidad >= periodo.tope ? ': llegaste al máximo del turno.' : '.');
+    if (cantidad > 0) {
+      cupo = ' Tenés ' + cantidad + ' mesa' + (cantidad === 1 ? '' : 's') + ' inscripta' + (cantidad === 1 ? '' : 's') + ' en este turno.';
     }
 
     /* Los últimos días el aviso pasa a amarillo para que no se pase la fecha. */
@@ -114,12 +114,6 @@
       '<div class="mt-3"><button type="button" class="btn btn--outline btn--sm" data-accion="reintentar">' +
       'Reintentar</button></div>';
     App.iconos(contenedor);
-  }
-
-  /* true si el alumno ya llegó al tope de mesas del turno. */
-  function sinCupo(datos) {
-    return !!datos.periodo && datos.periodo.tope > 0 &&
-           datos.inscripciones.length >= datos.periodo.tope;
   }
 
   /* Con un solo llamado no hace falta elegirlo ni mostrarlo. */
@@ -197,11 +191,11 @@
   /* Inscripción a finales                                               */
   /* ------------------------------------------------------------------ */
 
-  /* inscripto | correlativas | cerrado | disponible */
+  /* inscripto | cerrado | disponible */
   function estadoMateria(m, datos) {
     if (m.llamado !== null) { return 'inscripto'; }
-    if (m.correlativas.length) { return 'correlativas'; }
-    return datos.periodo && datos.periodo.abierto ? 'disponible' : 'cerrado';
+    if (!datos.periodo || !datos.periodo.abierto) { return 'cerrado'; }
+    return 'disponible';
   }
 
   function itemMateria(m, datos) {
@@ -214,16 +208,11 @@
       estado = '<span class="badge badge--success">Inscripto' +
                (varios ? ' · ' + esc(datos.llamados[m.llamado] || '') : '') + '</span>';
       if (datos.periodo && datos.periodo.abierto) { accion = botonCancelar(m); }
-    } else if (tipo === 'correlativas') {
-      estado = '<span class="badge badge--warning">Faltan correlativas</span>' +
-               '<div class="muted" style="font-size: .75rem; margin-top: 4px;">Te falta aprobar: ' +
-               esc(m.correlativas.join(', ')) + '</div>';
     } else if (tipo === 'cerrado') {
       estado = '<span class="badge badge--neutral">Cerrado</span>';
     } else {
-      var lleno = sinCupo(datos);
       estado = '<span class="badge badge--info">Disponible</span>';
-      if (varios && !lleno) {
+      if (varios) {
         accion = '<select class="select" style="width: auto;" aria-label="Llamado para ' + esc(m.materia) + '">' +
                  Object.keys(datos.llamados).map(function (id) {
                    return '<option value="' + id + '">' + esc(datos.llamados[id]) + '</option>';
@@ -231,7 +220,6 @@
       }
       accion += '<button type="button" class="btn btn--primary btn--sm" data-accion="inscribir"' +
                 datosFila(m) + ' data-condicion="' + esc(m.condicion) + '"' +
-                (lleno ? ' disabled title="Llegaste al máximo de mesas de este turno."' : '') +
                 '>Inscribirme</button>';
     }
 
@@ -381,17 +369,11 @@
       /* Inscribirse pide confirmación: en el celular es fácil tocar el botón sin querer. */
       var selector = boton.closest('.exam-item').querySelector('select');
       var llamado = selector ? selector.value : Object.keys(ultimo.llamados)[0];
-      var tope = ultimo.periodo.tope;
-      var quedan = tope - ultimo.inscripciones.length - 1;
 
       App.confirmar({
         titulo: '¿Inscribirte a este final?',
         texto: 'Vas a anotarte en la mesa de ' + boton.getAttribute('data-nombre') +
-               ' como ' + boton.getAttribute('data-condicion').toLowerCase() + '.' +
-               (tope <= 0 ? ''
-                 : quedan <= 0 ? ' Con esta llegás al máximo de mesas del turno.'
-                 : ' Después de esta te ' + (quedan === 1 ? 'queda 1 mesa' : 'quedan ' + quedan + ' mesas') +
-                   ' en el turno.'),
+               ' en condición ' + boton.getAttribute('data-condicion').toLowerCase() + '.',
         confirmar: 'Inscribirme',
         cancelar: 'Volver'
       }).then(function (ok) {
@@ -577,7 +559,7 @@
     }
 
     function dibujar() {
-      return Promise.all([cargar(), pedidoAlumno]).then(function (respuestas) {
+      return Promise.all([cargar(ENDPOINT_MIS), pedidoAlumno]).then(function (respuestas) {
         var datos = respuestas[0];
 
         if (!datos.ok) {
@@ -600,13 +582,14 @@
         habilitarComprobante(hay);
         bloquearInscripcion(
           !datos.periodo ? 'Todavía no hay un turno de finales publicado.'
-            : !abierto ? 'La inscripción de este turno está cerrada.'
-            : sinCupo(datos) ? 'Llegaste al máximo de mesas de este turno.'
+            : !abierto ? (diasHasta(datos.periodo.fecha_inicio) > 0
+                ? 'La inscripción de este turno todavía no abrió.'
+                : 'La inscripción de este turno está cerrada.')
             : '');
 
         if (!hay) {
-          cajaLista.innerHTML = vacio('inbox', 'Todavía no tenés inscripciones',
-            'Cuando te anotes a una mesa final, vas a poder verla acá con su llamado y su estado.',
+          cajaLista.innerHTML = vacio('inbox', 'No tenés inscripciones en este turno',
+            'Cuando te anotes a una mesa final de este turno, vas a poder verla acá con su llamado y su estado.',
             '<a class="btn btn--outline" href="inscripcion_finales.html">' +
             '<i data-lucide="calendar-plus"></i>Ver materias disponibles</a>');
         } else {

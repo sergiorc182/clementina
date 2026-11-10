@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial académico · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="historial">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title">Historial académico</h1>
+            <p class="page-head__text">Buscá un alumno por DNI para consultar su historial de materias, notas y regularidades.</p>
+          </div>
+        </div>
+
+        <!-- Buscador por DNI -->
+        <div class="card" style="max-width:480px; margin-bottom: var(--sp-6);">
+          <div class="card__body">
+            <form id="form-busqueda" novalidate>
+              <label class="label" for="input-dni">DNI del alumno <span class="req">*</span></label>
+              <div class="input-group">
+                <div class="field field--icon" style="flex:1; margin:0;">
+                  <i data-lucide="search" class="field__icon icon--sm"></i>
+                  <input type="text" id="input-dni" class="input" placeholder="Ingresá el DNI…" inputmode="numeric" autocomplete="off" required>
+                </div>
+                <button type="submit" class="btn btn--primary" id="btn-buscar">Buscar</button>
+              </div>
+              <div id="msg-busqueda" class="field__error" hidden>
+                <i data-lucide="x-circle" class="icon--sm"></i><span id="msg-texto"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Datos del alumno encontrado -->
+        <div id="panel-alumno" hidden>
+
+          <!-- Info del alumno -->
+          <div class="card mb-4" id="card-alumno">
+            <div class="card__header">
+              <div>
+                <div class="card__title" id="alumno-nombre">—</div>
+                <div class="card__subtitle" id="alumno-meta">—</div>
+              </div>
+              <div>
+                <!-- Selector de carrera -->
+                <select class="select" id="select-carrera" style="min-width:200px;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen de estadísticas -->
+          <div class="grid grid--3 mb-4" id="resumen-stats">
+            <!-- Se rellena dinámicamente -->
+          </div>
+
+          <!-- Tabla de historial -->
+          <div class="table-wrap table-wrap--stack" id="tabla-wrap">
+            <table class="table" aria-label="Historial académico">
+              <thead>
+                <tr>
+                  <th>Materia</th>
+                  <th>Año cursada</th>
+                  <th>Año regular</th>
+                  <th>Nota</th>
+                  <th>Fecha aprobación</th>
+                  <th>Acta</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-historial">
+                <!-- Se rellena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Total -->
+          <div class="row mt-3">
+            <span class="muted" style="font-size:.875rem;" id="total-materias"></span>
+          </div>
+
+        </div><!-- /panel-alumno -->
+
+        <!-- Estados -->
+        <div id="estado-inicial" class="empty">
+          <div class="empty__icon"><i data-lucide="file-search" class="icon"></i></div>
+          <div class="empty__title">Ingresá un DNI para buscar</div>
+          <p class="empty__text">El historial muestra todas las materias cursadas, sus notas, regularidades y el estado académico actual del alumno.</p>
+        </div>
+
+        <div id="estado-carga" class="empty" hidden>
+          <div class="spinner"></div>
+          <div class="empty__title" style="margin-top:var(--sp-4);">Buscando…</div>
+        </div>
+
+        <div id="estado-error" class="alert alert--error" style="max-width:480px;" hidden>
+          <i data-lucide="x-circle" class="icon"></i>
+          <div class="alert__body"><div class="alert__title" id="error-titulo">Sin resultados</div><p id="error-texto"></p></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../vista/estilo/app.js?v=13"></script>
+  <script src="estilo/app-admin.js?v=1"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var carreraActual = null;
+
+      AppAdmin.montarAdmin({ titulo: 'Historial académico', subtitulo: 'Consulta por alumno' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+
+          // Si llegó con ?dni= lo carga automáticamente
+          var params = new URLSearchParams(window.location.search);
+          var dniParam = params.get('dni');
+          if (dniParam) {
+            document.getElementById('input-dni').value = dniParam;
+            buscar(parseInt(dniParam));
+          }
+
+          App.iconos();
+          conectarFormulario();
+        });
+
+      function conectarFormulario() {
+        var form = document.getElementById('form-busqueda');
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var dni = parseInt(document.getElementById('input-dni').value.trim());
+          if (!dni || dni < 1000000) {
+            mostrarMsgBusqueda('Ingresá un DNI válido (número de 7 u 8 dígitos).'); return;
+          }
+          buscar(dni);
+        });
+
+        document.getElementById('select-carrera').addEventListener('change', function () {
+          var dni = parseInt(document.getElementById('input-dni').value.trim());
+          carreraActual = this.value === 'todas' ? null : parseInt(this.value);
+          if (dni) { cargarHistorial(dni, carreraActual); }
+        });
+      }
+
+      function buscar(dni) {
+        ocultarMsgBusqueda();
+        mostrarEstado('carga');
+
+        // Primero verificar que el alumno exista
+        fetch(AppAdmin.controladorAdmin('alumnos.php') + '?dni=' + dni)
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              mostrarEstado('error');
+              document.getElementById('error-titulo').textContent = 'Alumno no encontrado';
+              document.getElementById('error-texto').textContent  = res.mensaje || 'No existe un alumno con ese DNI.';
+              App.iconos(document.getElementById('estado-error'));
+              return;
+            }
+            pintarDatosAlumno(res.alumno);
+            cargarHistorial(dni, null);
+          })
+          .catch(function () {
+            mostrarEstado('error');
+            document.getElementById('error-titulo').textContent = 'Error de red';
+            document.getElementById('error-texto').textContent  = 'No se pudo conectar con el servidor.';
+            App.iconos(document.getElementById('estado-error'));
+          });
+      }
+
+      function pintarDatosAlumno(a) {
+        var nombre = esc(a.primer_apellido + (a.otros_apellidos ? ' ' + a.otros_apellidos : '') +
+          ', ' + a.primer_nombre + (a.otros_nombres ? ' ' + a.otros_nombres : ''));
+        document.getElementById('alumno-nombre').textContent = nombre;
+        document.getElementById('alumno-meta').textContent   = 'DNI ' + a.numero_documento + (a.legajo ? ' · Legajo: ' + a.legajo : '');
+
+        // Selector de carreras
+        var select = document.getElementById('select-carrera');
+        var carreras = Array.isArray(a.carreras) ? a.carreras : [];
+        var opts = '<option value="todas">Todas las carreras</option>';
+        carreras.forEach(function (c) {
+          opts += '<option value="' + c.id_carrera + '">' + esc(c.nombre_carrera) + '</option>';
+        });
+        select.innerHTML = opts;
+        carreraActual = null;
+      }
+
+      function cargarHistorial(dni, idCarrera) {
+        var url = AppAdmin.baseAdmin.replace(/\/vista$/, '') + '/../../controlador/historial_academico.php?dni=' + dni;
+        if (idCarrera) { url += '&carrera=' + idCarrera; }
+
+        fetch(url)
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'warning', titulo: 'Historial', texto: res.mensaje || 'Sin datos de historial.' });
+              document.getElementById('panel-alumno').hidden = false;
+              document.getElementById('tabla-historial').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-2);">Sin registros académicos.</td></tr>';
+              mostrarEstado('oculto');
+              return;
+            }
+            pintarHistorial(res);
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudo cargar el historial.' });
+          });
+      }
+
+      function pintarHistorial(res) {
+        mostrarEstado('oculto');
+        document.getElementById('panel-alumno').hidden = false;
+
+        var materias = Array.isArray(res.materias) ? res.materias : [];
+
+        // Resumen de stats
+        var aprobadas  = materias.filter(function (m) { return m.nota >= 4; }).length;
+        var regulares  = materias.filter(function (m) { return m.estado_texto === 'Regular'; }).length;
+        var pendientes = materias.length - aprobadas - regulares;
+
+        document.getElementById('resumen-stats').innerHTML =
+          miniStat('check-circle-2', aprobadas,  'Aprobadas',  'success') +
+          miniStat('clock',          regulares,  'Regulares',  'info') +
+          miniStat('alert-triangle', pendientes < 0 ? 0 : pendientes, 'Pendientes', 'neutral');
+        App.iconos(document.getElementById('resumen-stats'));
+
+        // Tabla
+        var tbody = document.getElementById('tabla-historial');
+        if (!materias.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Sin registros académicos.</td></tr>';
+        } else {
+          tbody.innerHTML = materias.map(function (m) {
+            return '<tr>' +
+              '<td class="col-main" data-label="Materia"><strong>' + esc(m.materia) + '</strong></td>' +
+              '<td data-label="Año cursada">' + esc(m.anio_cursada || '—') + '</td>' +
+              '<td data-label="Año regular">' + esc(m.anio_regular_display) + '</td>' +
+              '<td data-label="Nota" class="num">' + esc(m.nota_display) + '</td>' +
+              '<td data-label="Fecha aprobación">' + esc(m.fecha_aprobacion) + '</td>' +
+              '<td data-label="Acta">' + esc(m.acta_texto) + '</td>' +
+              '<td data-label="Estado"><span class="badge ' + esc(m.estado_badge) + '">' + esc(m.estado_texto) + '</span></td>' +
+            '</tr>';
+          }).join('');
+        }
+
+        document.getElementById('total-materias').textContent = materias.length + ' materia' + (materias.length !== 1 ? 's' : '');
+        App.iconos();
+      }
+
+      function miniStat(icon, valor, label, tipo) {
+        var clases = { success: 'badge--success', info: 'badge--info', neutral: 'badge--neutral' };
+        return '<div class="stat" style="padding:var(--sp-4);">' +
+          '<div class="stat__icon' + (tipo === 'success' ? ' stat__icon--accent' : tipo === 'neutral' ? ' stat__icon--neutral' : '') + '">' +
+          '<i data-lucide="' + icon + '" class="icon"></i></div>' +
+          '<div><div class="stat__value">' + valor + '</div>' +
+          '<div class="stat__label">' + esc(label) + '</div></div>' +
+        '</div>';
+      }
+
+      function mostrarEstado(estado) {
+        document.getElementById('estado-inicial').hidden = (estado !== 'inicial');
+        document.getElementById('estado-carga').hidden   = (estado !== 'carga');
+        document.getElementById('estado-error').hidden   = (estado !== 'error');
+        if (estado !== 'oculto') {
+          document.getElementById('panel-alumno').hidden = true;
+        }
+      }
+
+      function mostrarMsgBusqueda(msg) {
+        var div  = document.getElementById('msg-busqueda');
+        var span = document.getElementById('msg-texto');
+        span.textContent = msg;
+        div.hidden = false;
+        App.iconos(div);
+      }
+      function ocultarMsgBusqueda() {
+        document.getElementById('msg-busqueda').hidden = true;
+      }
+
+      function esc(txt) {
+        return String(txt == null ? '' : txt)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+
+    })();
+  </script>
+</body>
+</html>

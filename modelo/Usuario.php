@@ -135,15 +135,20 @@ class Usuario {
             $stmt = $this->conexion->prepare("
                 SELECT a.numero_documento, a.legajo, a.primer_apellido, a.otros_apellidos,
                        a.primer_nombre, a.otros_nombres, a.email, a.fecha_nacimiento,
-                       a.sexo, a.estado_civil, a.id_pais_nacimiento, a.id_localidad_nacimiento,
+                       a.sexo, a.estado_civil, a.id_pais_nacimiento,
+                       a.id_provincia_nacimiento,
+                       COALESCE(a.id_provincia_nacimiento, l.id_provincia) AS id_provincia,
+                       a.id_localidad_nacimiento,
                        a.lugar_nacimiento_extranjero, a.cantidad_hijos, a.cantidad_familiares_a_cargo,
                        a.alta_registro,
                        p.nombre AS pais_nombre,
+                       pr.nombre AS provincia_nombre,
                        l.nombre AS localidad_nombre,
                        d.telefono_principal, d.telefono_alternativo
                 FROM alumnos a
                 LEFT JOIN paises p ON p.id_pais = a.id_pais_nacimiento
                 LEFT JOIN localidades l ON l.id_localidad = a.id_localidad_nacimiento
+                LEFT JOIN provincias pr ON pr.id_provincia = COALESCE(a.id_provincia_nacimiento, l.id_provincia)
                 LEFT JOIN domicilios_alumno d ON d.id_alumno = a.id_alumno
                 WHERE a.id_alumno = ?
             ");
@@ -177,6 +182,7 @@ class Usuario {
                     sexo = ?,
                     estado_civil = ?,
                     id_pais_nacimiento = ?,
+                    id_provincia_nacimiento = ?,
                     id_localidad_nacimiento = ?,
                     lugar_nacimiento_extranjero = ?,
                     cantidad_hijos = ?,
@@ -194,6 +200,7 @@ class Usuario {
                 ($datos['sexo'] ?: null),
                 ($datos['estado_civil'] ?: null),
                 ($datos['id_pais_nacimiento'] ?: 'ZZ'),
+                ($datos['id_provincia'] ?: null),
                 ($datos['id_localidad_nacimiento'] ?: null),
                 ($datos['lugar_nacimiento_extranjero'] ?: null),
                 intval($datos['cantidad_hijos']),

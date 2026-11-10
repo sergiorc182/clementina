@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alumnos · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="alumnos">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title">Alumnos</h1>
+            <p class="page-head__text">Consultá el listado completo o buscá por nombre, apellido o DNI.</p>
+          </div>
+        </div>
+
+        <!-- Buscador -->
+        <div class="toolbar mb-4">
+          <div class="field field--icon" style="flex:1 1 280px; margin:0;">
+            <i data-lucide="search" class="field__icon icon--sm"></i>
+            <input type="search" id="input-busqueda" class="input" placeholder="Buscar por nombre, apellido, DNI o legajo…" autocomplete="off">
+          </div>
+          <button type="button" class="btn btn--outline" id="btn-buscar">Buscar</button>
+        </div>
+
+        <!-- Estado de carga / error -->
+        <div id="estado-carga" class="empty" hidden>
+          <div class="empty__icon"><i data-lucide="user" class="icon"></i></div>
+          <div class="empty__title">Cargando alumnos…</div>
+        </div>
+        <div id="estado-vacio" class="empty" hidden>
+          <div class="empty__icon"><i data-lucide="search" class="icon"></i></div>
+          <div class="empty__title">Sin resultados</div>
+          <p class="empty__text">No se encontraron alumnos con ese criterio de búsqueda.</p>
+        </div>
+        <div id="estado-error" class="alert alert--error mb-4" hidden>
+          <i data-lucide="x-circle" class="icon"></i>
+          <div class="alert__body"><div class="alert__title">Error al cargar</div><p id="error-texto"></p></div>
+        </div>
+
+        <!-- Tabla de alumnos -->
+        <div class="table-wrap table-wrap--stack" id="tabla-wrap">
+          <table class="table" id="tabla-alumnos" aria-label="Listado de alumnos">
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Documento</th>
+                <th>Legajo</th>
+                <th>Carrera/s</th>
+                <th>Email</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body">
+              <!-- Se rellena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="row between mt-4" id="paginacion" hidden>
+          <span id="pag-info" class="muted" style="font-size:.875rem;"></span>
+          <div class="row" style="gap:var(--sp-2);" id="pag-botones"></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal de detalle de alumno -->
+  <div class="modal" id="modal-alumno" role="dialog" aria-modal="true" aria-labelledby="modal-alumno-titulo">
+    <div class="modal__dialog" style="max-width:600px;">
+      <div class="modal__header">
+        <span class="modal__icon"><i data-lucide="user" class="icon"></i></span>
+        <div>
+          <div class="modal__title" id="modal-alumno-titulo">Legajo del alumno</div>
+          <p class="modal__text" id="modal-alumno-subtitulo"></p>
+        </div>
+      </div>
+      <div class="modal__body" id="modal-alumno-body">
+        <!-- Se rellena dinámicamente -->
+      </div>
+      <div class="modal__footer">
+        <a id="modal-btn-historial" href="#" class="btn btn--outline btn--sm">
+          <i data-lucide="file-search" class="icon--sm"></i>Ver historial
+        </a>
+        <button type="button" class="btn btn--primary btn--sm" id="btn-cerrar-modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../vista/estilo/app.js?v=13"></script>
+  <script src="estilo/app-admin.js?v=1"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var paginaActual = 1;
+      var busquedaActual = '';
+      var totalPaginas  = 1;
+
+      AppAdmin.montarAdmin({ titulo: 'Alumnos', subtitulo: 'Listado institucional' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+          cargar(1, '');
+          conectarBusqueda();
+        });
+
+      function conectarBusqueda() {
+        var input = document.getElementById('input-busqueda');
+        var btn   = document.getElementById('btn-buscar');
+        var timer;
+
+        btn.addEventListener('click', function () { cargar(1, input.value.trim()); });
+        input.addEventListener('input', function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () { cargar(1, input.value.trim()); }, 450);
+        });
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { cargar(1, input.value.trim()); }
+        });
+      }
+
+      function cargar(pagina, busqueda) {
+        paginaActual   = pagina;
+        busquedaActual = busqueda;
+
+        mostrarEstado('carga');
+
+        var params = '?pagina=' + pagina + (busqueda ? '&q=' + encodeURIComponent(busqueda) : '');
+        fetch(AppAdmin.controladorAdmin('alumnos.php') + params)
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { mostrarError(res.mensaje); return; }
+            if (!res.alumnos || !res.alumnos.length) { mostrarEstado('vacio'); return; }
+            pintarTabla(res.alumnos);
+            pintarPaginacion(res.total, res.paginas, res.pagina);
+          })
+          .catch(function () { mostrarError('Error de red. Revisá tu conexión.'); });
+      }
+
+      function pintarTabla(alumnos) {
+        var tbody = document.getElementById('tabla-body');
+        tbody.innerHTML = alumnos.map(function (a) {
+          return '<tr>' +
+            '<td class="col-main" data-label="Alumno"><strong>' + esc(a.apellido + ', ' + a.nombre) + '</strong></td>' +
+            '<td data-label="Documento">' + esc(a.numero_documento) + '</td>' +
+            '<td data-label="Legajo"><span class="badge badge--neutral">' + esc(a.legajo || '—') + '</span></td>' +
+            '<td data-label="Carrera/s">' + esc(a.carreras || '—') + '</td>' +
+            '<td data-label="Email"><a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a></td>' +
+            '<td class="col-actions">' +
+              '<button type="button" class="btn btn--outline btn--sm" data-id="' + a.id_alumno + '" data-accion="detalle">Ver legajo</button>' +
+              ' <a href="historial.html?dni=' + esc(a.numero_documento) + '" class="btn btn--ghost btn--sm">Historial</a>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+
+        document.getElementById('tabla-wrap').hidden = false;
+        document.getElementById('estado-carga').hidden = true;
+        document.getElementById('estado-vacio').hidden = true;
+        document.getElementById('estado-error').hidden = true;
+        App.iconos();
+
+        // Eventos de detalle
+        tbody.querySelectorAll('[data-accion="detalle"]').forEach(function (btn) {
+          btn.addEventListener('click', function () { abrirDetalle(parseInt(this.dataset.id)); });
+        });
+      }
+
+      function pintarPaginacion(total, paginas, pagina) {
+        totalPaginas = paginas;
+        var divPag  = document.getElementById('paginacion');
+        var info    = document.getElementById('pag-info');
+        var botones = document.getElementById('pag-botones');
+
+        info.textContent = total + ' alumno' + (total !== 1 ? 's' : '');
+        divPag.hidden = false;
+
+        var html = '';
+        html += '<button type="button" class="btn btn--outline btn--sm" id="pag-anterior" ' + (pagina <= 1 ? 'disabled' : '') + '>Anterior</button>';
+        html += '<span style="font-size:.875rem; color:var(--text-2); align-self:center;">Pág. ' + pagina + ' / ' + paginas + '</span>';
+        html += '<button type="button" class="btn btn--outline btn--sm" id="pag-siguiente" ' + (pagina >= paginas ? 'disabled' : '') + '>Siguiente</button>';
+        botones.innerHTML = html;
+
+        var btnAnt = document.getElementById('pag-anterior');
+        var btnSig = document.getElementById('pag-siguiente');
+        if (btnAnt) { btnAnt.addEventListener('click', function () { cargar(paginaActual - 1, busquedaActual); }); }
+        if (btnSig) { btnSig.addEventListener('click', function () { cargar(paginaActual + 1, busquedaActual); }); }
+      }
+
+      function abrirDetalle(idAlumno) {
+        fetch(AppAdmin.controladorAdmin('alumnos.php') + '?id=' + idAlumno)
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje }); return; }
+            mostrarModalAlumno(res.alumno);
+          })
+          .catch(function () { App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo obtener el detalle.' }); });
+      }
+
+      function mostrarModalAlumno(a) {
+        var titulo    = document.getElementById('modal-alumno-titulo');
+        var subtitulo = document.getElementById('modal-alumno-subtitulo');
+        var body      = document.getElementById('modal-alumno-body');
+        var btnHist   = document.getElementById('modal-btn-historial');
+        var modal     = document.getElementById('modal-alumno');
+
+        var nombreCompleto = esc(a.primer_apellido + (a.otros_apellidos ? ' ' + a.otros_apellidos : '') +
+          ', ' + a.primer_nombre + (a.otros_nombres ? ' ' + a.otros_nombres : ''));
+
+        titulo.textContent    = nombreCompleto;
+        subtitulo.textContent = 'DNI ' + a.numero_documento + (a.legajo ? ' · Legajo: ' + a.legajo : '');
+        btnHist.href          = 'historial.html?dni=' + a.numero_documento;
+
+        var carreras = Array.isArray(a.carreras) && a.carreras.length
+          ? a.carreras.map(function (c) {
+              return '<span class="badge badge--info" style="margin:2px;">' + esc(c.nombre_carrera_corto) + ' ' + esc(c.anio_inscripcion || '') + '</span>';
+            }).join('')
+          : '<span class="muted">Sin matriculación</span>';
+
+        body.innerHTML =
+          dl('Email',       '<a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a>') +
+          dl('Teléfono',    esc(a.telefono_principal || '—')) +
+          dl('Carrera/s',   carreras) +
+          dl('Alta',        fmtFecha(a.alta_registro)) +
+          dl('Domicilio',   esc(a.calle ? (a.calle + (a.numero_calle ? ' ' + a.numero_calle : '') + (a.piso ? ', P' + a.piso : '') + (a.depto ? ' D' + a.depto : '')) : '—'));
+
+        modal.classList.add('is-open');
+        App.iconos(modal);
+
+        function cerrar() { modal.classList.remove('is-open'); }
+        document.getElementById('btn-cerrar-modal').onclick = cerrar;
+        modal.onclick = function (e) { if (e.target === modal) { cerrar(); } };
+
+        requestAnimationFrame(function () {
+          var btnCerrar = document.getElementById('btn-cerrar-modal');
+          if (btnCerrar) { btnCerrar.focus(); }
+        });
+      }
+
+      function dl(label, value) {
+        return '<div class="data-row"><dt class="data-row__label">' + label + '</dt><dd class="data-row__value">' + value + '</dd></div>';
+      }
+
+      function mostrarEstado(estado) {
+        document.getElementById('tabla-wrap').hidden     = (estado !== 'tabla');
+        document.getElementById('estado-carga').hidden   = (estado !== 'carga');
+        document.getElementById('estado-vacio').hidden   = (estado !== 'vacio');
+        document.getElementById('estado-error').hidden   = (estado !== 'error');
+        document.getElementById('paginacion').hidden     = (estado !== 'tabla');
+        if (estado === 'carga') { App.iconos(document.getElementById('estado-carga')); }
+        if (estado === 'vacio') { App.iconos(document.getElementById('estado-vacio')); }
+      }
+
+      function mostrarError(msg) {
+        mostrarEstado('error');
+        document.getElementById('error-texto').textContent = msg || 'Error desconocido.';
+        App.iconos(document.getElementById('estado-error'));
+      }
+
+      function fmtFecha(iso) {
+        if (!iso) { return '—'; }
+        var p = String(iso).substring(0, 10).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+      }
+
+      function esc(txt) {
+        return String(txt == null ? '' : txt)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+
+      // Estado inicial
+      mostrarEstado('carga');
+
+    })();
+  </script>
+</body>
+</html>

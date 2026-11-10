@@ -124,6 +124,7 @@ CREATE TABLE alumnos (
   fecha_nacimiento           DATE DEFAULT NULL,
   sexo                       CHAR(1) DEFAULT NULL,
   id_pais_nacimiento         CHAR(2) DEFAULT 'ZZ',
+  id_provincia_nacimiento    INT DEFAULT NULL,
   id_localidad_nacimiento    INT DEFAULT NULL,
   lugar_nacimiento_extranjero VARCHAR(100) DEFAULT NULL,
   estado_civil               CHAR(1) DEFAULT NULL,
@@ -137,11 +138,14 @@ CREATE TABLE alumnos (
   UNIQUE KEY uq_alumno_documento (id_tipo_documento, numero_documento),
   UNIQUE KEY uq_alumno_email (email),
   KEY fk_alumno_pais (id_pais_nacimiento),
+  KEY fk_alumno_provincia_nac (id_provincia_nacimiento),
   KEY fk_alumno_localidad_nac (id_localidad_nacimiento),
   CONSTRAINT fk_alumno_tipo_doc FOREIGN KEY (id_tipo_documento)
     REFERENCES tipos_documento (id_tipo_documento),
   CONSTRAINT fk_alumno_pais FOREIGN KEY (id_pais_nacimiento)
     REFERENCES paises (id_pais),
+  CONSTRAINT fk_alumno_provincia_nac FOREIGN KEY (id_provincia_nacimiento)
+    REFERENCES provincias (id_provincia),
   CONSTRAINT fk_alumno_localidad_nac FOREIGN KEY (id_localidad_nacimiento)
     REFERENCES localidades (id_localidad)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -445,6 +449,8 @@ INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
   ('A', 'Preceptor');
 
 -- País placeholder: alumnos.id_pais_nacimiento tiene DEFAULT 'ZZ' con FK a paises.
+-- Los catálogos completos de países, provincias y localidades están en
+-- docs/datos_ubicaciones.sql (se importa después de este esquema).
 INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES
   ('ZZ', 'ZZZ', 'No especificado', 'No especificada', 1000);
 

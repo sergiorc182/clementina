@@ -1,9 +1,9 @@
 <?php
 /**
- * ConfiguraciÃ³n general del sistema.
- * ISFT 182 "Clementina" - Sistema de gestiÃ³n acadÃ©mica
+ * config general del sistema.
+ * ISFT 182 "Clementina" - Sistema de gestion académica
  *
- * Ajustar estos valores segÃºn el entorno (Hostinger, XAMPP, etc.).
+ * Ajustar estos valores según el entorno (Hostinger, XAMPP, etc.).
  */
 
 // --- Base de datos -------------------------------------------------------

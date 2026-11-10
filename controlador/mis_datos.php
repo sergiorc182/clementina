@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/_sesion.php';
 require_once '../modelo/Usuario.php';
 
 header('Content-Type: application/json');
@@ -28,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'sexo' => trim($_POST['sexo'] ?? ''),
         'estado_civil' => trim($_POST['estado_civil'] ?? ''),
         'id_pais_nacimiento' => trim($_POST['id_pais_nacimiento'] ?? ''),
-        'id_localidad_nacimiento' => trim($_POST['id_localidad_nacimiento'] ?? ''),
+        'id_provincia' => !empty($_POST['id_provincia']) ? intval($_POST['id_provincia']) : null,
+        'id_localidad_nacimiento' => !empty($_POST['id_localidad_nacimiento']) ? intval($_POST['id_localidad_nacimiento']) : null,
         'lugar_nacimiento_extranjero' => trim($_POST['lugar_nacimiento_extranjero'] ?? ''),
         'cantidad_hijos' => intval($_POST['cantidad_hijos'] ?? 0),
         'cantidad_familiares_a_cargo' => intval($_POST['cantidad_familiares_a_cargo'] ?? 0)
@@ -70,6 +71,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['nombre'] = trim($datos['primer_nombre'] . ' ' . $datos['otros_nombres']);
         $_SESSION['apellido'] = trim($datos['primer_apellido'] . ' ' . $datos['otros_apellidos']);
         $_SESSION['email'] = $datos['email'];
+        $uActualizado = [
+            'id'       => $_SESSION['id_usuario'],
+            'tipo'     => $_SESSION['tipo_usuario'],
+            'rol'      => $_SESSION['rol'],
+            'nombre'   => $_SESSION['nombre'],
+            'apellido' => $_SESSION['apellido'],
+            'dni'      => $_SESSION['dni'] ?? '',
+            'legajo'   => $_SESSION['legajo'] ?? null,
+            'email'    => $_SESSION['email'],
+        ];
+        establecerCookieAutenticacion($uActualizado);
     }
 
     echo json_encode($resultado);

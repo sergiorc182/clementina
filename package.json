@@ -1,0 +1,16 @@
+{
+  "name": "clementina-main",
+  "version": "1.0.0",
+  "description": "Sistema de gestión académica. PHP con PDO, MySQL y vistas en HTML + JS sin frameworks.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

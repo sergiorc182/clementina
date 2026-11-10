@@ -10,7 +10,6 @@
  *   carrera_materias      materias de cada carrera
  *   materias / carreras   nombres
  *   historial_academico   materias aprobadas y regularidades
- *   correlatividades      correlativas que hay que tener aprobadas
  *   inscripciones         inscripciones a mesas (acá se escribe)
  *
  * El alumno se identifica siempre por `alumnos.id_alumno`.
@@ -49,12 +48,19 @@ class InscripcionFinal
 
     /**
      * Período de mesas cargado en `parametros_mesas`.
-     * Si hay más de un registro, se usa el que está vigente hoy y, si
-     * ninguno lo está, el que empieza más tarde.
+     * Si hay más de un registro, se usa el que está vigente hoy; si
+     * ninguno lo está, el próximo a abrir (el más cercano) y, si ya
+     * pasaron todos, el último cerrado.
      * Devuelve null si todavía no hay ninguno configurado.
      */
     public function periodo(): ?array
     {
+        /*
+         * Prioridad: período vigente -> próximo a abrir (el más cercano)
+         * -> último período cerrado. Antes, si no había ninguno vigente,
+         * se elegía el de fecha_inicio más lejana (por ejemplo agosto en
+         * lugar de febrero) y la pantalla mostraba un turno equivocado.
+         */
         $fila = $this->db->query(
             "SELECT anio_mesas   AS anio,
                     id_turno,
@@ -62,11 +68,64 @@ class InscripcionFinal
                     fecha_fin,
                     tope_mesas   AS tope
              FROM parametros_mesas
+             WHERE fecha_inicio IS NOT NULL
+               AND fecha_fin IS NOT NULL
              ORDER BY (CURDATE() BETWEEN fecha_inicio AND fecha_fin) DESC,
+                      (fecha_inicio > CURDATE()) DESC,
+                      CASE WHEN fecha_inicio > CURDATE() THEN fecha_inicio END ASC,
                       fecha_inicio DESC
              LIMIT 1"
         )->fetch();
 
+        return $this->formatearPeriodo($fila);
+    }
+
+    /**
+     * Período que corresponde mostrar en "Mis finales": el vigente si está
+     * abierto; si no, el último período con inscripciones activas del
+     * alumno; y si no tiene ninguna, el mismo que muestra la inscripción.
+     */
+    public function periodoMisFinales(): ?array
+    {
+        $periodo = $this->periodo();
+
+        if ($periodo !== null && $periodo['abierto']) {
+            return $periodo;
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT pm.anio_mesas AS anio,
+                    pm.id_turno,
+                    pm.fecha_inicio,
+                    pm.fecha_fin,
+                    pm.tope_mesas AS tope
+             FROM parametros_mesas pm
+             WHERE pm.fecha_inicio IS NOT NULL
+               AND pm.fecha_fin IS NOT NULL
+               AND EXISTS (
+                   SELECT 1
+                   FROM inscripciones i
+                   WHERE i.id_alumno = :alumno
+                     AND i.anio = pm.anio_mesas
+                     AND i.id_turno = pm.id_turno
+                     AND i.estado = :estado
+               )
+             ORDER BY (CURDATE() BETWEEN pm.fecha_inicio AND pm.fecha_fin) DESC,
+                      (pm.fecha_inicio > CURDATE()) DESC,
+                      CASE WHEN pm.fecha_inicio > CURDATE() THEN pm.fecha_inicio END ASC,
+                      pm.fecha_inicio DESC
+             LIMIT 1"
+        );
+        $this->bindAlumno($stmt);
+        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
+        $stmt->execute();
+
+        return $this->formatearPeriodo($stmt->fetch()) ?? $periodo;
+    }
+
+    /** Arma el período que consume la vista a partir de una fila de `parametros_mesas`. */
+    private function formatearPeriodo($fila): ?array
+    {
         $inicio = $fila ? $this->fecha($fila['fecha_inicio']) : null;
         $fin    = $fila ? $this->fecha($fila['fecha_fin']) : null;
 
@@ -90,8 +149,8 @@ class InscripcionFinal
 
     /**
      * Materias que el alumno todavía no aprobó, de las carreras en las
-     * que está matriculado. Cada una indica su condición, las
-     * correlativas que le faltan y si ya está inscripto en el período.
+     * que está matriculado. Cada una indica su condición y si ya está
+     * inscripto en el período.
      */
     public function materias(?array $periodo): array
     {
@@ -119,7 +178,6 @@ class InscripcionFinal
         $stmt->bindValue(':aprobado', self::NOTA_APROBACION, PDO::PARAM_INT);
         $stmt->execute();
 
-        $pendientes = $this->correlativasPendientes();
         $inscriptas = [];
         foreach ($periodo ? $this->inscripciones($periodo) : [] as $insc) {
             $inscriptas[$insc['id_carrera'] . '-' . $insc['id_materia']] = $insc['id_llamado'];
@@ -135,7 +193,6 @@ class InscripcionFinal
                 'materia'      => $fila['materia'],
                 'anio_cursada' => (int) $fila['anio_cursada'],
                 'condicion'    => ((int) $fila['anio_regular']) > 0 ? 'Regular' : 'Libre',
-                'correlativas' => $pendientes[$clave] ?? [],
                 'llamado'      => $inscriptas[$clave] ?? null,
             ];
         }
@@ -159,11 +216,13 @@ class InscripcionFinal
              WHERE i.id_alumno = :alumno
                AND i.anio = :anio
                AND i.id_turno = :turno
+               AND i.estado = :estado
              ORDER BY i.id_llamado, m.nombre_materia"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
         $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
         $stmt->execute();
 
         $inscripciones = [];
@@ -207,16 +266,6 @@ class InscripcionFinal
         if ($materia['llamado'] !== null) {
             throw new DomainException('Ya estás inscripto en esa materia para este turno.');
         }
-        if ($materia['correlativas']) {
-            throw new DomainException(
-                'Te falta aprobar correlativas: ' . implode(', ', $materia['correlativas']) . '.'
-            );
-        }
-        if ($periodo['tope'] > 0 && count($this->inscripciones($periodo)) >= $periodo['tope']) {
-            throw new DomainException(
-                'Llegaste al máximo de ' . $periodo['tope'] . ' mesas para este turno.'
-            );
-        }
 
         // Los datos personales ya no se copian: se leen de `alumnos` con JOIN.
         $stmt = $this->db->prepare(
@@ -256,13 +305,15 @@ class InscripcionFinal
                AND id_carrera = :carrera
                AND id_materia = :materia
                AND anio = :anio
-               AND id_turno = :turno"
+               AND id_turno = :turno
+               AND estado = :estado"
         );
         $this->bindAlumno($stmt);
         $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
         $stmt->bindValue(':materia', $idMateria, PDO::PARAM_INT);
         $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
         $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
         $stmt->execute();
 
         if ($stmt->rowCount() === 0) {
@@ -279,46 +330,17 @@ class InscripcionFinal
     {
         $periodo = $this->periodo();
 
-        if ($periodo === null || !$periodo['abierto']) {
+        if ($periodo === null) {
+            throw new DomainException('Todavía no hay un turno de finales publicado.');
+        }
+        if (!$periodo['abierto']) {
+            if (date('Y-m-d') < $periodo['fecha_inicio']) {
+                throw new DomainException('La inscripción a finales todavía no abrió.');
+            }
             throw new DomainException('La inscripción a finales está cerrada.');
         }
 
         return $periodo;
-    }
-
-    /**
-     * Correlativas que el alumno todavía no aprobó, agrupadas por
-     * "id_carrera-id_materia" => [nombres de las materias que faltan].
-     */
-    private function correlativasPendientes(): array
-    {
-        $stmt = $this->db->prepare(
-            "SELECT DISTINCT
-                    co.id_carrera,
-                    co.id_materia,
-                    m.nombre_materia AS correlativa
-             FROM matriculacion mt
-             JOIN correlatividades co ON co.id_carrera = mt.id_carrera
-             JOIN materias m ON m.id_materia = co.id_materia_correlativa
-             LEFT JOIN historial_academico h
-                    ON h.id_alumno = mt.id_alumno
-                   AND h.id_carrera = co.id_carrera
-                   AND h.id_materia = co.id_materia_correlativa
-                   AND h.nota >= :aprobado
-             WHERE mt.id_alumno = :alumno
-               AND h.id_materia IS NULL
-             ORDER BY m.nombre_materia"
-        );
-        $this->bindAlumno($stmt);
-        $stmt->bindValue(':aprobado', self::NOTA_APROBACION, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $pendientes = [];
-        foreach ($stmt->fetchAll() as $fila) {
-            $pendientes[$fila['id_carrera'] . '-' . $fila['id_materia']][] = $fila['correlativa'];
-        }
-
-        return $pendientes;
     }
 
     private function buscarMateria(array $materias, int $idCarrera, int $idMateria): ?array

@@ -1,0 +1,425 @@
+/* =====================================================================
+   CLEMENTINA · PANEL ADMINISTRATIVO · ISFT N.º 182
+   ---------------------------------------------------------------------
+   Extiende vista/estilo/estilo.css con el layout de sidebar lateral.
+   No duplica tokens: los hereda del CSS del alumno cargado antes.
+   ===================================================================== */
+
+/* ------------------------------------------------------------------ */
+/* Layout de 2 columnas: sidebar + contenido principal                  */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --sidebar-w:     240px;
+  --sidebar-collapsed: 0px;
+  --topbar-admin-h: var(--topbar-h);
+}
+
+/* Shell del panel admin */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------------------ */
+/* Sidebar                                                              */
+/* ------------------------------------------------------------------ */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--primary);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  transition: transform var(--base);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Encabezado del sidebar */
+.sidebar__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+}
+.sidebar__brand:hover { text-decoration: none; }
+
+.sidebar__logo {
+  flex: none;
+  width: auto;
+  height: 36px;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+.sidebar__brand-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__brand-sub {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Badge de rol del usuario en el sidebar */
+.sidebar__role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(20, 184, 166, 0.2);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: var(--r-full);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Navegación del sidebar */
+.sidebar__nav {
+  flex: 1;
+  padding: var(--sp-3) var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Separadores de sección */
+.sidebar__section {
+  padding: var(--sp-4) var(--sp-2) var(--sp-1);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Ítem de navegación */
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: background var(--fast), color var(--fast);
+  white-space: nowrap;
+}
+.sidebar__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  text-decoration: none;
+}
+.sidebar__item.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+}
+.sidebar__item.is-active .sidebar__item-icon {
+  color: var(--accent);
+}
+.sidebar__item-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color var(--fast);
+}
+.sidebar__item:hover .sidebar__item-icon { color: rgba(255, 255, 255, 0.9); }
+
+/* Pie del sidebar (usuario + cerrar sesión) */
+.sidebar__foot {
+  flex: none;
+  padding: var(--sp-3) var(--sp-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r);
+  cursor: default;
+}
+.sidebar__user-avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.15);
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.sidebar__user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.sidebar__user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__user-role {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar__logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  margin-top: 4px;
+  border-radius: var(--r);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--fast), color var(--fast);
+}
+.sidebar__logout:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #FCA5A5;
+}
+.sidebar__logout .sidebar__item-icon { color: inherit; }
+
+/* ------------------------------------------------------------------ */
+/* Topbar del panel admin                                               */
+/* ------------------------------------------------------------------ */
+
+.admin-topbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--topbar-admin-h);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-6);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(180%) blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  transition: left var(--base);
+}
+
+.admin-topbar__toggle {
+  display: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+}
+.admin-topbar__toggle:hover { background: var(--surface-3); color: var(--text); }
+
+.admin-topbar__heading { min-width: 0; flex: 1; }
+.admin-topbar__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-topbar__sub {
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+.admin-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Contenido principal (desplazado por el sidebar)                     */
+/* ------------------------------------------------------------------ */
+
+.admin-main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  padding-top: var(--topbar-admin-h);
+  min-height: 100vh;
+  transition: margin-left var(--base);
+}
+
+.admin-content {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-6) var(--sp-12);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tarjetas de estadística del dashboard                               */
+/* ------------------------------------------------------------------ */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+/* ------------------------------------------------------------------ */
+/* Sección de dos columnas en el dashboard                             */
+/* ------------------------------------------------------------------ */
+
+.dashboard-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabla compacta de carreras                                           */
+/* ------------------------------------------------------------------ */
+
+.carrera-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.carrera-row:last-child { border-bottom: none; }
+.carrera-row__name { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+.carrera-row__count {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* Barra de progreso mini */
+.mini-bar {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: var(--r-full);
+  margin-top: 5px;
+  overflow: hidden;
+}
+.mini-bar__fill {
+  height: 100%;
+  background: var(--secondary);
+  border-radius: var(--r-full);
+  transition: width 0.6s var(--ease);
+}
+
+/* ------------------------------------------------------------------ */
+/* Sidebar overlay en móvil                                             */
+/* ------------------------------------------------------------------ */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 29, 51, 0.5);
+  z-index: 199;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                           */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 1024px) {
+  .dashboard-cols { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.is-open {
+    transform: none;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar-overlay { display: block; }
+  .sidebar:not(.is-open) + * + .sidebar-overlay { display: none; }
+
+  .admin-main { margin-left: 0; }
+  .admin-topbar { left: 0; }
+  .admin-topbar__toggle { display: flex; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .admin-content { padding: var(--sp-5) var(--sp-4) var(--sp-10); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Modo noche — ajustes del panel admin                                 */
+/* ------------------------------------------------------------------ */
+
+[data-theme="dark"] .sidebar {
+  background: #162032;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .admin-topbar {
+  background: rgba(23, 33, 46, 0.88);
+}
+[data-theme="dark"] .sidebar__item.is-active {
+  background: rgba(255, 255, 255, 0.1);
+}

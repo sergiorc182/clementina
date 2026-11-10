@@ -125,7 +125,7 @@
   </div>
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script src="vista/estilo/app.js?v=13"></script>
+  <script src="vista/estilo/app.js?v=14"></script>
   <script>
     (function () {
       'use strict';
@@ -133,6 +133,15 @@
       var VISIBLES = 2;
       var finales = [];
       var expandido = false;
+
+      function escapar(texto) {
+        return String(texto == null ? '' : texto)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
 
       function formatearFecha(iso) {
         if (!iso) { return ''; }
@@ -153,8 +162,8 @@
         if (pm.anio_mesas) { turno += ' ' + pm.anio_mesas; }
         return '' +
           '<div class="module__item' + (oculto ? ' oculto' : '') + '">' +
-            '<span class="module__item-turno">' + turno + '</span>' +
-            '<span class="module__item-fecha">' + rango(pm) + '</span>' +
+            '<span class="module__item-turno">' + escapar(turno) + '</span>' +
+            '<span class="module__item-fecha">' + escapar(rango(pm)) + '</span>' +
           '</div>';
       }
 
@@ -193,17 +202,23 @@
         boton.setAttribute('aria-expanded', expandible && expandido ? 'true' : 'false');
       }
 
+      function mostrarError() {
+        finales = [];
+        document.getElementById('finales-lista').innerHTML =
+          '<div class="module__item module__item--muted">No se pudieron cargar las mesas.</div>';
+        document.getElementById('finales-more').classList.add('oculto');
+        document.getElementById('finales-chevron').classList.add('oculto');
+      }
+
       function cargarFinales() {
         fetch(App.controlador('get_proximos_finales.php'))
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            finales = Array.isArray(data) ? data : [];
+            if (!Array.isArray(data)) { throw new Error('Respuesta inválida'); }
+            finales = data;
             pintar();
           })
-          .catch(function () {
-            finales = [];
-            pintar();
-          });
+          .catch(mostrarError);
       }
 
       document.getElementById('modulo-finales').addEventListener('click', function () {

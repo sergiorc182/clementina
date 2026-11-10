@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cronograma de finales · Clementina · ISFT N.º 182</title>
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo/estilo.css?v=15">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="cronograma-finales" data-title="Cronograma de finales" data-subtitle="Fechas de examen">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <div class="app">
+
+    <div class="app__main">
+      <header class="topbar" id="topbar"></header>
+
+      <main id="contenido" class="content content--narrow">
+
+        <div class="page-head">
+          <div class="page-head__lead">
+            <a class="btn btn--ghost btn--icon" href="../index.html" aria-label="Volver al inicio" title="Volver">
+              <i data-lucide="arrow-left"></i>
+            </a>
+            <div>
+              <h2 class="page-head__title">Cronograma de finales</h2>
+              <p class="page-head__text">PDFs de fechas de examen publicados por la institución para tus carreras.</p>
+            </div>
+          </div>
+        </div>
+
+        <p id="mensaje" class="mensaje" role="alert"></p>
+
+        <!-- Carga -->
+        <div class="card" id="cargando">
+          <div class="card__body">
+            <div class="skeleton skeleton--text" style="width: 30%"></div>
+            <div class="skeleton skeleton--line" style="width: 70%; margin-top: 14px;"></div>
+            <div class="skeleton skeleton--line" style="width: 55%; margin-top: 10px;"></div>
+            <div class="skeleton skeleton--line" style="width: 62%; margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Sin matriculación -->
+        <div class="card oculto" id="tarjeta-sin-carrera">
+          <div class="card__body">
+            <div class="empty">
+              <div class="empty__icon"><i data-lucide="school"></i></div>
+              <p class="empty__title">Sin carreras asociadas</p>
+              <p class="empty__text">
+                Los cronogramas se publican por carrera. Inscribite a una carrera
+                para ver sus fechas de finales.
+              </p>
+              <div class="empty__action">
+                <a class="btn btn--primary" href="inscripcion_carreras.html">
+                  <i data-lucide="school"></i>Ir a inscripción a carreras
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cronogramas por carrera -->
+        <div id="tarjetas"></div>
+
+      </main>
+    </div>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="estilo/app.js?v=14"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var cargando = document.getElementById('cargando');
+      var tarjetas = document.getElementById('tarjetas');
+      var sinCarrera = document.getElementById('tarjeta-sin-carrera');
+
+      function escapar(texto) {
+        return String(texto == null ? '' : texto)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function urlArchivo(idCarrera, archivo, descargar) {
+        var url = App.controlador('cronograma_finales.php')
+          + '?id_carrera=' + encodeURIComponent(idCarrera)
+          + '&archivo=' + encodeURIComponent(archivo);
+        return descargar ? url + '&descargar=1' : url;
+      }
+
+      function filaArchivo(c, a) {
+        return '' +
+          '<tr>' +
+            '<td class="col-main" data-label="Cronograma"><strong>' + escapar(a.nombre) + '</strong></td>' +
+            '<td data-label="Publicado">' + escapar(a.fecha) + '</td>' +
+            '<td data-label="Tamaño">' + escapar(a.tamano_legible) + '</td>' +
+            '<td class="col-actions">' +
+              '<a class="btn btn--outline btn--sm" href="' + urlArchivo(c.id_carrera, a.archivo) + '" target="_blank" rel="noopener">' +
+                '<i data-lucide="file-search"></i>Ver' +
+              '</a> ' +
+              '<a class="btn btn--ghost btn--sm" href="' + urlArchivo(c.id_carrera, a.archivo, true) + '">' +
+                '<i data-lucide="download"></i>Descargar' +
+              '</a>' +
+            '</td>' +
+          '</tr>';
+      }
+
+      function tarjetaCarrera(c) {
+        var cuerpo = '';
+        if (!c.archivos.length) {
+          cuerpo = '<div class="card__body">' +
+            '<div class="empty">' +
+              '<div class="empty__icon"><i data-lucide="calendar"></i></div>' +
+              '<p class="empty__title">Sin cronogramas publicados</p>' +
+              '<p class="empty__text">Cuando la institución suba el cronograma de finales de esta carrera, vas a verlo acá.</p>' +
+            '</div></div>';
+        } else {
+          cuerpo = '<div class="card__body">' +
+            '<div class="table-wrap table-wrap--stack">' +
+              '<table class="table" aria-label="Cronogramas de finales">' +
+                '<thead><tr><th>Cronograma</th><th>Publicado</th><th>Tamaño</th><th class="col-actions">Acciones</th></tr></thead>' +
+                '<tbody>' + c.archivos.map(function (a) { return filaArchivo(c, a); }).join('') + '</tbody>' +
+              '</table>' +
+            '</div></div>';
+        }
+
+        return '' +
+          '<section class="card mt-4">' +
+            '<div class="card__header">' +
+              '<div>' +
+                '<h3 class="card__title">' + escapar(c.nombre_carrera) + '</h3>' +
+                '<p class="card__subtitle">Cronogramas publicados (' + c.archivos.length + ')</p>' +
+              '</div>' +
+              '<span class="stat__icon"><i data-lucide="calendar-days"></i></span>' +
+            '</div>' +
+            cuerpo +
+          '</section>';
+      }
+
+      function mostrar(texto) {
+        var mensaje = document.getElementById('mensaje');
+        mensaje.textContent = texto;
+        mensaje.className = 'mensaje mensaje-visible mensaje-error';
+        setTimeout(function () { mensaje.className = 'mensaje'; }, 6000);
+      }
+
+      function pintar(carreras) {
+        tarjetas.innerHTML = carreras.map(tarjetaCarrera).join('');
+        App.iconos();
+      }
+
+      function finalizarCarga() {
+        cargando.classList.add('oculto');
+        App.iconos();
+      }
+
+      App.montarLayout().then(function (usuario) {
+        if (!usuario) { return; }
+        fetch(App.controlador('cronograma_finales.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            finalizarCarga();
+            if (!res.ok) {
+              mostrar(res.mensaje || 'No se pudieron cargar los cronogramas.');
+              return;
+            }
+            if (!res.carreras.length) {
+              sinCarrera.classList.remove('oculto');
+              return;
+            }
+            pintar(res.carreras);
+          })
+          .catch(function () {
+            finalizarCarga();
+            mostrar('Error de red o del servidor.');
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -2,12 +2,13 @@
 -- Esquema normalizado propuesto para u714838186_desarrollo (ISFT 182)
 -- Basado en el análisis de bd_clementina.sql
 -- Charset unificado en utf8mb4 para evitar problemas de acentos.
+--
+-- IMPORTANTE: no crea ni selecciona la base de datos: se importa desde
+-- phpMyAdmin con la BD destino ya seleccionada (los hostings compartidos
+-- no dan permiso CREATE DATABASE) o por consola pasando la BD por CLI:
+--   mysql -u USUARIO NOMBRE_BD < esquema_normalizado.sql
 -- =====================================================================
 
-CREATE DATABASE IF NOT EXISTS `clementina`
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_general_ci;
-USE `clementina`;
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 

@@ -242,6 +242,59 @@ class InscripcionFinal
         return $inscripciones;
     }
 
+    /**
+     * Períodos de mesas con inscripciones activas del alumno cuya
+     * fecha de cierre todavía no pasó. Cada uno incluye las materias
+     * inscriptas: lo usa el calendario de finales del inicio.
+     */
+    public function periodosInscriptos(): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT pm.id_registro,
+                    pm.anio_mesas,
+                    pm.id_turno,
+                    pm.fecha_inicio,
+                    pm.fecha_fin,
+                    pm.tope_mesas AS tope
+             FROM parametros_mesas pm
+             WHERE (pm.fecha_fin IS NULL OR pm.fecha_fin >= CURDATE())
+               AND EXISTS (
+                   SELECT 1
+                   FROM inscripciones i
+                   WHERE i.id_alumno = :alumno
+                     AND i.anio = pm.anio_mesas
+                     AND i.id_turno = pm.id_turno
+                     AND i.estado = :estado
+               )
+             ORDER BY (pm.fecha_inicio IS NULL) ASC,
+                      pm.fecha_inicio ASC,
+                      pm.fecha_fin ASC"
+        );
+        $this->bindAlumno($stmt);
+        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
+        $stmt->execute();
+
+        $periodos = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $idTurno = (int) $fila['id_turno'];
+            $periodo = ['anio' => (int) $fila['anio_mesas'], 'id_turno' => $idTurno];
+
+            $periodos[] = [
+                'id_registro' => (int) $fila['id_registro'],
+                'anio_mesas'  => (int) $fila['anio_mesas'],
+                'turno'       => self::TURNOS[$idTurno] ?? ('Turno ' . $idTurno),
+                'fecha_inicio' => $fila['fecha_inicio'],
+                'fecha_fin'    => $fila['fecha_fin'],
+                'tope_mesas'   => (int) $fila['tope'],
+                'materias'     => array_map(function (array $i): array {
+                    return ['materia' => $i['materia'], 'llamado' => $i['llamado']];
+                }, $this->inscripciones($periodo)),
+            ];
+        }
+
+        return $periodos;
+    }
+
     /* ------------------------------------------------------------------ */
     /* Acciones                                                            */
     /* ------------------------------------------------------------------ */

@@ -1,2 +1,4 @@
 # Configuración local de cada uno (tiene claves). Copiar config/config.example.php como config/config.php
 config/config.php
+documentos/cronogramas_finales/*
+documentos/cronogramas_finales/.gitkeep

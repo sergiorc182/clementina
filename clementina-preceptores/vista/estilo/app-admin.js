@@ -21,7 +21,7 @@
     {
       seccion: 'Principal',
       items: [
-        { id: 'dashboard',  icon: 'layout-dashboard', label: 'Dashboard',         href: 'index.html' },
+        { id: 'dashboard',  icon: 'layout-dashboard', label: 'Dashboard',         href: '../index.html' },
       ]
     },
     {
@@ -37,6 +37,7 @@
         { id: 'carreras',   icon: 'school',           label: 'Carreras',           href: 'carreras.html' },
         { id: 'inscripciones', icon: 'calendar-check', label: 'Inscripciones',     href: 'inscripciones.html' },
         { id: 'mesas',      icon: 'calendar-days',    label: 'Mesas de examen',    href: 'mesas.html' },
+        { id: 'cronogramas', icon: 'file-text',       label: 'Cronogramas de finales', href: 'cronogramas_finales.html' },
       ]
     },
   ];
@@ -192,8 +193,7 @@
             tipo: 'danger'
           }).then(function (ok) {
             if (!ok) { return; }
-            fetch(self.baseAdmin.replace(/\/vista$/, '') + '/../../controlador/cerrar_sesion.php',
-                  { method: 'POST' })
+            fetch(App.controlador('cerrar_sesion.php'), { method: 'POST' })
               .catch(function () { /* no importa el resultado */ })
               .finally(function () {
                 window.location.href = self.urlLogin();

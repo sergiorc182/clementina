@@ -125,7 +125,7 @@
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
   <script src="../../vista/estilo/app.js?v=13"></script>
-  <script src="estilo/app-admin.js?v=1"></script>
+  <script src="estilo/app-admin.js?v=3"></script>
   <script>
     (function () {
       'use strict';
@@ -210,7 +210,7 @@
       }
 
       function cargarHistorial(dni, idCarrera) {
-        var url = AppAdmin.baseAdmin.replace(/\/vista$/, '') + '/../../controlador/historial_academico.php?dni=' + dni;
+        var url = App.controlador('historial_academico.php') + '?dni=' + dni;
         if (idCarrera) { url += '&carrera=' + idCarrera; }
 
         fetch(url)

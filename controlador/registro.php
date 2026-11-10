@@ -2,9 +2,10 @@
 /**
  * Controlador: Registro de alumnos
  *
- * Recibe POST con `nombre`, `apellido`, `dni`, `email`, `telefono` y
- * `password`. Crea el alumno en la tabla `alumnos` y guarda su teléfono
- * en `domicilios_alumno` (base local `clementina`, esquema normalizado).
+ * Recibe POST con `primer_nombre`, `otros_nombres`, `primer_apellido`,
+ * `otros_apellidos`, `dni`, `email`, `telefono` (opcional) y `password`.
+ * Crea el alumno en la tabla `alumnos` y guarda su teléfono en
+ * `domicilios_alumno` (base local `clementina`, esquema normalizado).
  * Devuelve JSON.
  */
 
@@ -23,15 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
 }
 
-$nombre   = trim((string) ($_POST['nombre'] ?? ''));
-$apellido = trim((string) ($_POST['apellido'] ?? ''));
+$primerNombre   = trim((string) ($_POST['primer_nombre'] ?? ''));
+$otrosNombres   = trim((string) ($_POST['otros_nombres'] ?? ''));
+$primerApellido = trim((string) ($_POST['primer_apellido'] ?? ''));
+$otrosApellidos = trim((string) ($_POST['otros_apellidos'] ?? ''));
 $dni      = trim((string) ($_POST['dni'] ?? ''));
 $email    = strtolower(trim((string) ($_POST['email'] ?? '')));
 $telefono = trim((string) ($_POST['telefono'] ?? ''));
 $password = (string) ($_POST['password'] ?? '');
+$password2 = (string) ($_POST['password2'] ?? '');
 
-if ($nombre === '' || $apellido === '' || $email === '' || $telefono === '' || $password === '') {
-    responder(['ok' => false, 'mensaje' => 'Completá todos los campos.']);
+if ($primerNombre === '' || $primerApellido === '' || $email === '' || $password === '') {
+    responder(['ok' => false, 'mensaje' => 'Completá los campos obligatorios.']);
+}
+
+if ($password2 !== '' && $password !== $password2) {
+    responder(['ok' => false, 'mensaje' => 'Las contraseñas no coinciden.']);
 }
 
 if (!preg_match('/^\d{6,8}$/', $dni)) {
@@ -73,26 +81,30 @@ try {
 
     $stmt = $db->prepare(
         "INSERT INTO alumnos
-           (id_tipo_documento, numero_documento, primer_apellido,
-            primer_nombre, email, password_hash, alta_registro)
-         VALUES ('DNI', :dni, :apellido, :nombre, :email, :hash, NOW())"
+           (id_tipo_documento, numero_documento, primer_apellido, otros_apellidos,
+            primer_nombre, otros_nombres, email, password_hash, alta_registro)
+         VALUES ('DNI', :dni, :apellido, :otros_apellidos, :nombre, :otros_nombres, :email, :hash, NOW())"
     );
     $stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
-    $stmt->bindValue(':apellido', $apellido);
-    $stmt->bindValue(':nombre', $nombre);
+    $stmt->bindValue(':apellido', $primerApellido);
+    $stmt->bindValue(':otros_apellidos', $otrosApellidos !== '' ? $otrosApellidos : null);
+    $stmt->bindValue(':nombre', $primerNombre);
+    $stmt->bindValue(':otros_nombres', $otrosNombres !== '' ? $otrosNombres : null);
     $stmt->bindValue(':email', $email);
     $stmt->bindValue(':hash', $hash);
     $stmt->execute();
 
     $idAlumno = (int) $db->lastInsertId();
 
-    $stmt = $db->prepare(
-        "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
-         VALUES (:id_alumno, :telefono)"
-    );
-    $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
-    $stmt->bindValue(':telefono', $telefono);
-    $stmt->execute();
+    if ($telefono !== '') {
+        $stmt = $db->prepare(
+            "INSERT INTO domicilios_alumno (id_alumno, telefono_principal)
+             VALUES (:id_alumno, :telefono)"
+        );
+        $stmt->bindValue(':id_alumno', $idAlumno, PDO::PARAM_INT);
+        $stmt->bindValue(':telefono', $telefono);
+        $stmt->execute();
+    }
 
     $db->commit();
 

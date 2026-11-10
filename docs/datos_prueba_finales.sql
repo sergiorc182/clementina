@@ -12,9 +12,8 @@
 --
 -- Importar con:
 --   mysql -u root --default-character-set=utf8mb4 clementina < datos_prueba_finales.sql
+--   (o desde phpMyAdmin con la BD destino seleccionada)
 -- =====================================================================
-
-USE clementina;
 
 -- ---------------------------------------------------------------------
 -- Catálogos y estructura académica
@@ -101,14 +100,14 @@ ON DUPLICATE KEY UPDATE
 -- ---------------------------------------------------------------------
 -- Períodos de mesas
 -- ---------------------------------------------------------------------
--- El primero queda vigente durante noviembre de 2026. Los otros dos
--- sirven para ver el listado y la expansión de "Próximos finales".
+-- Con un solo llamado por turno, cada final se rinde en una única
+-- fecha: fecha_inicio = fecha_fin = día del examen.
 INSERT INTO parametros_mesas
   (id_registro, anio_mesas, id_turno, fecha_inicio, fecha_fin, tope_mesas)
 VALUES
-  (1, 2026, 3, '2026-11-01', '2026-11-30', 3),
-  (2, 2027, 1, '2027-02-01', '2027-02-28', 4),
-  (3, 2027, 2, '2027-08-01', '2027-08-31', 4)
+  (1, 2026, 3, '2026-11-20', '2026-11-20', 3),
+  (2, 2027, 1, '2027-02-10', '2027-02-10', 4),
+  (3, 2027, 2, '2027-08-12', '2027-08-12', 4)
 ON DUPLICATE KEY UPDATE
   anio_mesas = VALUES(anio_mesas),
   id_turno = VALUES(id_turno),

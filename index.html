@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="vista/estilo/estilo.css?v=16">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="inicio">
@@ -80,7 +80,7 @@
             </div>
           </a>
 
-          <a class="module" href="vista/inscripcion_finales.html">
+          <a class="module" href="vista/cronograma_finales.html">
             <div class="module__head">
               <span class="module__icon"><i data-lucide="calendar-days"></i></span>
               <i data-lucide="arrow-right" class="module__arrow"></i>
@@ -103,19 +103,16 @@
           </a>
 
           <button type="button" class="module module--btn" id="modulo-finales" data-solo-usuario hidden
-                  aria-expanded="false" aria-controls="finales-lista">
+                  aria-expanded="false" aria-controls="cal-finales">
             <div class="module__head">
               <span class="module__icon"><i data-lucide="calendar-clock"></i></span>
               <span class="module__arrow" id="finales-chevron"><i data-lucide="chevron-down"></i></span>
             </div>
             <div>
               <div class="module__name">Calendario de próximos finales</div>
-              <div class="module__desc" id="finales-desc">Próximas mesas de examen programadas.</div>
+              <div class="module__desc" id="finales-desc">Tus mesas de examen inscriptas.</div>
             </div>
-            <div class="module__list" id="finales-lista">
-              <div class="module__item module__item--muted">Cargando finales…</div>
-            </div>
-            <div class="module__more oculto" id="finales-more">Ver todos</div>
+            <div class="cal oculto" id="cal-finales"></div>
           </button>
 
         </nav>
@@ -130,9 +127,8 @@
     (function () {
       'use strict';
 
-      var VISIBLES = 2;
       var finales = [];
-      var expandido = false;
+      var abierto = false;
 
       function escapar(texto) {
         return String(texto == null ? '' : texto)
@@ -143,70 +139,108 @@
           .replace(/'/g, '&#39;');
       }
 
-      function formatearFecha(iso) {
-        if (!iso) { return ''; }
-        var partes = String(iso).substring(0, 10).split('-');
-        if (partes.length !== 3) { return iso; }
-        return partes[2] + '/' + partes[1] + '/' + partes[0];
+      function isoLocal(f) {
+        var m = f.getMonth() + 1;
+        var d = f.getDate();
+        return f.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
       }
 
-      function rango(pm) {
-        var ini = formatearFecha(pm.fecha_inicio);
-        var fin = formatearFecha(pm.fecha_fin);
-        if (ini && fin) { return ini + ' al ' + fin; }
-        return ini || fin || 'Fecha a confirmar';
+      /** Examen fijado para ese día: con un solo llamado, fecha_inicio = fecha_fin. */
+      function periodoDelDia(clave) {
+        for (var i = 0; i < finales.length; i++) {
+          var pm = finales[i];
+          if (pm.fecha_inicio && clave === pm.fecha_inicio) {
+            return pm;
+          }
+        }
+        return null;
       }
 
-      function fila(pm, oculto) {
-        var turno = pm.turno ? ('Turno ' + pm.turno) : 'Mesa de examen';
-        if (pm.anio_mesas) { turno += ' ' + pm.anio_mesas; }
-        return '' +
-          '<div class="module__item' + (oculto ? ' oculto' : '') + '">' +
-            '<span class="module__item-turno">' + escapar(turno) + '</span>' +
-            '<span class="module__item-fecha">' + escapar(rango(pm)) + '</span>' +
-          '</div>';
+      function celdaDia(f, hoy) {
+        var clave = isoLocal(f);
+        var pm = periodoDelDia(clave);
+        var clases = ['cal__day'];
+
+        if (f < hoy) { clases.push('cal__day--pasado'); }
+        if (clave === isoLocal(hoy)) { clases.push('cal__day--hoy'); }
+
+        var tip = '';
+        if (pm) {
+          clases.push('cal__day--final');
+          var turno = 'Turno ' + (pm.turno || 'de examen') + (pm.anio_mesas ? ' ' + pm.anio_mesas : '');
+          tip = '<span class="cal__tip">' +
+                  '<strong>' + escapar(turno) + '</strong>' +
+                  (pm.materias || []).map(function (mm) {
+                    return '<span>' + escapar(mm.materia) +
+                             (mm.llamado ? ' · ' + escapar(mm.llamado) : '') + '</span>';
+                  }).join('') +
+                '</span>';
+        }
+
+        return '<span class="' + clases.join(' ') + '"' + (pm ? ' data-tip="1"' : '') + '>' +
+                 f.getDate() + tip +
+               '</span>';
       }
 
-      function pintar() {
-        var lista = document.getElementById('finales-lista');
-        var more = document.getElementById('finales-more');
+      function pintarCalendario() {
+        var cont = document.getElementById('cal-finales');
+        var hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        // La grilla arranca el lunes de la semana actual y cubre 5 semanas.
+        var lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+
+        var DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        var html = '<div class="cal__head" aria-hidden="true">';
+        DIAS.forEach(function (d) { html += '<span class="cal__wd">' + d + '</span>'; });
+        html += '</div><div class="cal__grid">';
+        for (var i = 0; i < 35; i++) {
+          var f = new Date(lunes);
+          f.setDate(lunes.getDate() + i);
+          html += celdaDia(f, hoy);
+        }
+        html += '</div>';
+        html += '<div class="cal__legend">' +
+                  '<span class="cal__lg"><i class="cal__lg-dot cal__lg-dot--final"></i>Tus finales</span>' +
+                  '<span class="cal__lg"><i class="cal__lg-dot cal__lg-dot--hoy"></i>Hoy</span>' +
+                '</div>';
+        cont.innerHTML = html;
+        conectarDias();
+      }
+
+      /* En pantallas táctiles no hay hover: el tap sobre un día marcado
+         fija o desfija su tooltip (sin cerrar el calendario). */
+      function conectarDias() {
+        contDias().forEach(function (dia) {
+          dia.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var estaba = dia.classList.contains('cal__day--tip-open');
+            contDias().forEach(function (otro) {
+              otro.classList.remove('cal__day--tip-open');
+            });
+            if (!estaba) { dia.classList.add('cal__day--tip-open'); }
+          });
+        });
+      }
+
+      function contDias() {
+        return Array.prototype.slice.call(document.querySelectorAll('#cal-finales .cal__day[data-tip]'));
+      }
+
+      function aplicarEstado() {
+        var cal = document.getElementById('cal-finales');
         var chevron = document.getElementById('finales-chevron');
         var boton = document.getElementById('modulo-finales');
-        var expandible = finales.length > VISIBLES;
 
-        if (!finales.length) {
-          lista.innerHTML = '<div class="module__item module__item--muted">Sin mesas publicadas.</div>';
-        } else {
-          var html = '';
-          finales.forEach(function (pm, i) {
-            html += fila(pm, !expandido && i >= VISIBLES);
-          });
-          lista.innerHTML = html;
-        }
-
-        if (expandible) {
-          more.classList.remove('oculto');
-          more.textContent = expandido ? 'Ver menos' : ('Ver todos (' + finales.length + ')');
-          if (chevron) {
-            chevron.classList.remove('oculto');
-            chevron.style.transform = expandido ? 'rotate(180deg)' : '';
-          }
-        } else {
-          more.classList.add('oculto');
-          if (chevron) {
-            chevron.classList.add('oculto');
-            chevron.style.transform = '';
-          }
-        }
-
-        boton.setAttribute('aria-expanded', expandible && expandido ? 'true' : 'false');
+        cal.classList.toggle('oculto', !abierto);
+        if (chevron) { chevron.style.transform = abierto ? 'rotate(180deg)' : ''; }
+        boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
       }
 
       function mostrarError() {
         finales = [];
-        document.getElementById('finales-lista').innerHTML =
-          '<div class="module__item module__item--muted">No se pudieron cargar las mesas.</div>';
-        document.getElementById('finales-more').classList.add('oculto');
+        document.getElementById('finales-desc').textContent = 'No se pudieron cargar las mesas.';
         document.getElementById('finales-chevron').classList.add('oculto');
       }
 
@@ -216,18 +250,31 @@
           .then(function (data) {
             if (!Array.isArray(data)) { throw new Error('Respuesta inválida'); }
             finales = data;
-            pintar();
+
+            var total = 0;
+            finales.forEach(function (pm) { total += (pm.materias || []).length; });
+
+            if (!total) {
+              finales = [];
+              document.getElementById('finales-desc').textContent = 'No tenés finales inscriptos por ahora.';
+              document.getElementById('finales-chevron').classList.add('oculto');
+              return;
+            }
+            document.getElementById('finales-desc').textContent =
+              'Tenés ' + total + (total === 1 ? ' final inscripto.' : ' finales inscriptos.');
+            pintarCalendario();
+            aplicarEstado();
           })
           .catch(mostrarError);
       }
 
       document.getElementById('modulo-finales').addEventListener('click', function () {
-        if (finales.length > VISIBLES) {
-          expandido = !expandido;
-          pintar();
-        } else {
+        if (!finales.length) {
           window.location.href = App.vista('inscripcion_finales.html');
+          return;
         }
+        abierto = !abierto;
+        aplicarEstado();
       });
 
       App.montarLayout({ protegida: true }).then(function (usuario) {

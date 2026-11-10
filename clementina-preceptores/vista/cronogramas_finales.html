@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cronogramas de finales · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="cronogramas">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title">Cronogramas de finales</h1>
+            <p class="page-head__text">Publicá los PDFs de fechas de examen por carrera: los alumnos los ven según su matriculación.</p>
+          </div>
+        </div>
+
+        <!-- Subir PDF -->
+        <section class="card mb-4" aria-label="Publicar cronograma">
+          <div class="card__header">
+            <div>
+              <h3 class="card__title">Publicar nuevo cronograma</h3>
+              <p class="card__subtitle">Elegí la carrera y el PDF (máx. 10 MB)</p>
+            </div>
+            <span class="stat__icon"><i data-lucide="file-text"></i></span>
+          </div>
+          <div class="card__body">
+            <form id="form-subir" enctype="multipart/form-data" novalidate>
+              <div class="grid grid--2">
+                <div class="field">
+                  <label class="label" for="select-carrera">Carrera <span class="req">*</span></label>
+                  <select class="select" id="select-carrera" required>
+                    <option value="">Cargando…</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="label" for="input-archivo">Archivo PDF <span class="req">*</span></label>
+                  <input class="input" type="file" id="input-archivo" name="archivo" accept="application/pdf,.pdf" required>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn--primary" id="btn-subir" disabled>
+                  <i data-lucide="save"></i>Publicar PDF
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Estado de carga / error -->
+        <div id="estado-carga" class="empty" hidden>
+          <div class="empty__icon"><i data-lucide="calendar-days" class="icon"></i></div>
+          <div class="empty__title">Cargando cronogramas…</div>
+        </div>
+        <div id="estado-error" class="alert alert--error mb-4" hidden>
+          <i data-lucide="x-circle" class="icon"></i>
+          <div class="alert__body"><div class="alert__title">Error al cargar</div><p id="error-texto"></p></div>
+        </div>
+
+        <!-- Publicados -->
+        <section id="seccion-publicados" hidden>
+          <div class="row between mb-3">
+            <div>
+              <h2 class="card__title">Cronogramas publicados</h2>
+              <p class="muted" style="font-size: .875rem;">Todos los PDFs por carrera, del más reciente al más viejo.</p>
+            </div>
+          </div>
+          <div class="table-wrap table-wrap--stack">
+            <table class="table" id="tabla-cronogramas" aria-label="Cronogramas publicados">
+              <thead>
+                <tr>
+                  <th>Carrera</th>
+                  <th>Archivo</th>
+                  <th>Publicado</th>
+                  <th>Tamaño</th>
+                  <th class="col-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../vista/estilo/app.js?v=13"></script>
+  <script src="estilo/app-admin.js?v=3"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var carreras = [];
+
+      AppAdmin.montarAdmin({ titulo: 'Cronogramas de finales', subtitulo: 'Publicación de PDFs' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+          cargar();
+        });
+
+      function esc(txt) {
+        return String(txt == null ? '' : txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+
+      function urlDescarga(idCarrera, archivo) {
+        return AppAdmin.controladorAdmin('cronogramas_finales.php')
+          + '?accion=descargar&id_carrera=' + encodeURIComponent(idCarrera)
+          + '&archivo=' + encodeURIComponent(archivo);
+      }
+
+      function cargar() {
+        mostrarEstado('carga');
+        fetch(AppAdmin.controladorAdmin('cronogramas_finales.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { mostrarError(res.mensaje); return; }
+            carreras = res.carreras || [];
+            llenarSelect();
+            pintarTabla();
+          })
+          .catch(function () { mostrarError('Error de red. Revisá tu conexión.'); });
+      }
+
+      function llenarSelect() {
+        var select = document.getElementById('select-carrera');
+        var btn = document.getElementById('btn-subir');
+        var opciones = '<option value="">Elegí una carrera…</option>';
+        carreras.forEach(function (c) {
+          opciones += '<option value="' + c.id_carrera + '">' + esc(c.nombre_carrera) + '</option>';
+        });
+        select.innerHTML = opciones;
+        btn.disabled = false;
+      }
+
+      function filas() {
+        var html = '';
+        carreras.forEach(function (c) {
+          c.archivos.forEach(function (a) {
+            html += '<tr>' +
+              '<td data-label="Carrera"><span class="badge badge--info">' + esc(c.nombre_carrera_corto) + '</span></td>' +
+              '<td class="col-main" data-label="Archivo"><strong>' + esc(a.nombre) + '</strong></td>' +
+              '<td data-label="Publicado">' + esc(a.fecha) + '</td>' +
+              '<td data-label="Tamaño">' + esc(a.tamano_legible) + '</td>' +
+              '<td class="col-actions">' +
+                '<a class="btn btn--ghost btn--sm" href="' + urlDescarga(c.id_carrera, a.archivo) + '" target="_blank" rel="noopener">Ver</a> ' +
+                '<button type="button" class="btn btn--outline btn--sm" data-borrar="' + c.id_carrera + '" data-archivo="' + esc(a.archivo) + '" data-nombre="' + esc(a.nombre) + '">Borrar</button>' +
+              '</td>' +
+            '</tr>';
+          });
+        });
+        return html;
+      }
+
+      function pintarTabla() {
+        var seccion = document.getElementById('seccion-publicados');
+        var tbody = document.getElementById('tabla-body');
+        var html = filas();
+
+        if (!html) {
+          mostrarEstado('vacio');
+          return;
+        }
+
+        tbody.innerHTML = html;
+        seccion.hidden = false;
+        mostrarEstado('tabla');
+        App.iconos();
+
+        tbody.querySelectorAll('[data-borrar]').forEach(function (btn) {
+          btn.addEventListener('click', confirmarBorrado);
+        });
+      }
+
+      function confirmarBorrado() {
+        var idCarrera = parseInt(this.dataset.borrar, 10);
+        var archivo = this.dataset.archivo;
+        var nombre = this.dataset.nombre;
+
+        App.confirmar({
+          titulo: '¿Borrar cronograma?',
+          texto: 'Se elimina "' + nombre + '". Los alumnos dejarán de verlo. Esta acción no se puede deshacer.',
+          confirmar: 'Borrar',
+          tipo: 'danger'
+        }).then(function (ok) {
+          if (!ok) { return; }
+          var datos = new URLSearchParams();
+          datos.append('accion', 'borrar');
+          datos.append('id_carrera', idCarrera);
+          datos.append('archivo', archivo);
+          fetch(AppAdmin.controladorAdmin('cronogramas_finales.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: datos.toString()
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              App.toast({
+                tipo: res.ok ? 'success' : 'error',
+                titulo: res.ok ? 'Listo' : 'Error',
+                texto: res.mensaje
+              });
+              if (res.ok) { cargar(); }
+            })
+            .catch(function () {
+              App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo borrar el archivo.' });
+            });
+        });
+      }
+
+      document.getElementById('form-subir').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var select = document.getElementById('select-carrera');
+        var input = document.getElementById('input-archivo');
+        var btn = document.getElementById('btn-subir');
+
+        if (!select.value || !input.files.length) {
+          App.toast({ tipo: 'warning', titulo: 'Faltan datos', texto: 'Elegí la carrera y el archivo PDF.' });
+          return;
+        }
+
+        var datos = new FormData();
+        datos.append('accion', 'subir');
+        datos.append('id_carrera', select.value);
+        datos.append('archivo', input.files[0]);
+
+        btn.disabled = true;
+        btn.textContent = 'Publicando…';
+
+        fetch(AppAdmin.controladorAdmin('cronogramas_finales.php'), { method: 'POST', body: datos })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            App.toast({
+              tipo: res.ok ? 'success' : 'error',
+              titulo: res.ok ? 'Listo' : 'Error',
+              texto: res.mensaje
+            });
+            if (res.ok) {
+              input.value = '';
+              select.value = '';
+              cargar();
+            }
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo subir el archivo.' });
+          })
+          .finally(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="save"></i>Publicar PDF';
+            App.iconos(btn);
+          });
+      });
+
+      function mostrarEstado(estado) {
+        var vacio = document.getElementById('estado-vacio');
+        if (!vacio) {
+          vacio = document.createElement('div');
+          vacio.id = 'estado-vacio';
+          vacio.className = 'empty';
+          vacio.hidden = true;
+          vacio.innerHTML =
+            '<div class="empty__icon"><i data-lucide="calendar-days" class="icon"></i></div>' +
+            '<div class="empty__title">Sin cronogramas publicados</div>' +
+            '<p class="empty__text">Todavía no subiste ningún PDF. Publicá el primero con el formulario de arriba.</p>';
+          document.getElementById('seccion-publicados').parentNode.insertBefore(vacio, document.getElementById('seccion-publicados'));
+        }
+        document.getElementById('estado-carga').hidden = (estado !== 'carga');
+        document.getElementById('estado-error').hidden = (estado !== 'error');
+        vacio.hidden = (estado !== 'vacio');
+        document.getElementById('seccion-publicados').hidden = (estado !== 'tabla');
+        if (estado === 'carga' || estado === 'vacio') { App.iconos(); }
+      }
+
+      function mostrarError(msg) {
+        mostrarEstado('error');
+        document.getElementById('error-texto').textContent = msg || 'Error desconocido.';
+        App.iconos(document.getElementById('estado-error'));
+      }
+
+    })();
+  </script>
+</body>
+</html>

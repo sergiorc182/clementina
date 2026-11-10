@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/../../modelo/Conexion.php';
+require_once __DIR__ . '/../../modelo/InscripcionFinal.php';
 
 class InscripcionesAdmin
 {
@@ -67,7 +68,7 @@ class InscripcionesAdmin
                    a.numero_documento,
                    m.nombre_materia AS materia,
                    c.nombre_carrera_corto AS carrera,
-                   t.turno,
+                   i.id_turno,
                    i.anio,
                    i.estado,
                    i.fecha_hora
@@ -75,7 +76,6 @@ class InscripcionesAdmin
             INNER JOIN alumnos a  ON a.id_alumno  = i.id_alumno
             INNER JOIN materias m ON m.id_materia  = i.id_materia
             INNER JOIN carreras c ON c.id_carrera  = i.id_carrera
-            LEFT JOIN turnos t    ON t.id_turno    = i.id_turno
             $where
             ORDER BY i.fecha_hora DESC
             LIMIT :limite OFFSET :offset
@@ -89,8 +89,15 @@ class InscripcionesAdmin
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
+        /* En inscripciones, id_turno es el turno de MESAS
+           (1=Febrero, 2=Agosto, 3=Diciembre), no el de cursada. */
+        $inscripciones = array_map(function (array $fila): array {
+            $fila['turno'] = InscripcionFinal::TURNOS[(int) $fila['id_turno']] ?? ('Turno ' . $fila['id_turno']);
+            return $fila;
+        }, $stmt->fetchAll());
+
         return [
-            'inscripciones' => $stmt->fetchAll(),
+            'inscripciones' => $inscripciones,
             'total'         => $total,
             'paginas'       => (int)ceil($total / $porPagina),
         ];

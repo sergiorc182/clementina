@@ -8,6 +8,7 @@
  */
 
 require_once __DIR__ . '/../../modelo/Conexion.php';
+require_once __DIR__ . '/../../modelo/InscripcionFinal.php';
 
 class Dashboard
 {
@@ -91,16 +92,16 @@ class Dashboard
             SELECT pm.*, t.turno
             FROM parametros_mesas pm
             LEFT JOIN turnos t ON t.id_turno = pm.id_turno
-            WHERE pm.fecha_inicio <= :hoy AND pm.fecha_fin >= :hoy
+            WHERE pm.fecha_inicio <= :hoyDesde AND pm.fecha_fin >= :hoyHasta
             ORDER BY pm.fecha_inicio DESC
             LIMIT 1
         ");
-        $stmt->execute([':hoy' => $hoy]);
+        $stmt->execute([':hoyDesde' => $hoy, ':hoyHasta' => $hoy]);
         $vigente = $stmt->fetch();
 
         if ($vigente) {
             $vigente['estado'] = 'abierto';
-            return $vigente;
+            return $this->nombrarTurnoMesas($vigente);
         }
 
         // Si no hay vigente, devuelve el más reciente
@@ -114,10 +115,21 @@ class Dashboard
         $reciente = $stmt2->fetch();
         if ($reciente) {
             $reciente['estado'] = $reciente['fecha_inicio'] > $hoy ? 'proximo' : 'cerrado';
-            return $reciente;
+            return $this->nombrarTurnoMesas($reciente);
         }
 
         return ['estado' => 'sin_datos'];
+    }
+
+    /**
+     * `turnos` es la tabla de turnos de cursada (Mañana/Tarde/Noche);
+     * para las mesas el mismo id significa 1=Febrero, 2=Agosto,
+     * 3=Diciembre. Se muestra ese nombre.
+     */
+    private function nombrarTurnoMesas(array $fila): array
+    {
+        $fila['turno'] = InscripcionFinal::TURNOS[(int) $fila['id_turno']] ?? $fila['turno'];
+        return $fila;
     }
 
     /** Cantidad total de matriculaciones por año. */

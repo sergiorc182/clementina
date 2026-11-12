@@ -92,15 +92,37 @@ class Historial
     }
 
     /**
-     * Resuelve el id de alumno a partir del número de documento (para el personal).
+     * Obtiene los datos básicos del alumno a partir del documento (para el personal).
+     *
+     * @return array{id_alumno:int,numero_documento:int,nombre_completo:string}|null
      */
-    public function obtenerIdAlumnoPorDocumento(int $documento): ?int
+    public function obtenerAlumnoPorDocumento(int $documento): ?array
     {
-        $stmt = $this->db->prepare("SELECT id_alumno FROM alumnos WHERE numero_documento = :doc LIMIT 1");
+        $stmt = $this->db->prepare("
+            SELECT id_alumno,
+                   numero_documento,
+                   CONCAT(
+                       TRIM(CONCAT(primer_apellido, ' ', COALESCE(otros_apellidos, ''))),
+                       ', ',
+                       TRIM(CONCAT(primer_nombre, ' ', COALESCE(otros_nombres, '')))
+                   ) AS nombre_completo
+            FROM alumnos
+            WHERE numero_documento = :doc
+            LIMIT 1
+        ");
         $stmt->bindValue(':doc', $documento, PDO::PARAM_INT);
         $stmt->execute();
-        $id = $stmt->fetchColumn();
-        return $id === false ? null : (int) $id;
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($fila === false) {
+            return null;
+        }
+
+        return [
+            'id_alumno'        => (int) $fila['id_alumno'],
+            'numero_documento' => (int) $fila['numero_documento'],
+            'nombre_completo'  => trim((string) $fila['nombre_completo']),
+        ];
     }
 
     /**

@@ -410,6 +410,22 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Formularios en grilla (edición de datos del alumno)                 */
+/* ------------------------------------------------------------------ */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3) var(--sp-4);
+}
+.form-grid .field { margin: 0; }
+.form-grid__full { grid-column: 1 / -1; }
+
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ------------------------------------------------------------------ */
 /* Modo noche — ajustes del panel admin                                 */
 /* ------------------------------------------------------------------ */
 

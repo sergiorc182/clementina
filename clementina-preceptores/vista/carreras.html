@@ -24,62 +24,278 @@
         <div class="page-head">
           <div>
             <h1 class="page-head__title">Carreras</h1>
-            <p class="page-head__text">Carreras registradas en el sistema y cantidad de alumnos matriculados.</p>
+            <p class="page-head__text">Oferta académica, resoluciones y cantidad de alumnos matriculados.</p>
+          </div>
+          <div class="page-head__actions">
+            <button type="button" class="btn btn--primary" id="btn-nueva-carrera">
+              <i data-lucide="plus" class="icon--sm"></i>Nueva carrera
+            </button>
           </div>
         </div>
-        <div class="table-wrap">
+
+        <div class="table-wrap table-wrap--stack">
           <table class="table" id="tabla-carreras" aria-label="Carreras">
             <thead>
               <tr>
                 <th>Carrera</th>
                 <th>Nombre corto</th>
                 <th>Resolución</th>
+                <th>Título</th>
                 <th class="num">Matriculados</th>
+                <th class="col-actions">Acciones</th>
               </tr>
             </thead>
             <tbody id="tabla-body">
-              <tr><td colspan="4" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando…</td></tr>
+              <tr><td colspan="6" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando…</td></tr>
             </tbody>
           </table>
         </div>
       </main>
     </div>
   </div>
+
+  <div class="modal" id="modal-carrera" role="dialog" aria-modal="true" aria-labelledby="modal-carrera-titulo">
+    <div class="modal__dialog" style="max-width:620px;">
+      <div class="modal__header">
+        <span class="modal__icon"><i data-lucide="graduation-cap" class="icon"></i></span>
+        <div>
+          <div class="modal__title" id="modal-carrera-titulo">Nueva carrera</div>
+          <p class="modal__text" id="modal-carrera-subtitulo">Completá los datos de la oferta académica.</p>
+        </div>
+      </div>
+      <div class="modal__body">
+        <form id="form-carrera" novalidate>
+          <div class="form-grid">
+            <div class="field form-grid__full">
+              <label class="label" for="campo-nombre">Nombre de la carrera <span class="req">*</span></label>
+              <input class="input" id="campo-nombre" name="nombre_carrera" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label class="label" for="campo-corto">Nombre corto <span class="req">*</span></label>
+              <input class="input" id="campo-corto" name="nombre_carrera_corto" type="text" maxlength="45" required>
+            </div>
+            <div class="field">
+              <label class="label" for="campo-resolucion">Número de resolución <span class="req">*</span></label>
+              <input class="input" id="campo-resolucion" name="nro_resolucion" type="text" maxlength="45" required>
+            </div>
+            <div class="field form-grid__full">
+              <label class="label" for="campo-titulo">Título que otorga <span class="req">*</span></label>
+              <input class="input" id="campo-titulo" name="titulo" type="text" maxlength="100" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline btn--sm" id="btn-cancelar-carrera">Cancelar</button>
+        <button type="button" class="btn btn--primary btn--sm" id="btn-guardar-carrera">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="../../vista/estilo/app.js?v=13"></script>
   <script src="estilo/app-admin.js?v=3"></script>
   <script>
     (function () {
       'use strict';
+
+      var carreras = [];
+      var carreraEditando = null;
+
       AppAdmin.montarAdmin({ titulo: 'Carreras', subtitulo: 'Oferta académica' })
         .then(function (usuario) {
           if (!usuario) { return; }
-          fetch(AppAdmin.controladorAdmin('dashboard.php'))
-            .then(function (r) { return r.json(); })
-            .then(function (res) {
-              if (!res.ok) { return; }
-              var carreras = res.data.carreras || [];
-              var tbody = document.getElementById('tabla-body');
-              if (!carreras.length) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Sin carreras registradas.</td></tr>';
-                return;
-              }
-              tbody.innerHTML = carreras.map(function (c) {
-                return '<tr>' +
-                  '<td class="col-main"><strong>' + esc(c.nombre_carrera) + '</strong></td>' +
-                  '<td><span class="badge badge--neutral">' + esc(c.nombre_carrera_corto) + '</span></td>' +
-                  '<td>' + esc(c.nro_resolucion || '—') + '</td>' +
-                  '<td class="num">' + (parseInt(c.matriculados) || 0) + '</td>' +
-                '</tr>';
-              }).join('');
-            })
-            .catch(function () {
-              App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudieron cargar las carreras.' });
-            });
+          conectarEventos();
+          cargar();
         });
 
+      function conectarEventos() {
+        var modal = document.getElementById('modal-carrera');
+
+        document.getElementById('btn-nueva-carrera').addEventListener('click', function () {
+          abrirModal(null);
+        });
+        document.getElementById('btn-cancelar-carrera').addEventListener('click', cerrarModal);
+        document.getElementById('btn-guardar-carrera').addEventListener('click', guardar);
+
+        document.getElementById('form-carrera').addEventListener('submit', function (e) {
+          e.preventDefault();
+          guardar();
+        });
+
+        document.getElementById('tabla-body').addEventListener('click', function (e) {
+          var btn = e.target.closest('[data-accion]');
+          if (!btn) { return; }
+          var id = parseInt(btn.dataset.id, 10);
+          if (btn.dataset.accion === 'editar') {
+            abrirModal(buscarCarrera(id));
+          } else if (btn.dataset.accion === 'eliminar') {
+            eliminar(id);
+          }
+        });
+
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) { cerrarModal(); }
+        });
+      }
+
+      function cargar() {
+        var tbody = document.getElementById('tabla-body');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando…</td></tr>';
+
+        fetch(AppAdmin.controladorAdmin('carreras.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">No se pudieron cargar las carreras.</td></tr>';
+              return;
+            }
+            carreras = Array.isArray(res.carreras) ? res.carreras : [];
+            pintarTabla();
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudieron cargar las carreras.' });
+          });
+      }
+
+      function pintarTabla() {
+        var tbody = document.getElementById('tabla-body');
+        if (!carreras.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Sin carreras registradas.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = carreras.map(function (c) {
+          return '<tr>' +
+            '<td class="col-main" data-label="Carrera"><strong>' + esc(c.nombre_carrera) + '</strong></td>' +
+            '<td data-label="Nombre corto"><span class="badge badge--neutral">' + esc(c.nombre_carrera_corto) + '</span></td>' +
+            '<td data-label="Resolución">' + esc(c.nro_resolucion || '—') + '</td>' +
+            '<td data-label="Título">' + esc(c.titulo || '—') + '</td>' +
+            '<td data-label="Matriculados" class="num">' + (parseInt(c.matriculados, 10) || 0) + '</td>' +
+            '<td class="col-actions" data-label="Acciones">' +
+              '<button type="button" class="btn btn--outline btn--sm" data-accion="editar" data-id="' + c.id_carrera + '">Editar</button> ' +
+              '<button type="button" class="btn btn--ghost btn--sm" data-accion="eliminar" data-id="' + c.id_carrera + '">Eliminar</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function buscarCarrera(id) {
+        for (var i = 0; i < carreras.length; i++) {
+          if (parseInt(carreras[i].id_carrera, 10) === id) { return carreras[i]; }
+        }
+        return null;
+      }
+
+      function abrirModal(carrera) {
+        carreraEditando = carrera || null;
+
+        document.getElementById('modal-carrera-titulo').textContent = carrera ? 'Editar carrera' : 'Nueva carrera';
+        document.getElementById('modal-carrera-subtitulo').textContent = carrera
+          ? 'Actualizá los datos de la oferta académica.'
+          : 'Completá los datos de la oferta académica.';
+
+        document.getElementById('campo-nombre').value      = carrera ? carrera.nombre_carrera : '';
+        document.getElementById('campo-corto').value       = carrera ? carrera.nombre_carrera_corto : '';
+        document.getElementById('campo-resolucion').value  = carrera ? carrera.nro_resolucion : '';
+        document.getElementById('campo-titulo').value      = carrera ? carrera.titulo : '';
+
+        var modal = document.getElementById('modal-carrera');
+        modal.classList.add('is-open');
+
+        requestAnimationFrame(function () {
+          document.getElementById('campo-nombre').focus();
+        });
+      }
+
+      function cerrarModal() {
+        document.getElementById('modal-carrera').classList.remove('is-open');
+        carreraEditando = null;
+      }
+
+      function guardar() {
+        var nombre = document.getElementById('campo-nombre').value.trim();
+        var corto  = document.getElementById('campo-corto').value.trim();
+        var resolucion = document.getElementById('campo-resolucion').value.trim();
+        var titulo = document.getElementById('campo-titulo').value.trim();
+
+        if (!nombre || !corto || !resolucion || !titulo) {
+          App.toast({ tipo: 'warning', titulo: 'Datos incompletos', texto: 'Completá todos los campos obligatorios.' });
+          return;
+        }
+
+        var datos = new URLSearchParams();
+        datos.append('accion', carreraEditando ? 'actualizar' : 'crear');
+        if (carreraEditando) { datos.append('id_carrera', carreraEditando.id_carrera); }
+        datos.append('nombre_carrera', nombre);
+        datos.append('nombre_carrera_corto', corto);
+        datos.append('nro_resolucion', resolucion);
+        datos.append('titulo', titulo);
+
+        var btn = document.getElementById('btn-guardar-carrera');
+        btn.disabled = true;
+
+        fetch(AppAdmin.controladorAdmin('carreras.php'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: datos.toString()
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: res.mensaje || 'Intentá nuevamente.' });
+              return;
+            }
+            cerrarModal();
+            cargar();
+            App.toast({ tipo: 'success', titulo: 'Carreras', texto: res.mensaje || 'Cambios guardados.' });
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo guardar. Revisá tu conexión.' });
+          })
+          .then(function () { btn.disabled = false; });
+      }
+
+      function eliminar(id) {
+        var carrera = buscarCarrera(id);
+        if (!carrera) { return; }
+
+        App.confirmar({
+          tipo: 'danger',
+          titulo: 'Eliminar carrera',
+          texto: '¿Eliminar "' + carrera.nombre_carrera + '"? Esta acción no se puede deshacer.',
+          confirmar: 'Eliminar'
+        }).then(function (confirmado) {
+          if (!confirmado) { return; }
+
+          var datos = new URLSearchParams();
+          datos.append('accion', 'eliminar');
+          datos.append('id_carrera', id);
+
+          fetch(AppAdmin.controladorAdmin('carreras.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: datos.toString()
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              if (!res.ok) {
+                App.toast({ tipo: 'error', titulo: 'No se pudo eliminar', texto: res.mensaje || 'Intentá nuevamente.' });
+                return;
+              }
+              cargar();
+              App.toast({ tipo: 'success', titulo: 'Carreras', texto: res.mensaje || 'Carrera eliminada.' });
+            })
+            .catch(function () {
+              App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo eliminar. Revisá tu conexión.' });
+            });
+        });
+      }
+
       function esc(txt) {
-        return String(txt == null ? '' : txt).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        return String(txt == null ? '' : txt)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
       }
     })();
   </script>

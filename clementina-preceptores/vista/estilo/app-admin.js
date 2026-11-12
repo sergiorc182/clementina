@@ -75,8 +75,8 @@
 
     /* URL del login del alumno (para redirigir al cerrar sesión) */
     urlLogin: function () {
-      // Sube desde /clementina-preceptores/ hasta la raíz
-      return this.baseAdmin.replace(/\/clementina-preceptores\/vista$/, '') + '/vista/login.html';
+      // Sube desde /clementina-preceptores/vista/ hasta /vista/ del proyecto raíz
+      return this.baseAdmin + '/../../vista/login.html';
     },
 
     /* ================================================================ */
@@ -127,7 +127,7 @@
 
       // Encabezado
       html += '<div class="sidebar__head">';
-      html += '  <a class="sidebar__brand" href="' + this.vistaAdmin('index.html') + '">';
+      html += '  <a class="sidebar__brand" href="' + this.vistaAdmin('../index.html') + '">';
       html += '    <img class="sidebar__logo" src="'
               + this.baseAdmin + '/../../vista/estilo/logo-isft182.svg?v=3"'
               + ' alt="" width="32" height="36">';
@@ -178,7 +178,7 @@
       if (overlay) {
         overlay.addEventListener('click', function () {
           sidebar.classList.remove('is-open');
-          overlay.style.display = 'none';
+          overlay.hidden = true;
         });
       }
 
@@ -293,7 +293,7 @@
 
       btn.addEventListener('click', function () {
         var abierto = sidebar.classList.toggle('is-open');
-        if (overlay) { overlay.style.display = abierto ? 'block' : 'none'; }
+        if (overlay) { overlay.hidden = !abierto; }
       });
     },
 

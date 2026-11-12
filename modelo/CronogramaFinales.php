@@ -114,8 +114,12 @@ class CronogramaFinales
         }
 
         $archivos = [];
-        foreach (scandir($dir) as $nombre) {
-            if ($nombre[0] === '.' || !$this->esArchivoCronograma($nombre)) {
+        $lista = @scandir($dir);
+        if ($lista === false) {
+            return [];
+        }
+        foreach ($lista as $nombre) {
+            if ($nombre === '' || $nombre[0] === '.' || !$this->esArchivoCronograma($nombre)) {
                 continue;
             }
             $ruta = $dir . DIRECTORY_SEPARATOR . $nombre;

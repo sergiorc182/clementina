@@ -2,7 +2,8 @@
  * inscripciones.js — Inscripciones a finales (panel de preceptores).
  *
  * Monta el shell del panel y carga el listado de inscripciones con
- * búsqueda por texto, filtro de estado y paginación.
+ * búsqueda por texto, filtro de estado, paginación y acciones de gestión
+ * (cancelar, reactivar y eliminar).
  */
 (function () {
   'use strict';
@@ -22,6 +23,20 @@
   function conectarFiltros() {
     var input  = document.getElementById('input-busqueda');
     var estado = document.getElementById('filtro-estado');
+
+    document.getElementById('tabla-body').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-accion]');
+      if (!btn) { return; }
+
+      var id = parseInt(btn.dataset.id, 10);
+      if (btn.dataset.accion === 'cancelar') {
+        cambiarEstado(id, 'C', btn);
+      } else if (btn.dataset.accion === 'reactivar') {
+        cambiarEstado(id, 'A', btn);
+      } else if (btn.dataset.accion === 'eliminar') {
+        eliminar(id, btn);
+      }
+    });
 
     input.addEventListener('input', function () {
       clearTimeout(timer);
@@ -44,7 +59,7 @@
     estadoActual   = estado    !== undefined ? estado    : estadoActual;
 
     var tbody = document.getElementById('tabla-body');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando inscripciones…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando inscripciones…</td></tr>';
 
     var params = '?pagina=' + paginaActual;
     if (busquedaActual) { params += '&q=' + encodeURIComponent(busquedaActual); }
@@ -71,7 +86,7 @@
 
   function pintarVacio() {
     document.getElementById('tabla-body').innerHTML =
-      '<tr><td colspan="7" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">' +
+      '<tr><td colspan="8" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">' +
       'No hay inscripciones con ese criterio.</td></tr>';
     document.getElementById('paginacion').innerHTML = '';
     document.getElementById('total-info').textContent = '';
@@ -89,8 +104,77 @@
         '<td data-label="Fecha inscripción">' + fmtFechaHora(i.fecha_hora) + '</td>' +
         '<td data-label="Estado"><span class="badge ' + (activa ? 'badge--success' : 'badge--warning') + '">' +
           (activa ? 'Activa' : 'Cancelada') + '</span></td>' +
+        '<td class="col-actions" data-label="Acciones">' +
+          (activa
+            ? '<button type="button" class="btn btn--outline btn--sm" data-accion="cancelar" data-id="' + i.id_inscripcion + '">Cancelar</button> '
+            : '<button type="button" class="btn btn--outline btn--sm" data-accion="reactivar" data-id="' + i.id_inscripcion + '">Reactivar</button> ') +
+          '<button type="button" class="btn btn--ghost btn--sm" data-accion="eliminar" data-id="' + i.id_inscripcion + '">Eliminar</button>' +
+        '</td>' +
       '</tr>';
     }).join('');
+  }
+
+  function cambiarEstado(id, estado, btn) {
+    var cancelar = estado === 'C';
+
+    App.confirmar({
+      tipo: cancelar ? 'danger' : 'primary',
+      titulo: cancelar ? 'Cancelar inscripción' : 'Reactivar inscripción',
+      texto: cancelar
+        ? '¿Cancelar esta inscripción a la mesa de examen?'
+        : '¿Reactivar esta inscripción a la mesa de examen?',
+      confirmar: cancelar ? 'Sí, cancelar' : 'Sí, reactivar'
+    }).then(function (confirmado) {
+      if (!confirmado) { return; }
+
+      var datos = new URLSearchParams();
+      datos.append('accion', 'cambiar_estado');
+      datos.append('id_inscripcion', id);
+      datos.append('estado', estado);
+
+      enviarAccion(datos, btn, 'No se pudo actualizar la inscripción.');
+    });
+  }
+
+  function eliminar(id, btn) {
+    App.confirmar({
+      tipo: 'danger',
+      titulo: 'Eliminar inscripción',
+      texto: '¿Eliminar definitivamente esta inscripción? Esta acción no se puede deshacer.',
+      confirmar: 'Sí, eliminar'
+    }).then(function (confirmado) {
+      if (!confirmado) { return; }
+
+      var datos = new URLSearchParams();
+      datos.append('accion', 'eliminar');
+      datos.append('id_inscripcion', id);
+
+      enviarAccion(datos, btn, 'No se pudo eliminar la inscripción.');
+    });
+  }
+
+  function enviarAccion(datos, btn, mensajeError) {
+    if (btn) { btn.disabled = true; }
+
+    fetch(AppAdmin.controladorAdmin('inscripciones.php'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: datos.toString()
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.ok) {
+          App.toast({ tipo: 'error', titulo: 'Acción no realizada', texto: res.mensaje || mensajeError });
+          if (btn) { btn.disabled = false; }
+          return;
+        }
+        App.toast({ tipo: 'success', titulo: 'Inscripciones', texto: res.mensaje || 'Acción realizada.' });
+        cargar(paginaActual);
+      })
+      .catch(function () {
+        App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo conectar con el servidor.' });
+        if (btn) { btn.disabled = false; }
+      });
   }
 
   function pintarPaginacion(res) {

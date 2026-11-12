@@ -171,8 +171,12 @@ class InscripcionCarrera
      */
     public function registrarInscripcion(int $idAlumno, int $idCarrera, int $idSede, int $idTurno): array
     {
-        // 1. Obtener parámetros para año de inscripción
+        // 1. Verificar que el período de inscripción esté abierto
         $param = $this->obtenerParametrosInscripcion();
+        if (empty($param['abierto'])) {
+            throw new RuntimeException($param['mensaje_cerrado'] ?? 'El período de inscripción a carreras está cerrado.');
+        }
+
         $anioInscripcion = $param['anio_inscripcion'];
 
         // 2. Verificar que no esté ya matriculado

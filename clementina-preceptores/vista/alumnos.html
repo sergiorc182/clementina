@@ -29,7 +29,7 @@
         <div class="page-head">
           <div>
             <h1 class="page-head__title">Alumnos</h1>
-            <p class="page-head__text">Consultá el listado completo o buscá por nombre, apellido o DNI.</p>
+            <p class="page-head__text">Consultá el listado, buscá por nombre, apellido o DNI y actualizá los datos de contacto del alumno.</p>
           </div>
         </div>
 
@@ -103,7 +103,12 @@
         <a id="modal-btn-historial" href="#" class="btn btn--outline btn--sm">
           <i data-lucide="file-search" class="icon--sm"></i>Ver historial
         </a>
+        <button type="button" class="btn btn--outline btn--sm" id="modal-btn-editar">
+          <i data-lucide="pencil" class="icon--sm"></i>Editar datos
+        </button>
+        <button type="button" class="btn btn--outline btn--sm" id="btn-cancelar-edicion" hidden>Cancelar</button>
         <button type="button" class="btn btn--primary btn--sm" id="btn-cerrar-modal">Cerrar</button>
+        <button type="button" class="btn btn--primary btn--sm" id="btn-guardar-datos" hidden>Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -119,12 +124,14 @@
       var paginaActual = 1;
       var busquedaActual = '';
       var totalPaginas  = 1;
+      var alumnoActual  = null;
 
       AppAdmin.montarAdmin({ titulo: 'Alumnos', subtitulo: 'Listado institucional' })
         .then(function (usuario) {
           if (!usuario) { return; }
           cargar(1, '');
           conectarBusqueda();
+          conectarModal();
         });
 
       function conectarBusqueda() {
@@ -220,14 +227,26 @@
       }
 
       function mostrarModalAlumno(a) {
+        alumnoActual = a;
+        pintarVistaAlumno(a);
+
+        var modal = document.getElementById('modal-alumno');
+        modal.classList.add('is-open');
+
+        requestAnimationFrame(function () {
+          var btnCerrar = document.getElementById('btn-cerrar-modal');
+          if (btnCerrar) { btnCerrar.focus(); }
+        });
+      }
+
+      function pintarVistaAlumno(a) {
         var titulo    = document.getElementById('modal-alumno-titulo');
         var subtitulo = document.getElementById('modal-alumno-subtitulo');
         var body      = document.getElementById('modal-alumno-body');
         var btnHist   = document.getElementById('modal-btn-historial');
-        var modal     = document.getElementById('modal-alumno');
 
-        var nombreCompleto = esc(a.primer_apellido + (a.otros_apellidos ? ' ' + a.otros_apellidos : '') +
-          ', ' + a.primer_nombre + (a.otros_nombres ? ' ' + a.otros_nombres : ''));
+        var nombreCompleto = a.primer_apellido + (a.otros_apellidos ? ' ' + a.otros_apellidos : '') +
+          ', ' + a.primer_nombre + (a.otros_nombres ? ' ' + a.otros_nombres : '');
 
         titulo.textContent    = nombreCompleto;
         subtitulo.textContent = 'DNI ' + a.numero_documento + (a.legajo ? ' · Legajo: ' + a.legajo : '');
@@ -246,17 +265,139 @@
           dl('Alta',        fmtFecha(a.alta_registro)) +
           dl('Domicilio',   esc(a.calle ? (a.calle + (a.numero_calle ? ' ' + a.numero_calle : '') + (a.piso ? ', P' + a.piso : '') + (a.depto ? ' D' + a.depto : '')) : '—'));
 
-        modal.classList.add('is-open');
-        App.iconos(modal);
+        mostrarModoEdicion(false);
+        App.iconos(document.getElementById('modal-alumno'));
+      }
 
-        function cerrar() { modal.classList.remove('is-open'); }
-        document.getElementById('btn-cerrar-modal').onclick = cerrar;
-        modal.onclick = function (e) { if (e.target === modal) { cerrar(); } };
+      function pintarFormularioAlumno(a) {
+        var body = document.getElementById('modal-alumno-body');
+        body.innerHTML =
+          '<form id="form-editar-alumno" novalidate>' +
+            '<p class="muted" style="font-size:.8125rem; margin:0 0 var(--sp-4);">' +
+              'Podés actualizar legajo, contacto y domicilio. Nombre y DNI no se modifican desde acá.' +
+            '</p>' +
+            '<div class="form-grid">' +
+              campo('Legajo', 'legajo', 'text', a.legajo, 45, '') +
+              campo('Email', 'email', 'email', a.email, 255, 'required') +
+              campo('Teléfono principal', 'telefono_principal', 'tel', a.telefono_principal, 45, '') +
+              campo('Calle', 'calle', 'text', a.calle, 45, '') +
+              campo('Número', 'numero', 'text', a.numero_calle, 10, 'inputmode="numeric" pattern="[0-9]*"') +
+              campo('Piso', 'piso', 'text', a.piso, 3, '') +
+              campo('Depto', 'depto', 'text', a.depto, 3, '') +
+            '</div>' +
+          '</form>';
 
-        requestAnimationFrame(function () {
-          var btnCerrar = document.getElementById('btn-cerrar-modal');
-          if (btnCerrar) { btnCerrar.focus(); }
+        mostrarModoEdicion(true);
+        App.iconos(document.getElementById('modal-alumno'));
+
+        document.getElementById('form-editar-alumno').addEventListener('submit', function (e) {
+          e.preventDefault();
+          guardarDatosAlumno();
         });
+      }
+
+      function campo(label, name, type, value, maxlen, extra) {
+        var req = name === 'email' ? ' <span class="req">*</span>' : '';
+        return '<div class="field">' +
+          '<label class="label" for="edit-' + name + '">' + label + req + '</label>' +
+          '<input class="input" id="edit-' + name + '" name="' + name + '" type="' + type + '"' +
+            ' value="' + esc(value == null ? '' : value) + '"' +
+            (maxlen ? ' maxlength="' + maxlen + '"' : '') +
+            (extra ? ' ' + extra : '') +
+          '>' +
+        '</div>';
+      }
+
+      function mostrarModoEdicion(editando) {
+        document.getElementById('modal-btn-historial').hidden  = editando;
+        document.getElementById('modal-btn-editar').hidden     = editando;
+        document.getElementById('btn-cerrar-modal').hidden     = editando;
+        document.getElementById('btn-cancelar-edicion').hidden = !editando;
+        document.getElementById('btn-guardar-datos').hidden    = !editando;
+      }
+
+      function conectarModal() {
+        var modal = document.getElementById('modal-alumno');
+        document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
+        document.getElementById('btn-cancelar-edicion').addEventListener('click', function () {
+          if (alumnoActual) { pintarVistaAlumno(alumnoActual); }
+        });
+        document.getElementById('modal-btn-editar').addEventListener('click', function () {
+          if (alumnoActual) { pintarFormularioAlumno(alumnoActual); }
+        });
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) { cerrarModal(); }
+        });
+      }
+
+      function guardarDatosAlumno() {
+        if (!alumnoActual) { return; }
+
+        var email  = document.getElementById('edit-email').value.trim();
+        var numero = document.getElementById('edit-numero').value.trim();
+
+        if (!email || email.indexOf('@') === -1) {
+          App.toast({ tipo: 'warning', titulo: 'Datos incompletos', texto: 'Ingresá un email válido.' });
+          document.getElementById('edit-email').focus();
+          return;
+        }
+        if (numero !== '' && !/^\d+$/.test(numero)) {
+          App.toast({ tipo: 'warning', titulo: 'Datos incompletos', texto: 'El número de domicilio debe ser numérico.' });
+          document.getElementById('edit-numero').focus();
+          return;
+        }
+
+        var datos = new URLSearchParams();
+        datos.append('accion', 'actualizar_datos');
+        datos.append('id_alumno', alumnoActual.id_alumno);
+        datos.append('legajo', document.getElementById('edit-legajo').value.trim());
+        datos.append('email', email);
+        datos.append('telefono_principal', document.getElementById('edit-telefono_principal').value.trim());
+        datos.append('calle', document.getElementById('edit-calle').value.trim());
+        datos.append('numero', numero);
+        datos.append('piso', document.getElementById('edit-piso').value.trim());
+        datos.append('depto', document.getElementById('edit-depto').value.trim());
+
+        var btn = document.getElementById('btn-guardar-datos');
+        btn.disabled = true;
+
+        fetch(AppAdmin.controladorAdmin('alumnos.php'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: datos.toString()
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: res.mensaje || 'Intentá nuevamente.' });
+              return;
+            }
+            alumnoActual = res.alumno;
+            pintarVistaAlumno(res.alumno);
+            actualizarFilaAlumno(res.alumno);
+            App.toast({ tipo: 'success', titulo: 'Datos actualizados', texto: res.mensaje || 'Los cambios se guardaron.' });
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo guardar. Revisá tu conexión.' });
+          })
+          .then(function () { btn.disabled = false; });
+      }
+
+      function actualizarFilaAlumno(a) {
+        var btn = document.querySelector('[data-accion="detalle"][data-id="' + a.id_alumno + '"]');
+        if (!btn) { return; }
+        var tr = btn.closest('tr');
+        if (!tr) { return; }
+        var celdas = tr.querySelectorAll('td');
+        if (celdas.length < 5) { return; }
+        celdas[2].innerHTML = '<span class="badge badge--neutral">' + esc(a.legajo || '—') + '</span>';
+        celdas[4].innerHTML = '<a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a>';
+      }
+
+      function cerrarModal() {
+        document.getElementById('modal-alumno').classList.remove('is-open');
+        alumnoActual = null;
+        mostrarModoEdicion(false);
       }
 
       function dl(label, value) {

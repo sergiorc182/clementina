@@ -155,6 +155,7 @@ class Usuario {
             $stmt->execute([$id_alumno]);
             return $stmt->fetch();
         } catch (PDOException $e) {
+            error_log('Error al obtener los datos del alumno: ' . $e->getMessage());
             return false;
         }
     }
@@ -225,8 +226,11 @@ class Usuario {
             $this->conexion->commit();
             return ['ok' => true, 'mensaje' => 'Datos actualizados correctamente.'];
         } catch (PDOException $e) {
-            $this->conexion->rollBack();
-            return ['ok' => false, 'mensaje' => 'Error al actualizar los datos: ' . $e->getMessage()];
+            if ($this->conexion->inTransaction()) {
+                $this->conexion->rollBack();
+            }
+            error_log('Error al actualizar los datos del alumno: ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'Error al actualizar los datos. Intentá nuevamente.'];
         }
     }
 }

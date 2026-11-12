@@ -32,6 +32,8 @@ $rol = $_SESSION['rol'] ?? 'alumno';
 $modelo = new Historial();
 
 // 2. Determinación del alumno según el rol
+$alumno = null;
+
 if ($rol === 'alumno') {
     // Alumno: identidad siempre estrictamente de la sesión
     $idAlumno = (int) $_SESSION['id_usuario'];
@@ -39,7 +41,8 @@ if ($rol === 'alumno') {
     // Personal: puede consultar por DNI recibido por GET o su propia sesión
     $dniParam = isset($_GET['dni']) ? (int) $_GET['dni'] : 0;
     if ($dniParam > 0) {
-        $idAlumno = $modelo->obtenerIdAlumnoPorDocumento($dniParam);
+        $alumno   = $modelo->obtenerAlumnoPorDocumento($dniParam);
+        $idAlumno = $alumno ? $alumno['id_alumno'] : 0;
     } else {
         $idAlumno = (int) $_SESSION['id_usuario'];
     }
@@ -67,10 +70,15 @@ try {
     // Obtener las materias del historial académico
     $materias = $modelo->obtenerMateriasHistorial($idAlumno, $idCarrera);
 
-    $nombreCompleto = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
-    $documento = isset($_SESSION['dni']) && $_SESSION['dni'] !== null
-        ? (int) $_SESSION['dni']
-        : (int) ($_SESSION['usuario'] ?? 0);
+    if ($alumno !== null) {
+        $nombreCompleto = $alumno['nombre_completo'];
+        $documento      = $alumno['numero_documento'];
+    } else {
+        $nombreCompleto = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+        $documento = isset($_SESSION['dni']) && $_SESSION['dni'] !== null
+            ? (int) $_SESSION['dni']
+            : (int) ($_SESSION['usuario'] ?? 0);
+    }
 
     responder([
         'ok'         => true,
@@ -84,8 +92,9 @@ try {
         'total'      => count($materias),
     ]);
 } catch (Throwable $e) {
+    error_log('[Clementina Historial] ' . $e->getMessage());
     responder([
         'ok'      => false,
-        'mensaje' => 'Error al consultar el historial académico: ' . $e->getMessage(),
+        'mensaje' => 'Error al consultar el historial académico. Intentá nuevamente.',
     ]);
 }

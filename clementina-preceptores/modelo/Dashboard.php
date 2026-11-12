@@ -58,10 +58,11 @@ class Dashboard
             SELECT c.id_carrera,
                    c.nombre_carrera,
                    c.nombre_carrera_corto,
+                   c.nro_resolucion,
                    COUNT(m.id_alumno) AS matriculados
             FROM carreras c
             LEFT JOIN matriculacion m ON m.id_carrera = c.id_carrera
-            GROUP BY c.id_carrera, c.nombre_carrera, c.nombre_carrera_corto
+            GROUP BY c.id_carrera, c.nombre_carrera, c.nombre_carrera_corto, c.nro_resolucion
             ORDER BY matriculados DESC
         ");
         return $stmt->fetchAll();
@@ -83,7 +84,7 @@ class Dashboard
         ];
     }
 
-    /** Período de mesas vigente o el más reciente. */
+    /** Período de mesas vigente, el próximo a abrir o el último cerrado. */
     private function obtenerMesasVigentes(): array
     {
         // Primero busca el período vigente hoy
@@ -104,31 +105,55 @@ class Dashboard
             return $this->nombrarTurnoMesas($vigente);
         }
 
-        // Si no hay vigente, devuelve el más reciente
-        $stmt2 = $this->db->query("
+        // Si no hay vigente, devuelve el próximo a abrir (el más cercano)
+        $stmt2 = $this->db->prepare("
             SELECT pm.*, t.turno
             FROM parametros_mesas pm
             LEFT JOIN turnos t ON t.id_turno = pm.id_turno
+            WHERE pm.fecha_inicio IS NOT NULL
+              AND pm.fecha_fin IS NOT NULL
+              AND pm.fecha_inicio > :hoy
+            ORDER BY pm.fecha_inicio ASC
+            LIMIT 1
+        ");
+        $stmt2->execute([':hoy' => $hoy]);
+        $proximo = $stmt2->fetch();
+        if ($proximo) {
+            $proximo['estado'] = 'proximo';
+            return $this->nombrarTurnoMesas($proximo);
+        }
+
+        // Si ya pasaron todos, devuelve el último cerrado
+        $stmt3 = $this->db->prepare("
+            SELECT pm.*, t.turno
+            FROM parametros_mesas pm
+            LEFT JOIN turnos t ON t.id_turno = pm.id_turno
+            WHERE pm.fecha_inicio IS NOT NULL
+              AND pm.fecha_fin IS NOT NULL
+              AND pm.fecha_fin < :hoy
             ORDER BY pm.fecha_inicio DESC
             LIMIT 1
         ");
-        $reciente = $stmt2->fetch();
-        if ($reciente) {
-            $reciente['estado'] = $reciente['fecha_inicio'] > $hoy ? 'proximo' : 'cerrado';
-            return $this->nombrarTurnoMesas($reciente);
+        $stmt3->execute([':hoy' => $hoy]);
+        $cerrado = $stmt3->fetch();
+        if ($cerrado) {
+            $cerrado['estado'] = 'cerrado';
+            return $this->nombrarTurnoMesas($cerrado);
         }
 
         return ['estado' => 'sin_datos'];
     }
 
     /**
-     * `turnos` es la tabla de turnos de cursada (Mañana/Tarde/Noche);
-     * para las mesas el mismo id significa 1=Febrero, 2=Agosto,
-     * 3=Diciembre. Se muestra ese nombre.
+     * Usa el nombre del turno que viene de la tabla `turnos` (JOIN) y,
+     * solo si no existe, cae al nombre por defecto.
      */
     private function nombrarTurnoMesas(array $fila): array
     {
-        $fila['turno'] = InscripcionFinal::TURNOS[(int) $fila['id_turno']] ?? $fila['turno'];
+        if (trim((string) ($fila['turno'] ?? '')) === '') {
+            $idTurno = (int) ($fila['id_turno'] ?? 0);
+            $fila['turno'] = InscripcionFinal::TURNOS[$idTurno] ?? ('Turno ' . $idTurno);
+        }
         return $fila;
     }
 

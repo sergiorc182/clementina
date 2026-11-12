@@ -54,9 +54,12 @@
         fetch(AppAdmin.controladorAdmin('dashboard.php'))
           .then(function (r) { return r.json(); })
           .then(function (res) {
-            if (!res.ok) { return; }
-            var mesas = res.data.mesas || {};
             var contenedor = document.getElementById('lista-mesas');
+            if (!res.ok) {
+              contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No se pudieron cargar los períodos.</p>';
+              return;
+            }
+            var mesas = res.data.mesas || {};
             if (mesas.estado === 'sin_datos') {
               contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No hay períodos de mesas configurados.</p>';
               return;

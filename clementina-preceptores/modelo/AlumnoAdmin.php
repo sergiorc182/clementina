@@ -3,8 +3,9 @@
  * Modelo: Gestión de alumnos — Panel de preceptores.
  * ISFT 182 "Clementina"
  *
- * Consultas para listar, buscar y obtener detalle de alumnos.
- * Solo lectura: el panel de preceptores no modifica datos académicos.
+ * Consultas para listar, buscar y obtener detalle de alumnos, y
+ * actualización de datos administrativos y de contacto (legajo, email,
+ * teléfono y domicilio).
  */
 
 require_once __DIR__ . '/../../modelo/Conexion.php';
@@ -158,5 +159,114 @@ class AlumnoAdmin
         $row = $stmt->fetch();
         if (!$row) { return null; }
         return $this->obtenerPorId((int)$row['id_alumno']);
+    }
+
+    /**
+     * Actualiza legajo, email, teléfono y domicilio del alumno.
+     *
+     * @param array $datos Claves: legajo, email, telefono_principal,
+     *                     calle, numero, piso, depto.
+     * @return array{ok:bool,mensaje:string,alumno?:array}
+     */
+    public function actualizarDatos(int $id, array $datos): array
+    {
+        $stmt = $this->db->prepare("SELECT id_alumno FROM alumnos WHERE id_alumno = :id LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        if (!$stmt->fetch()) {
+            return ['ok' => false, 'mensaje' => 'Alumno no encontrado.'];
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT id_alumno FROM alumnos
+            WHERE email = :email AND id_alumno <> :id
+            LIMIT 1
+        ");
+        $stmt->execute([':email' => $datos['email'], ':id' => $id]);
+        if ($stmt->fetch()) {
+            return ['ok' => false, 'mensaje' => 'El email ya está registrado por otro alumno.'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $stmt = $this->db->prepare("
+                UPDATE alumnos SET
+                    legajo = :legajo,
+                    email = :email,
+                    fecha_ultima_actualizacion = NOW()
+                WHERE id_alumno = :id
+            ");
+            $stmt->bindValue(':legajo', $datos['legajo'], $datos['legajo'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':email', $datos['email'], PDO::PARAM_STR);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $stmt = $this->db->prepare("
+                SELECT id_domicilio FROM domicilios_alumno
+                WHERE id_alumno = :id
+                ORDER BY id_domicilio ASC
+                LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $idDomicilio = $stmt->fetchColumn();
+
+            if ($idDomicilio !== false) {
+                $stmt = $this->db->prepare("
+                    UPDATE domicilios_alumno SET
+                        calle = :calle,
+                        numero = :numero,
+                        piso = :piso,
+                        depto = :depto,
+                        telefono_principal = :telefono
+                    WHERE id_domicilio = :id_domicilio
+                ");
+                $stmt->bindValue(':id_domicilio', $idDomicilio, PDO::PARAM_INT);
+                $this->vincularDomicilio($stmt, $datos);
+                $stmt->execute();
+            } else {
+                $tieneDatos = $datos['calle'] !== null
+                    || $datos['numero'] !== null
+                    || $datos['piso'] !== null
+                    || $datos['depto'] !== null
+                    || $datos['telefono_principal'] !== null;
+
+                if ($tieneDatos) {
+                    $stmt = $this->db->prepare("
+                        INSERT INTO domicilios_alumno
+                            (id_alumno, calle, numero, piso, depto, telefono_principal)
+                        VALUES (:id, :calle, :numero, :piso, :depto, :telefono)
+                    ");
+                    $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+                    $this->vincularDomicilio($stmt, $datos);
+                    $stmt->execute();
+                }
+            }
+
+            $this->db->commit();
+
+            return [
+                'ok'      => true,
+                'mensaje' => 'Datos actualizados correctamente.',
+                'alumno'  => $this->obtenerPorId($id),
+            ];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('[Clementina AlumnoAdmin] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'Error al actualizar los datos. Intentá nuevamente.'];
+        }
+    }
+
+    /**
+     * Vincula los parámetros de domicilio respetando los valores NULL.
+     */
+    private function vincularDomicilio(PDOStatement $stmt, array $datos): void
+    {
+        $stmt->bindValue(':calle', $datos['calle'], $datos['calle'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $stmt->bindValue(':numero', $datos['numero'], $datos['numero'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindValue(':piso', $datos['piso'], $datos['piso'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $stmt->bindValue(':depto', $datos['depto'], $datos['depto'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $stmt->bindValue(':telefono', $datos['telefono_principal'], $datos['telefono_principal'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     }
 }

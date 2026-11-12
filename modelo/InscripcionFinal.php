@@ -35,11 +35,34 @@ class InscripcionFinal
     private $db;
     private $idAlumno;
 
+    /** Caché de nombres de turnos leídos de la tabla `turnos`. */
+    private $nombresTurnos = null;
+
     /** Recibe el id interno del alumno (alumnos.id_alumno). */
     public function __construct(int $idAlumno)
     {
         $this->db       = Conexion::getInstancia()->getConexion();
         $this->idAlumno = $idAlumno;
+    }
+
+    /** Nombre del turno según la tabla `turnos` (con fallback local). */
+    private function nombreTurno(int $idTurno): string
+    {
+        if ($this->nombresTurnos === null) {
+            $this->nombresTurnos = [];
+            try {
+                $stmt = $this->db->query("SELECT id_turno, turno FROM turnos");
+                foreach ($stmt->fetchAll() as $fila) {
+                    $this->nombresTurnos[(int) $fila['id_turno']] = trim((string) $fila['turno']);
+                }
+            } catch (PDOException $e) {
+                error_log('No se pudieron cargar los turnos: ' . $e->getMessage());
+            }
+        }
+
+        return $this->nombresTurnos[$idTurno]
+            ?? self::TURNOS[$idTurno]
+            ?? ('Turno ' . $idTurno);
     }
 
     /* ------------------------------------------------------------------ */
@@ -139,7 +162,7 @@ class InscripcionFinal
         return [
             'anio'         => (int) $fila['anio'],
             'id_turno'     => $idTurno,
-            'turno'        => self::TURNOS[$idTurno] ?? ('Turno ' . $idTurno),
+            'turno'        => $this->nombreTurno($idTurno),
             'fecha_inicio' => $inicio,
             'fecha_fin'    => $fin,
             'tope'         => (int) $fila['tope'],
@@ -161,7 +184,10 @@ class InscripcionFinal
                     cm.id_materia,
                     m.nombre_materia AS materia,
                     cm.anio_cursada,
-                    h.anio_regular
+                    h.anio_regular,
+                    h.validado_regular,
+                    h.validado_examen,
+                    h.tipo_alumno
              FROM matriculacion mt
              JOIN carrera_materias cm ON cm.id_carrera = mt.id_carrera
              JOIN materias m ON m.id_materia = cm.id_materia
@@ -186,13 +212,17 @@ class InscripcionFinal
         $materias = [];
         foreach ($stmt->fetchAll() as $fila) {
             $clave = $fila['id_carrera'] . '-' . $fila['id_materia'];
+            $esRegular = ((int) $fila['anio_regular']) > 0
+                || strtoupper(trim((string) $fila['validado_regular'])) === 'V'
+                || strtoupper(trim((string) $fila['validado_examen'])) === 'V'
+                || strtoupper(trim((string) $fila['tipo_alumno'])) === 'R';
             $materias[] = [
                 'id_carrera'   => (int) $fila['id_carrera'],
                 'carrera'      => $fila['carrera'],
                 'id_materia'   => (int) $fila['id_materia'],
                 'materia'      => $fila['materia'],
                 'anio_cursada' => (int) $fila['anio_cursada'],
-                'condicion'    => ((int) $fila['anio_regular']) > 0 ? 'Regular' : 'Libre',
+                'condicion'    => $esRegular ? 'Regular' : 'Libre',
                 'llamado'      => $inscriptas[$clave] ?? null,
             ];
         }
@@ -282,7 +312,7 @@ class InscripcionFinal
             $periodos[] = [
                 'id_registro' => (int) $fila['id_registro'],
                 'anio_mesas'  => (int) $fila['anio_mesas'],
-                'turno'       => self::TURNOS[$idTurno] ?? ('Turno ' . $idTurno),
+                'turno'       => $this->nombreTurno($idTurno),
                 'fecha_inicio' => $fila['fecha_inicio'],
                 'fecha_fin'    => $fila['fecha_fin'],
                 'tope_mesas'   => (int) $fila['tope'],

@@ -161,6 +161,157 @@ class AlumnoAdmin
         return $this->obtenerPorId((int)$row['id_alumno']);
     }
 
+    /** Tipos de documento disponibles para el alta de alumnos. */
+    public function tiposDocumento(): array
+    {
+        return $this->db->query(
+            "SELECT id_tipo_documento, descripcion
+             FROM tipos_documento
+             ORDER BY descripcion ASC"
+        )->fetchAll();
+    }
+
+    /**
+     * Alta de un alumno con sus datos personales y de contacto.
+     *
+     * @param array $datos Claves: id_tipo_documento, numero_documento,
+     *                     legajo, primer_apellido, otros_apellidos,
+     *                     primer_nombre, otros_nombres, email,
+     *                     fecha_nacimiento, sexo, telefono_principal,
+     *                     calle, numero, piso, depto.
+     */
+    public function crear(array $datos): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id_alumno FROM alumnos
+             WHERE id_tipo_documento = :tipo AND numero_documento = :documento
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':tipo'      => $datos['id_tipo_documento'],
+            ':documento' => $datos['numero_documento'],
+        ]);
+        if ($stmt->fetch()) {
+            return ['ok' => false, 'mensaje' => 'Ya existe un alumno con ese tipo y número de documento.'];
+        }
+
+        $stmt = $this->db->prepare("SELECT id_alumno FROM alumnos WHERE email = :email LIMIT 1");
+        $stmt->execute([':email' => $datos['email']]);
+        if ($stmt->fetch()) {
+            return ['ok' => false, 'mensaje' => 'El email ya está registrado por otro alumno.'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $stmt = $this->db->prepare("
+                INSERT INTO alumnos
+                    (id_tipo_documento, numero_documento, legajo,
+                     primer_apellido, otros_apellidos, primer_nombre, otros_nombres,
+                     email, fecha_nacimiento, sexo, alta_registro)
+                VALUES
+                    (:tipo, :documento, :legajo,
+                     :primer_apellido, :otros_apellidos, :primer_nombre, :otros_nombres,
+                     :email, :fecha_nacimiento, :sexo, NOW())
+            ");
+            $this->bindValor($stmt, ':tipo', $datos['id_tipo_documento']);
+            $this->bindValor($stmt, ':documento', $datos['numero_documento'], PDO::PARAM_INT);
+            $this->bindValor($stmt, ':legajo', $datos['legajo']);
+            $this->bindValor($stmt, ':primer_apellido', $datos['primer_apellido']);
+            $this->bindValor($stmt, ':otros_apellidos', $datos['otros_apellidos']);
+            $this->bindValor($stmt, ':primer_nombre', $datos['primer_nombre']);
+            $this->bindValor($stmt, ':otros_nombres', $datos['otros_nombres']);
+            $this->bindValor($stmt, ':email', $datos['email']);
+            $this->bindValor($stmt, ':fecha_nacimiento', $datos['fecha_nacimiento']);
+            $this->bindValor($stmt, ':sexo', $datos['sexo']);
+            $stmt->execute();
+
+            $id = (int) $this->db->lastInsertId();
+
+            $tieneDomicilio = $datos['calle'] !== null
+                || $datos['numero'] !== null
+                || $datos['piso'] !== null
+                || $datos['depto'] !== null
+                || $datos['telefono_principal'] !== null;
+
+            if ($tieneDomicilio) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO domicilios_alumno
+                        (id_alumno, calle, numero, piso, depto, telefono_principal)
+                    VALUES (:id, :calle, :numero, :piso, :depto, :telefono)
+                ");
+                $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+                $this->vincularDomicilio($stmt, $datos);
+                $stmt->execute();
+            }
+
+            $this->db->commit();
+
+            return [
+                'ok'      => true,
+                'mensaje' => 'Alumno creado correctamente.',
+                'alumno'  => $this->obtenerPorId($id),
+            ];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('[Clementina AlumnoAdmin crear] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'No se pudo crear el alumno. Intentá nuevamente.'];
+        }
+    }
+
+    /**
+     * Baja de un alumno sin datos académicos asociados.
+     */
+    public function eliminar(int $id): array
+    {
+        if ($this->obtenerPorId($id) === null) {
+            return ['ok' => false, 'mensaje' => 'Alumno no encontrado.'];
+        }
+
+        $dependencias = [
+            'matriculaciones'          => 'matriculacion',
+            'historial académico'      => 'historial_academico',
+            'inscripciones a finales'  => 'inscripciones',
+            'registros de aspirantes'  => 'aspirantes',
+        ];
+
+        $encontradas = [];
+        foreach ($dependencias as $etiqueta => $tabla) {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM {$tabla} WHERE id_alumno = :id");
+            $stmt->execute([':id' => $id]);
+            if ((int) $stmt->fetchColumn() > 0) {
+                $encontradas[] = $etiqueta;
+            }
+        }
+
+        if ($encontradas) {
+            return [
+                'ok'      => false,
+                'mensaje' => 'No se puede borrar el alumno porque tiene datos asociados: '
+                             . implode(', ', $encontradas) . '.',
+            ];
+        }
+
+        try {
+            $this->db->beginTransaction();
+            $stmt = $this->db->prepare("DELETE FROM domicilios_alumno WHERE id_alumno = :id");
+            $stmt->execute([':id' => $id]);
+            $stmt = $this->db->prepare("DELETE FROM alumnos WHERE id_alumno = :id");
+            $stmt->execute([':id' => $id]);
+            $this->db->commit();
+
+            return ['ok' => true, 'mensaje' => 'Alumno eliminado correctamente.'];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('[Clementina AlumnoAdmin eliminar] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'No se pudo eliminar el alumno. Intentá nuevamente.'];
+        }
+    }
+
     /**
      * Actualiza legajo, email, teléfono y domicilio del alumno.
      *
@@ -256,6 +407,18 @@ class AlumnoAdmin
             error_log('[Clementina AlumnoAdmin] ' . $e->getMessage());
             return ['ok' => false, 'mensaje' => 'Error al actualizar los datos. Intentá nuevamente.'];
         }
+    }
+
+    /**
+     * Vincula un parámetro respetando los valores NULL y el tipo indicado.
+     */
+    private function bindValor(PDOStatement $stmt, string $parametro, $valor, int $tipo = PDO::PARAM_STR): void
+    {
+        if ($valor === null || $valor === '') {
+            $stmt->bindValue($parametro, null, PDO::PARAM_NULL);
+            return;
+        }
+        $stmt->bindValue($parametro, $valor, $tipo);
     }
 
     /**

@@ -255,6 +255,21 @@ CREATE TABLE carrera_materias (
     REFERENCES materias (id_materia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Asignaci��n de docentes (personal tipo D) a materias por carrera
+CREATE TABLE docente_asignaciones (
+  id_asignacion BIGINT NOT NULL AUTO_INCREMENT,
+  id_personal   INT NOT NULL,
+  id_carrera    INT NOT NULL,
+  id_materia    INT NOT NULL,
+  PRIMARY KEY (id_asignacion),
+  UNIQUE KEY uq_docente_carrera_materia (id_personal, id_carrera, id_materia),
+  KEY fk_da_carrera_materia (id_carrera, id_materia),
+  CONSTRAINT fk_da_personal FOREIGN KEY (id_personal)
+    REFERENCES personal (id_personal) ON DELETE CASCADE,
+  CONSTRAINT fk_da_cm FOREIGN KEY (id_carrera, id_materia)
+    REFERENCES carrera_materias (id_carrera, id_materia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Consolida correlatividades + Enfermeria_corr + tabla_de_correlatividades_upload.
 -- Estas dos últimas se eliminan una vez migrados sus datos aquí.
 CREATE TABLE correlatividades (
@@ -439,7 +454,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
 -- DATOS DE PRUEBA (opcionales)
--- Contraseña en claro de ambos usuarios: 123456
+-- Contraseñas en claro: admin y alumno@clementina.edu.ar -> 123456
+-- docente1 -> password
 -- Hash bcrypt ($2y$10$...) generado con password_hash(); sirve para
 -- probar el login antes de migrar los datos reales (ver análisis H).
 -- Order: primero los catálogos que referencian los INSERT de abajo.
@@ -452,7 +468,8 @@ INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
   ('PAS', 'Pasaporte');
 
 INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
-  ('A', 'Preceptor');
+  ('A', 'Preceptor'),
+  ('D', 'Docente');
 
 -- País placeholder: alumnos.id_pais_nacimiento tiene DEFAULT 'ZZ' con FK a paises.
 -- Los catálogos completos de países, provincias y localidades están en
@@ -473,5 +490,12 @@ VALUES
 INSERT INTO personal
   (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
 VALUES
-  ('Pérez', 'Juan Carlos', 'admin',
-   '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq', 'A');
+   ('Pérez', 'Juan Carlos', 'admin',
+    '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq', 'A');
+
+-- Usuario docente de prueba -> login con usuario de sistema: docente1
+INSERT INTO personal
+  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
+VALUES
+  ('Docente', 'Prueba', 'docente1',
+   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'D');

@@ -92,9 +92,25 @@
     </div>
   </div>
 
+  <div class="modal" id="modal-ver-carrera" role="dialog" aria-modal="true" aria-labelledby="modal-ver-carrera-titulo">
+    <div class="modal__dialog" style="max-width:620px;">
+      <div class="modal__header">
+        <span class="modal__icon"><i data-lucide="school" class="icon"></i></span>
+        <div>
+          <div class="modal__title" id="modal-ver-carrera-titulo">Detalle de carrera</div>
+          <p class="modal__text">Información completa del registro.</p>
+        </div>
+      </div>
+      <div class="modal__body" id="ver-carrera-body"></div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline btn--sm" id="btn-cerrar-ver-carrera">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script src="../../vista/estilo/app.js?v=13"></script>
-  <script src="estilo/app-admin.js?v=3"></script>
+  <script src="../../vista/estilo/app.js?v=15"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
   <script>
     (function () {
       'use strict';
@@ -111,12 +127,16 @@
 
       function conectarEventos() {
         var modal = document.getElementById('modal-carrera');
+        var modalVer = document.getElementById('modal-ver-carrera');
 
         document.getElementById('btn-nueva-carrera').addEventListener('click', function () {
           abrirModal(null);
         });
         document.getElementById('btn-cancelar-carrera').addEventListener('click', cerrarModal);
         document.getElementById('btn-guardar-carrera').addEventListener('click', guardar);
+        document.getElementById('btn-cerrar-ver-carrera').addEventListener('click', function () {
+          modalVer.classList.remove('is-open');
+        });
 
         document.getElementById('form-carrera').addEventListener('submit', function (e) {
           e.preventDefault();
@@ -127,15 +147,23 @@
           var btn = e.target.closest('[data-accion]');
           if (!btn) { return; }
           var id = parseInt(btn.dataset.id, 10);
-          if (btn.dataset.accion === 'editar') {
+          var accion = btn.dataset.accion;
+          if (accion === 'ver') {
+            abrirVer(buscarCarrera(id));
+          } else if (accion === 'editar') {
             abrirModal(buscarCarrera(id));
-          } else if (btn.dataset.accion === 'eliminar') {
+          } else if (accion === 'copiar') {
+            abrirModal(buscarCarrera(id), true);
+          } else if (accion === 'eliminar') {
             eliminar(id);
           }
         });
 
         modal.addEventListener('click', function (e) {
           if (e.target === modal) { cerrarModal(); }
+        });
+        modalVer.addEventListener('click', function (e) {
+          if (e.target === modalVer) { modalVer.classList.remove('is-open'); }
         });
       }
 
@@ -173,11 +201,61 @@
             '<td data-label="Título">' + esc(c.titulo || '—') + '</td>' +
             '<td data-label="Matriculados" class="num">' + (parseInt(c.matriculados, 10) || 0) + '</td>' +
             '<td class="col-actions" data-label="Acciones">' +
-              '<button type="button" class="btn btn--outline btn--sm" data-accion="editar" data-id="' + c.id_carrera + '">Editar</button> ' +
-              '<button type="button" class="btn btn--ghost btn--sm" data-accion="eliminar" data-id="' + c.id_carrera + '">Eliminar</button>' +
+              boton('ver', 'Ver', 'eye', c.id_carrera) +
+              boton('editar', 'Editar', 'pencil', c.id_carrera) +
+              boton('copiar', 'Copiar', 'copy', c.id_carrera) +
+              boton('eliminar', 'Borrar', 'trash-2', c.id_carrera) +
             '</td>' +
           '</tr>';
         }).join('');
+
+        App.iconos(tbody);
+      }
+
+      function boton(accion, titulo, icono, id) {
+        return '<button type="button" class="btn btn--ghost btn--icon btn--sm" title="' + titulo +
+          '" aria-label="' + titulo + '" data-accion="' + accion + '" data-id="' + id + '">' +
+          '<i data-lucide="' + icono + '"></i></button> ';
+      }
+
+      function abrirVer(carrera) {
+        if (!carrera) { return; }
+
+        var filas = [
+          ['ID', carrera.id_carrera],
+          ['Carrera', carrera.nombre_carrera],
+          ['Nombre corto', carrera.nombre_carrera_corto],
+          ['Resolución', carrera.nro_resolucion],
+          ['Título', carrera.titulo],
+          ['Matriculados', parseInt(carrera.matriculados, 10) || 0],
+          ['Color', '(' + sinNulo(carrera.color_r, 255) + ', ' + sinNulo(carrera.color_g, 0) + ', ' + sinNulo(carrera.color_b, 0) + ')'],
+          ['Usuario alta', carrera.usuario_alta],
+          ['Usuario modificación', carrera.usuario_mod],
+          ['Fecha alta', fmtFechaHora(carrera.fecha_alta)],
+          ['Fecha modificación', fmtFechaHora(carrera.fecha_mod)]
+        ];
+
+        document.getElementById('ver-carrera-body').innerHTML =
+          '<dl class="data-list">' + filas.map(function (f) {
+            return '<div class="data-row"><dt class="data-row__label">' + esc(f[0]) +
+              '</dt><dd class="data-row__value">' + esc(f[1] == null || f[1] === '' ? '—' : f[1]) + '</dd></div>';
+          }).join('') + '</dl>';
+
+        document.getElementById('modal-ver-carrera').classList.add('is-open');
+      }
+
+      function fmtFechaHora(iso) {
+        if (!iso) { return '—'; }
+        return String(iso).replace('T', ' ').substring(0, 16);
+      }
+
+      function sinNulo(valor, porDefecto) {
+        return valor == null || valor === '' ? porDefecto : valor;
+      }
+
+      function recortar(texto, maximo) {
+        texto = String(texto == null ? '' : texto);
+        return texto.length > maximo ? texto.substring(0, maximo) : texto;
       }
 
       function buscarCarrera(id) {
@@ -187,16 +265,26 @@
         return null;
       }
 
-      function abrirModal(carrera) {
-        carreraEditando = carrera || null;
+      function abrirModal(carrera, copia) {
+        carreraEditando = copia ? null : (carrera || null);
 
-        document.getElementById('modal-carrera-titulo').textContent = carrera ? 'Editar carrera' : 'Nueva carrera';
-        document.getElementById('modal-carrera-subtitulo').textContent = carrera
-          ? 'Actualizá los datos de la oferta académica.'
-          : 'Completá los datos de la oferta académica.';
+        document.getElementById('modal-carrera-titulo').textContent =
+          copia ? 'Copiar carrera' : (carrera ? 'Editar carrera' : 'Nueva carrera');
+        document.getElementById('modal-carrera-subtitulo').textContent = copia
+          ? 'Revisá los datos precargados y ajustá el nombre para crear la nueva carrera.'
+          : (carrera
+              ? 'Actualizá los datos de la oferta académica.'
+              : 'Completá los datos de la oferta académica.');
 
-        document.getElementById('campo-nombre').value      = carrera ? carrera.nombre_carrera : '';
-        document.getElementById('campo-corto').value       = carrera ? carrera.nombre_carrera_corto : '';
+        var nombre = carrera ? carrera.nombre_carrera : '';
+        var corto  = carrera ? carrera.nombre_carrera_corto : '';
+        if (copia) {
+          nombre = recortar(nombre + ' (copia)', 100);
+          corto  = recortar(corto + ' (copia)', 45);
+        }
+
+        document.getElementById('campo-nombre').value      = nombre;
+        document.getElementById('campo-corto').value       = corto;
         document.getElementById('campo-resolucion').value  = carrera ? carrera.nro_resolucion : '';
         document.getElementById('campo-titulo').value      = carrera ? carrera.titulo : '';
 

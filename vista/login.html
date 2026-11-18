@@ -173,7 +173,7 @@
       <p class="auth-form__foot">Sistema de gestión académica de alumnos y personal</p>
     </section>
   </div>
-  <script src="estilo/app.js?v=14"></script>
+  <script src="estilo/app.js?v=15"></script>
   <script>
     (function () {
       'use strict';
@@ -201,6 +201,14 @@
         el.className = 'mensaje';
       }
 
+      // Devuelve el panel correspondiente según el tipo y rol del usuario.
+      function urlDestino(tipo, rol) {
+        var raiz = App.raiz();
+        if (rol === 'docente') { return raiz + '/clementina-docentes/index.html'; }
+        if (tipo === 'personal') { return raiz + '/clementina-preceptores/index.html'; }
+        return raiz + '/index.html';
+      }
+
       // Pre-cargar último usuario recordado
       try {
         var guardado = localStorage.getItem('clementina_ultimo_usuario');
@@ -212,11 +220,7 @@
 
       App.verificarSesion(false).then(function (usuario) {
         if (usuario) {
-          if (usuario.tipo === 'personal') {
-            window.location.href = App.raiz() + '/clementina-preceptores/index.html';
-          } else {
-            window.location.href = App.raiz() + '/index.html';
-          }
+          window.location.href = urlDestino(usuario.tipo, usuario.rol);
         }
       });
 
@@ -260,12 +264,14 @@
               } catch (e) {}
               mostrarMensaje(mensajeLogin, resultado.mensaje, 'ok');
               setTimeout(function () {
-                // Redirigir según el tipo de usuario devuelto por el servidor
-                if (resultado.redirigir === 'admin') {
-                  window.location.href = App.raiz() + '/clementina-preceptores/index.html';
-                } else {
-                  window.location.href = App.raiz() + '/index.html';
+                // Redirigir según la señal devuelta por el servidor
+                var destino = App.raiz() + '/index.html';
+                if (resultado.redirigir === 'docente') {
+                  destino = App.raiz() + '/clementina-docentes/index.html';
+                } else if (resultado.redirigir === 'admin') {
+                  destino = App.raiz() + '/clementina-preceptores/index.html';
                 }
+                window.location.href = destino;
               }, 450);
             } else {
               mostrarMensaje(mensajeLogin, resultado.mensaje, 'error');

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parámetros · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="parametros">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title">Parámetros</h1>
+            <p class="page-head__text">Configuración general del instituto, mesas, inscripciones y matriculación.</p>
+          </div>
+          <div class="page-head__actions">
+            <button type="button" class="btn btn--primary" id="btn-guardar-parametros">
+              <i data-lucide="save" class="icon--sm"></i>Guardar cambios
+            </button>
+          </div>
+        </div>
+
+        <div id="estado-carga" class="empty" hidden>
+          <div class="empty__icon"><i data-lucide="settings" class="icon"></i></div>
+          <div class="empty__title">Cargando parámetros…</div>
+        </div>
+
+        <form id="form-parametros" novalidate hidden>
+
+          <div class="card mb-4">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Datos generales</div>
+                <div class="card__subtitle">Identificación institucional y ciclo lectivo</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="field form-grid__full">
+                  <label class="label" for="p-nombre-instituto">Nombre del instituto <span class="req">*</span></label>
+                  <input class="input" id="p-nombre-instituto" name="nombre_instituto" type="text" maxlength="45" required>
+                </div>
+                <div class="field">
+                  <label class="label" for="p-ciclo">Ciclo lectivo <span class="req">*</span></label>
+                  <input class="input" id="p-ciclo" name="ciclo_lectivo" type="number" min="2000" max="2100" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Mesas de examen</div>
+                <div class="card__subtitle">Período y tope de inscripción a finales</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="field">
+                  <label class="label" for="p-anio-mesas">Año de mesas <span class="req">*</span></label>
+                  <input class="input" id="p-anio-mesas" name="anio_mesas" type="number" min="2000" max="2100" required>
+                </div>
+                <div class="field">
+                  <label class="label" for="p-id-turno">Turno <span class="req">*</span></label>
+                  <select class="input" id="p-id-turno" name="id_turno" required>
+                    <option value="">Seleccioná…</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="label" for="p-mesas-inicio">Fecha de inicio</label>
+                  <input class="input" id="p-mesas-inicio" name="mesas_fecha_inicio" type="date">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-mesas-fin">Fecha de fin</label>
+                  <input class="input" id="p-mesas-fin" name="mesas_fecha_fin" type="date">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-tope">Tope de mesas por alumno</label>
+                  <input class="input" id="p-tope" name="tope_mesas" type="number" min="0" max="999">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Inscripción a carreras</div>
+                <div class="card__subtitle">Año y período de inscripción</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="field">
+                  <label class="label" for="p-anio-inscripcion">Año de inscripción a carreras</label>
+                  <input class="input" id="p-anio-inscripcion" name="anio_inscripcion_carrera" type="number" min="2000" max="2100">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-inscripcion-inicio">Fecha de inicio</label>
+                  <input class="input" id="p-inscripcion-inicio" name="inscripcion_fecha_inicio" type="date">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-inscripcion-fin">Fecha de fin</label>
+                  <input class="input" id="p-inscripcion-fin" name="inscripcion_fecha_fin" type="date">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Matriculación</div>
+                <div class="card__subtitle">Año, período y carpetas de vistas</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="field">
+                  <label class="label" for="p-anio-matriculacion">Año de matriculación</label>
+                  <input class="input" id="p-anio-matriculacion" name="anio_matriculacion" type="number" min="2000" max="2100">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-matriculacion-inicio">Fecha de inicio</label>
+                  <input class="input" id="p-matriculacion-inicio" name="matriculacion_fecha_inicio" type="date">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-matriculacion-fin">Fecha de fin</label>
+                  <input class="input" id="p-matriculacion-fin" name="matriculacion_fecha_fin" type="date">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-carpeta-alumno">Carpeta vista alumno</label>
+                  <input class="input" id="p-carpeta-alumno" name="carpeta_vista_alumno" type="text" maxlength="45">
+                </div>
+                <div class="field">
+                  <label class="label" for="p-carpeta-preceptor">Carpeta vista preceptoría</label>
+                  <input class="input" id="p-carpeta-preceptor" name="carpeta_vista_preceptoria" type="text" maxlength="45">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card__header">
+              <div>
+                <div class="card__title">Aspirantes</div>
+                <div class="card__subtitle">Año de la convocatoria</div>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="form-grid">
+                <div class="field">
+                  <label class="label" for="p-anio-aspirantes">Año de aspirantes</label>
+                  <input class="input" id="p-anio-aspirantes" name="anio_aspirantes" type="number" min="2000" max="2100">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../vista/estilo/app.js?v=15"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      AppAdmin.montarAdmin({ titulo: 'Parámetros', subtitulo: 'Configuración del sistema' })
+        .then(function (usuario) {
+          if (!usuario) { return; }
+          cargar();
+          document.getElementById('btn-guardar-parametros').addEventListener('click', guardar);
+        });
+
+      function cargar() {
+        document.getElementById('estado-carga').hidden = false;
+        document.getElementById('form-parametros').hidden = true;
+
+        fetch(AppAdmin.controladorAdmin('parametros.php'))
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje || 'No se pudieron cargar los parámetros.' });
+              return;
+            }
+            pintar(res.datos, res.turnos || []);
+            document.getElementById('estado-carga').hidden = true;
+            document.getElementById('form-parametros').hidden = false;
+            App.iconos(document.getElementById('form-parametros'));
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudieron cargar los parámetros.' });
+          });
+      }
+
+      function pintar(datos, turnos) {
+        turnosActuales = turnos || [];
+        var g  = datos.generales || {};
+        var m  = datos.mesas || {};
+        var i  = datos.inscripcion || {};
+        var mt = datos.matriculacion || {};
+        var a  = datos.aspirantes || {};
+
+        valor('p-nombre-instituto', g.nombre_instituto);
+        valor('p-ciclo', g.ciclo_lectivo);
+
+        valor('p-anio-mesas', m.anio_mesas);
+        valor('p-mesas-inicio', fecha(m.fecha_inicio));
+        valor('p-mesas-fin', fecha(m.fecha_fin));
+        valor('p-tope', m.tope_mesas);
+
+        var selectTurno = document.getElementById('p-id-turno');
+        selectTurno.innerHTML = '<option value="">Seleccioná…</option>' + turnos.map(function (t) {
+          var sel = String(t.id_turno) === String(m.id_turno) ? ' selected' : '';
+          return '<option value="' + esc(t.id_turno) + '"' + sel + '>' + esc(t.turno) + '</option>';
+        }).join('');
+
+        valor('p-anio-inscripcion', i.anio_inscripcion_carrera);
+        valor('p-inscripcion-inicio', fecha(i.fecha_inicio));
+        valor('p-inscripcion-fin', fecha(i.fecha_fin));
+
+        valor('p-anio-matriculacion', mt.anio_matriculacion);
+        valor('p-matriculacion-inicio', fecha(mt.fecha_inicio));
+        valor('p-matriculacion-fin', fecha(mt.fecha_fin));
+        valor('p-carpeta-alumno', mt.carpeta_vista_alumno);
+        valor('p-carpeta-preceptor', mt.carpeta_vista_preceptoria);
+
+        valor('p-anio-aspirantes', a.anio);
+      }
+
+      function valor(id, v) {
+        var el = document.getElementById(id);
+        if (el) { el.value = v == null ? '' : v; }
+      }
+
+      function fecha(v) {
+        if (!v) { return ''; }
+        return String(v).substring(0, 10);
+      }
+
+      function guardar() {
+        var form = document.getElementById('form-parametros');
+        if (!form.reportValidity()) { return; }
+
+        var datos = new URLSearchParams();
+        datos.append('accion', 'guardar');
+        [
+          'nombre_instituto', 'ciclo_lectivo', 'anio_mesas', 'id_turno',
+          'mesas_fecha_inicio', 'mesas_fecha_fin', 'tope_mesas',
+          'anio_inscripcion_carrera', 'inscripcion_fecha_inicio', 'inscripcion_fecha_fin',
+          'anio_matriculacion', 'matriculacion_fecha_inicio', 'matriculacion_fecha_fin',
+          'carpeta_vista_alumno', 'carpeta_vista_preceptoria', 'anio_aspirantes'
+        ].forEach(function (name) {
+          var el = form.querySelector('[name="' + name + '"]');
+          datos.append(name, el ? el.value.trim() : '');
+        });
+
+        var btn = document.getElementById('btn-guardar-parametros');
+        btn.disabled = true;
+
+        fetch(AppAdmin.controladorAdmin('parametros.php'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: datos.toString()
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'error', titulo: 'No se pudo guardar', texto: res.mensaje || 'Intentá nuevamente.' });
+              return;
+            }
+            App.toast({ tipo: 'success', titulo: 'Parámetros', texto: res.mensaje || 'Cambios guardados.' });
+            if (res.datos) { pintar(res.datos, turnosActuales); }
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo guardar. Revisá tu conexión.' });
+          })
+          .then(function () { btn.disabled = false; });
+      }
+
+      var turnosActuales = [];
+
+      function esc(txt) {
+        return String(txt == null ? '' : txt)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+    })();
+  </script>
+</body>
+</html>

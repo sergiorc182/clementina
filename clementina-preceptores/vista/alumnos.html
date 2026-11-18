@@ -31,6 +31,9 @@
             <h1 class="page-head__title">Alumnos</h1>
             <p class="page-head__text">Consultá el listado, buscá por nombre, apellido o DNI y actualizá los datos de contacto del alumno.</p>
           </div>
+          <button type="button" class="btn btn--primary" id="btn-nuevo-alumno">
+            <i data-lucide="user-plus" class="icon--sm"></i>Nuevo alumno
+          </button>
         </div>
 
         <!-- Buscador -->
@@ -113,10 +116,100 @@
     </div>
   </div>
 
+  <!-- Modal de alta / copia de alumno -->
+  <div class="modal" id="modal-nuevo-alumno" role="dialog" aria-modal="true" aria-labelledby="modal-nuevo-alumno-titulo">
+    <div class="modal__dialog" style="max-width:720px;">
+      <div class="modal__header">
+        <span class="modal__icon"><i data-lucide="user-plus" class="icon"></i></span>
+        <div>
+          <div class="modal__title" id="modal-nuevo-alumno-titulo">Nuevo alumno</div>
+          <p class="modal__text" id="modal-nuevo-alumno-subtitulo">Completá los datos personales y de contacto.</p>
+        </div>
+      </div>
+      <div class="modal__body">
+        <form id="form-nuevo-alumno" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label class="label" for="nuevo-id_tipo_documento">Tipo de documento <span class="req">*</span></label>
+              <select class="input" id="nuevo-id_tipo_documento" name="id_tipo_documento" required>
+                <option value="">Seleccioná…</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-numero_documento">Número de documento <span class="req">*</span></label>
+              <input class="input" id="nuevo-numero_documento" name="numero_documento" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" required>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-legajo">Legajo</label>
+              <input class="input" id="nuevo-legajo" name="legajo" type="text" maxlength="45">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-primer_apellido">Primer apellido <span class="req">*</span></label>
+              <input class="input" id="nuevo-primer_apellido" name="primer_apellido" type="text" maxlength="40" required>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-otros_apellidos">Otros apellidos</label>
+              <input class="input" id="nuevo-otros_apellidos" name="otros_apellidos" type="text" maxlength="40">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-primer_nombre">Primer nombre <span class="req">*</span></label>
+              <input class="input" id="nuevo-primer_nombre" name="primer_nombre" type="text" maxlength="40" required>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-otros_nombres">Otros nombres</label>
+              <input class="input" id="nuevo-otros_nombres" name="otros_nombres" type="text" maxlength="40">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-email">Email <span class="req">*</span></label>
+              <input class="input" id="nuevo-email" name="email" type="email" maxlength="255" required>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-fecha_nacimiento">Fecha de nacimiento</label>
+              <input class="input" id="nuevo-fecha_nacimiento" name="fecha_nacimiento" type="date">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-sexo">Sexo</label>
+              <select class="input" id="nuevo-sexo" name="sexo">
+                <option value="">Sin especificar</option>
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="X">X</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-telefono_principal">Teléfono principal</label>
+              <input class="input" id="nuevo-telefono_principal" name="telefono_principal" type="tel" maxlength="45">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-calle">Calle</label>
+              <input class="input" id="nuevo-calle" name="calle" type="text" maxlength="45">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-numero">Número</label>
+              <input class="input" id="nuevo-numero" name="numero" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-piso">Piso</label>
+              <input class="input" id="nuevo-piso" name="piso" type="text" maxlength="3">
+            </div>
+            <div class="field">
+              <label class="label" for="nuevo-depto">Depto</label>
+              <input class="input" id="nuevo-depto" name="depto" type="text" maxlength="3">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline btn--sm" id="btn-cancelar-nuevo">Cancelar</button>
+        <button type="button" class="btn btn--primary btn--sm" id="btn-guardar-nuevo">Crear alumno</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="../../vista/estilo/app.js?v=13"></script>
-  <script src="estilo/app-admin.js?v=3"></script>
+  <script src="../../vista/estilo/app.js?v=15"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
   <script>
     (function () {
       'use strict';
@@ -132,7 +225,28 @@
           cargar(1, '');
           conectarBusqueda();
           conectarModal();
+          conectarTabla();
+          conectarNuevoAlumno();
+          cargarTiposDocumento();
         });
+
+      function conectarTabla() {
+        document.getElementById('tabla-body').addEventListener('click', function (e) {
+          var btn = e.target.closest('[data-accion]');
+          if (!btn) { return; }
+          var id = parseInt(btn.dataset.id, 10);
+          var accion = btn.dataset.accion;
+          if (accion === 'detalle') {
+            abrirDetalle(id, false);
+          } else if (accion === 'editar') {
+            abrirDetalle(id, true);
+          } else if (accion === 'copiar') {
+            abrirCopiaAlumno(id);
+          } else if (accion === 'eliminar') {
+            eliminarAlumno(id);
+          }
+        });
+      }
 
       function conectarBusqueda() {
         var input = document.getElementById('input-busqueda');
@@ -160,7 +274,11 @@
           .then(function (r) { return r.json(); })
           .then(function (res) {
             if (!res.ok) { mostrarError(res.mensaje); return; }
-            if (!res.alumnos || !res.alumnos.length) { mostrarEstado('vacio'); return; }
+            if (!res.alumnos || !res.alumnos.length) {
+              if (pagina > 1) { cargar(pagina - 1, busqueda); return; }
+              mostrarEstado('vacio');
+              return;
+            }
             pintarTabla(res.alumnos);
             pintarPaginacion(res.total, res.paginas, res.pagina);
           })
@@ -176,9 +294,11 @@
             '<td data-label="Legajo"><span class="badge badge--neutral">' + esc(a.legajo || '—') + '</span></td>' +
             '<td data-label="Carrera/s">' + esc(a.carreras || '—') + '</td>' +
             '<td data-label="Email"><a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a></td>' +
-            '<td class="col-actions">' +
-              '<button type="button" class="btn btn--outline btn--sm" data-id="' + a.id_alumno + '" data-accion="detalle">Ver legajo</button>' +
-              ' <a href="historial.html?dni=' + esc(a.numero_documento) + '" class="btn btn--ghost btn--sm">Historial</a>' +
+            '<td class="col-actions" data-label="Acciones">' +
+              botonAccion('detalle', 'Ver legajo', 'eye', a.id_alumno) +
+              botonAccion('editar', 'Editar datos', 'pencil', a.id_alumno) +
+              botonAccion('copiar', 'Copiar alumno', 'copy', a.id_alumno) +
+              botonAccion('eliminar', 'Borrar alumno', 'trash-2', a.id_alumno) +
             '</td>' +
           '</tr>';
         }).join('');
@@ -187,12 +307,13 @@
         document.getElementById('estado-carga').hidden = true;
         document.getElementById('estado-vacio').hidden = true;
         document.getElementById('estado-error').hidden = true;
-        App.iconos();
+        App.iconos(tbody);
+      }
 
-        // Eventos de detalle
-        tbody.querySelectorAll('[data-accion="detalle"]').forEach(function (btn) {
-          btn.addEventListener('click', function () { abrirDetalle(parseInt(this.dataset.id)); });
-        });
+      function botonAccion(accion, titulo, icono, id) {
+        return '<button type="button" class="btn btn--ghost btn--icon btn--sm" title="' + titulo +
+          '" aria-label="' + titulo + '" data-accion="' + accion + '" data-id="' + id + '">' +
+          '<i data-lucide="' + icono + '"></i></button> ';
       }
 
       function pintarPaginacion(total, paginas, pagina) {
@@ -216,12 +337,13 @@
         if (btnSig) { btnSig.addEventListener('click', function () { cargar(paginaActual + 1, busquedaActual); }); }
       }
 
-      function abrirDetalle(idAlumno) {
+      function abrirDetalle(idAlumno, editar) {
         fetch(AppAdmin.controladorAdmin('alumnos.php') + '?id=' + idAlumno)
           .then(function (r) { return r.json(); })
           .then(function (res) {
             if (!res.ok) { App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje }); return; }
             mostrarModalAlumno(res.alumno);
+            if (editar) { pintarFormularioAlumno(res.alumno); }
           })
           .catch(function () { App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo obtener el detalle.' }); });
       }
@@ -294,6 +416,11 @@
           e.preventDefault();
           guardarDatosAlumno();
         });
+
+        requestAnimationFrame(function () {
+          var email = document.getElementById('edit-email');
+          if (email) { email.focus(); }
+        });
       }
 
       function campo(label, name, type, value, maxlen, extra) {
@@ -325,8 +452,193 @@
         document.getElementById('modal-btn-editar').addEventListener('click', function () {
           if (alumnoActual) { pintarFormularioAlumno(alumnoActual); }
         });
+        document.getElementById('btn-guardar-datos').addEventListener('click', guardarDatosAlumno);
         modal.addEventListener('click', function (e) {
           if (e.target === modal) { cerrarModal(); }
+        });
+      }
+
+      var tiposListos = false;
+      var prefillTipo = '';
+
+      function conectarNuevoAlumno() {
+        var modal = document.getElementById('modal-nuevo-alumno');
+
+        document.getElementById('btn-nuevo-alumno').addEventListener('click', function () {
+          abrirNuevoAlumno(null);
+        });
+        document.getElementById('btn-cancelar-nuevo').addEventListener('click', cerrarNuevoAlumno);
+        document.getElementById('btn-guardar-nuevo').addEventListener('click', guardarNuevoAlumno);
+
+        document.getElementById('form-nuevo-alumno').addEventListener('submit', function (e) {
+          e.preventDefault();
+          guardarNuevoAlumno();
+        });
+
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) { cerrarNuevoAlumno(); }
+        });
+      }
+
+      function cargarTiposDocumento(callback) {
+        fetch(AppAdmin.controladorAdmin('alumnos.php') + '?tipos=1')
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { return; }
+            var select = document.getElementById('nuevo-id_tipo_documento');
+            select.innerHTML = '<option value="">Seleccioná…</option>' + (res.tipos || []).map(function (t) {
+              return '<option value="' + esc(t.id_tipo_documento) + '">' + esc(t.descripcion) + '</option>';
+            }).join('');
+            tiposListos = true;
+            if (prefillTipo) { select.value = prefillTipo; }
+            if (callback) { callback(); }
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Tipos de documento', texto: 'No se pudieron cargar los tipos de documento.' });
+          });
+      }
+
+      function abrirCopiaAlumno(idAlumno) {
+        fetch(AppAdmin.controladorAdmin('alumnos.php') + '?id=' + idAlumno)
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje }); return; }
+            abrirNuevoAlumno(res.alumno);
+          })
+          .catch(function () { App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo obtener el detalle.' }); });
+      }
+
+      function abrirNuevoAlumno(prefill) {
+        var form = document.getElementById('form-nuevo-alumno');
+        form.reset();
+
+        document.getElementById('modal-nuevo-alumno-titulo').textContent =
+          prefill ? 'Copiar alumno' : 'Nuevo alumno';
+        document.getElementById('modal-nuevo-alumno-subtitulo').textContent = prefill
+          ? 'Se precargaron los datos. Completá el documento y el email (no se copian porque son únicos).'
+          : 'Completá los datos personales y de contacto.';
+
+        prefillTipo = prefill ? (prefill.id_tipo_documento || '') : '';
+
+        if (prefill) {
+          asignarNuevo('primer_apellido', prefill.primer_apellido);
+          asignarNuevo('otros_apellidos', prefill.otros_apellidos);
+          asignarNuevo('primer_nombre', prefill.primer_nombre);
+          asignarNuevo('otros_nombres', prefill.otros_nombres);
+          asignarNuevo('fecha_nacimiento', prefill.fecha_nacimiento ? String(prefill.fecha_nacimiento).substring(0, 10) : '');
+          asignarNuevo('sexo', prefill.sexo);
+          asignarNuevo('telefono_principal', prefill.telefono_principal);
+          asignarNuevo('calle', prefill.calle);
+          asignarNuevo('numero', prefill.numero_calle);
+          asignarNuevo('piso', prefill.piso);
+          asignarNuevo('depto', prefill.depto);
+        }
+
+        if (tiposListos) {
+          document.getElementById('nuevo-id_tipo_documento').value = prefillTipo;
+        } else {
+          cargarTiposDocumento();
+        }
+
+        var modal = document.getElementById('modal-nuevo-alumno');
+        modal.classList.add('is-open');
+
+        requestAnimationFrame(function () {
+          var foco = document.getElementById(prefill ? 'nuevo-numero_documento' : 'nuevo-id_tipo_documento');
+          if (foco) { foco.focus(); }
+        });
+      }
+
+      function asignarNuevo(name, valor) {
+        var campo = document.getElementById('nuevo-' + name);
+        if (campo) { campo.value = valor == null ? '' : valor; }
+      }
+
+      function cerrarNuevoAlumno() {
+        document.getElementById('modal-nuevo-alumno').classList.remove('is-open');
+        document.getElementById('form-nuevo-alumno').reset();
+      }
+
+      function guardarNuevoAlumno() {
+        var form = document.getElementById('form-nuevo-alumno');
+        if (!form.reportValidity()) { return; }
+
+        var email = document.getElementById('nuevo-email').value.trim();
+        if (!email || email.indexOf('@') === -1) {
+          App.toast({ tipo: 'warning', titulo: 'Datos incompletos', texto: 'Ingresá un email válido.' });
+          document.getElementById('nuevo-email').focus();
+          return;
+        }
+
+        var datos = new URLSearchParams();
+        datos.append('accion', 'crear_alumno');
+        ['id_tipo_documento', 'numero_documento', 'legajo', 'primer_apellido',
+         'otros_apellidos', 'primer_nombre', 'otros_nombres', 'email',
+         'fecha_nacimiento', 'sexo', 'telefono_principal', 'calle',
+         'numero', 'piso', 'depto'].forEach(function (name) {
+          var campo = document.getElementById('nuevo-' + name);
+          datos.append(name, campo ? campo.value.trim() : '');
+        });
+
+        var btn = document.getElementById('btn-guardar-nuevo');
+        btn.disabled = true;
+
+        fetch(AppAdmin.controladorAdmin('alumnos.php'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: datos.toString()
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) {
+              App.toast({ tipo: 'error', titulo: 'No se pudo crear', texto: res.mensaje || 'Intentá nuevamente.' });
+              return;
+            }
+            cerrarNuevoAlumno();
+            App.toast({ tipo: 'success', titulo: 'Alumno creado', texto: res.mensaje || 'El alumno se guardó correctamente.' });
+            cargar(paginaActual, busquedaActual);
+          })
+          .catch(function () {
+            App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo crear el alumno. Revisá tu conexión.' });
+          })
+          .then(function () { btn.disabled = false; });
+      }
+
+      function eliminarAlumno(idAlumno) {
+        var btn = document.querySelector('[data-accion="eliminar"][data-id="' + idAlumno + '"]');
+        var tr = btn ? btn.closest('tr') : null;
+        var nombre = tr ? (tr.querySelector('.col-main strong') || {}).textContent : '';
+        nombre = nombre || 'este alumno';
+
+        App.confirmar({
+          tipo: 'danger',
+          titulo: 'Borrar alumno',
+          texto: '¿Querés borrar a ' + nombre + '? Esta acción no se puede deshacer.',
+          confirmar: 'Borrar'
+        }).then(function (ok) {
+          if (!ok) { return; }
+
+          var datos = new URLSearchParams();
+          datos.append('accion', 'eliminar_alumno');
+          datos.append('id_alumno', idAlumno);
+
+          fetch(AppAdmin.controladorAdmin('alumnos.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: datos.toString()
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              if (!res.ok) {
+                App.toast({ tipo: 'error', titulo: 'No se pudo borrar', texto: res.mensaje || 'Intentá nuevamente.' });
+                return;
+              }
+              App.toast({ tipo: 'success', titulo: 'Alumno eliminado', texto: res.mensaje || 'El alumno se eliminó correctamente.' });
+              cargar(paginaActual, busquedaActual);
+            })
+            .catch(function () {
+              App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo borrar el alumno.' });
+            });
         });
       }
 

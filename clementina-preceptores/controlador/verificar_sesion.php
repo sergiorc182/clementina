@@ -15,6 +15,13 @@ if (($_SESSION['tipo_usuario'] ?? '') !== 'personal') {
     responder(['ok' => false, 'autenticado' => false, 'mensaje' => 'Acceso denegado.']);
 }
 
+if (!esPersonalAdmin([
+    'tipo' => $_SESSION['tipo_usuario'] ?? '',
+    'rol'  => $_SESSION['rol'] ?? 'personal',
+])) {
+    responder(['ok' => false, 'autenticado' => false, 'mensaje' => 'Acceso denegado.']);
+}
+
 responder([
     'ok'      => true,
     'usuario' => [

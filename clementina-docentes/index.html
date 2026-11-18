@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Docentes - Clementina ISFT 182</title>
+  <script>try{if(localStorage.getItem('clementina-tema')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="vista/estilo/docentes.css?v=1">
+</head>
+<body>
+  <div class="admin-shell">
+    <div class="admin-main docentes-wrap">
+      <header class="admin-topbar">
+        <div class="admin-topbar__title">Panel Docentes</div>
+        <a class="btn btn--ghost btn--sm" href="../vista/login.html">Salir</a>
+      </header>
+      <main class="admin-content">
+        <section class="welcome" style="margin-bottom: var(--sp-5); width:100%;">
+          <div class="welcome__body">
+            <p class="welcome__eyebrow">Clementina</p>
+            <h1 class="welcome__title">Notas y cursada</h1>
+            <p class="welcome__text" id="docente-nombre">Cargando...</p>
+          </div>
+        </section>
+
+        <div class="card" style="margin-bottom: var(--sp-5);">
+          <div class="card__header"><div class="card__title">Seleccionar cursada</div></div>
+          <div class="card__body">
+            <div class="grid grid--2" style="gap: var(--sp-3);">
+              <label>Carrera
+                <select id="sel-carrera" class="input" aria-label="Carrera"></select>
+              </label>
+              <label>Materia
+                <select id="sel-materia" class="input" aria-label="Materia"></select>
+              </label>
+            </div>
+            <button id="btn-cargar" class="btn btn--primary" style="margin-top: var(--sp-3);">Cargar alumnos</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Alumnos</div>
+              <div class="card__subtitle" id="subtabla">Elegí carrera y materia.</div>
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="table-wrap">
+              <table class="table" id="tabla-alumnos">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th>Legajo</th>
+                    <th>Nota (historial)</th>
+                    <th>Tipo/estado</th>
+                    <th>Promocionado</th>
+                    <th>Nota FINAL</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-alumnos"></tbody>
+              </table>
+            </div>
+            <p class="note" style="margin-top: var(--sp-3);">La carga/guardado de parciales y “nota FINAL” requiere tablas adicionales en BD (no creadas aquí). Por ahora se muestra el estado desde <code>historial_academico</code>; si querés guardado real, definimos el esquema y lo aplicamos con tu aprobación.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../vista/estilo/app.js?v=14"></script>
+  <script src="vista/estilo/docentes.js?v=1"></script>
+</body>
+</html>

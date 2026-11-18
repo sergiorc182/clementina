@@ -21,23 +21,29 @@
     {
       seccion: 'Principal',
       items: [
-        { id: 'dashboard',  icon: 'layout-dashboard', label: 'Dashboard',         href: '../index.html' },
+        { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', href: '../index.html' },
       ]
     },
     {
-      seccion: 'Alumnos',
+      seccion: 'Configurar',
       items: [
-        { id: 'alumnos',    icon: 'user',             label: 'Listado de alumnos', href: 'alumnos.html' },
-        { id: 'historial',  icon: 'file-search',      label: 'Historial académico', href: 'historial.html' },
+        { id: 'carreras', icon: 'school', label: 'Carreras', href: 'carreras.html' },
+        { id: 'materias', icon: 'book-open', label: 'Materias', href: 'configuracion.html?entidad=materias' },
+        { id: 'carrera_materias', icon: 'link', label: 'Relacion carreras-materias', href: 'configuracion.html?entidad=carrera_materias' },
+        { id: 'alumnos', icon: 'user', label: 'Alumnos', href: 'alumnos.html' },
+        { id: 'parametros', icon: 'settings', label: 'Parametros', href: 'parametros.html' },
+        { id: 'carrera_sede_turno', icon: 'share-2', label: 'Relacion carreras-sedes-turnos', href: 'configuracion.html?entidad=carrera_sede_turno' },
+        { id: 'turnos', icon: 'clock', label: 'Turnos', href: 'configuracion.html?entidad=turnos' },
       ]
     },
     {
-      seccion: 'Académico',
+      seccion: 'Gestion academica',
       items: [
-        { id: 'carreras',   icon: 'school',           label: 'Carreras',           href: 'carreras.html' },
-        { id: 'inscripciones', icon: 'calendar-check', label: 'Inscripciones',     href: 'inscripciones.html' },
-        { id: 'mesas',      icon: 'calendar-days',    label: 'Mesas de examen',    href: 'mesas.html' },
-        { id: 'cronogramas', icon: 'file-text',       label: 'Cronogramas de finales', href: 'cronogramas_finales.html' },
+        { id: 'historial', icon: 'file-search', label: 'Historial academico', href: 'historial.html' },
+        { id: 'inscripciones', icon: 'calendar-check', label: 'Inscripciones', href: 'inscripciones.html' },
+        { id: 'mesas', icon: 'calendar-days', label: 'Mesas de examen', href: 'mesas.html' },
+        { id: 'cronogramas', icon: 'file-text', label: 'Cronogramas de finales', href: 'cronogramas_finales.html' },
+        { id: 'asignaciones-docentes', icon: 'user-check', label: 'Asignaciones docentes', href: 'asignaciones_docentes.html' },
       ]
     },
   ];

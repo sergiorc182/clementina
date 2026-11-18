@@ -179,7 +179,7 @@ function intentarRestaurarSesionDesdeCookie(): bool
                 return false;
             }
 
-            $roles = ['A' => 'preceptor'];
+            $roles = ['A' => 'preceptor', 'D' => 'docente'];
             $_SESSION['id_usuario']   = $p['id_personal'];
             $_SESSION['tipo_usuario'] = 'personal';
             $_SESSION['rol']          = $roles[$p['id_tipo_personal']] ?? 'personal';

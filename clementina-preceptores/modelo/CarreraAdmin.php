@@ -28,11 +28,20 @@ class CarreraAdmin
                    c.nombre_carrera,
                    c.nombre_carrera_corto,
                    c.titulo,
+                   c.color_r,
+                   c.color_g,
+                   c.color_b,
+                   c.usuario_alta,
+                   c.usuario_mod,
+                   c.fecha_alta,
+                   c.fecha_mod,
                    COUNT(m.id_alumno) AS matriculados
             FROM carreras c
             LEFT JOIN matriculacion m ON m.id_carrera = c.id_carrera
             GROUP BY c.id_carrera, c.nro_resolucion, c.nombre_carrera,
-                     c.nombre_carrera_corto, c.titulo
+                     c.nombre_carrera_corto, c.titulo,
+                     c.color_r, c.color_g, c.color_b,
+                     c.usuario_alta, c.usuario_mod, c.fecha_alta, c.fecha_mod
             ORDER BY c.nombre_carrera ASC
         ");
         return $stmt->fetchAll();

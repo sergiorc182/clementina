@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignaciones docentes - Clementina</title>
+  <script>try{if(localStorage.getItem('clementina-tema')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+</head>
+<body data-page="asignaciones-docentes">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+      <main id="contenido" class="admin-content">
+        <section class="page-head">
+          <p class="page-head__eyebrow">Preceptores</p>
+          <h1 class="page-head__title">Asignaciones docentes</h1>
+          <p class="page-head__desc">Asigná docentes (personal tipo D) a carreras y materias.</p>
+        </section>
+
+        <div class="card" style="margin-bottom: var(--sp-5);">
+          <div class="card__header"><div class="card__title">Nueva asignación</div></div>
+          <div class="card__body">
+            <div class="grid grid--3" style="gap: var(--sp-3);">
+              <label>Docente
+                <select id="sel-docente" class="input"></select>
+              </label>
+              <label>Carrera / Materia
+                <select id="sel-cm" class="input"></select>
+              </label>
+              <div style="align-self: end;">
+                <button id="btn-crear" class="btn btn--primary">Asignar</button>
+              </div>
+            </div>
+            <p class="note" id="msg-asig" style="margin-top: var(--sp-2);"></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header"><div class="card__title">Asignaciones actuales</div></div>
+          <div class="card__body">
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Docente</th><th>Carrera</th><th>Materia</th><th></th></tr></thead>
+                <tbody id="tbody-asig"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../../vista/estilo/app.js?v=14"></script>
+  <script src="vista/estilo/asignaciones_docentes.js?v=1"></script>
+</body>
+</html>

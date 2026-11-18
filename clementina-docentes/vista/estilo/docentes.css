@@ -1,0 +1,32 @@
+/* Estilos docentes (basado en admin) */
+@import url('../../clementina-preceptores/vista/estilo/admin.css');
+
+body { background: var(--color-bg); }
+
+.docentes-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.admin-topbar {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.admin-content > * {
+  width: 100%;
+  max-width: 1100px;
+}
+
+@media (max-width: 900px) {
+  .admin-content > * { max-width: 100%; }
+}

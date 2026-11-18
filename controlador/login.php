@@ -51,9 +51,11 @@ $_SESSION['legajo']      = $u['legajo'];
 // Guardar cookies persistentes en el navegador (sesión de 30 días y datos del usuario)
 establecerCookieAutenticacion($u);
 
-// Determinar destino según el tipo de usuario
-// El frontend usa esta URL para redirigir, lo que evita problemas con rutas relativas en distintos hostings
-if ($u['tipo'] === 'personal') {
+// Determinar destino según el rol del usuario
+// El frontend usa esta señal para redirigir, lo que evita problemas con rutas relativas en distintos hostings
+if ($u['tipo'] === 'personal' && $u['rol'] === 'docente') {
+    $redirigir = 'docente'; // señal para que el JS vaya al panel de docentes
+} elseif ($u['tipo'] === 'personal') {
     $redirigir = 'admin';   // señal para que el JS construya la URL del panel admin
 } else {
     $redirigir = 'alumno';  // señal para que el JS vaya al index del alumno

@@ -108,20 +108,20 @@ class Usuario {
                 if (!password_verify($password, $personal['password_hash'])) {
                     return ['ok' => false, 'mensaje' => 'La contraseña es incorrecta.'];
                 }
-                $roles = ['A' => 'preceptor'];
-                return [
-                    'ok' => true,
-                    'usuario' => [
-                        'id' => $personal['id_personal'],
-                        'tipo' => 'personal',
-                        'rol' => $roles[$personal['id_tipo_personal']] ?? 'personal',
-                        'nombre' => $personal['nombres'],
-                        'apellido' => $personal['apellidos'],
-                        'email' => null,
-                        'dni' => null,
-                        'legajo' => null
-                    ]
-                ];
+            $roles = ['A' => 'preceptor', 'D' => 'docente'];
+            return [
+                'ok' => true,
+                'usuario' => [
+                    'id' => $personal['id_personal'],
+                    'tipo' => 'personal',
+                    'rol' => $roles[$personal['id_tipo_personal']] ?? 'personal',
+                    'nombre' => $personal['nombres'],
+                    'apellido' => $personal['apellidos'],
+                    'email' => null,
+                    'dni' => null,
+                    'legajo' => null
+                ]
+            ];
             }
             
             return ['ok' => false, 'mensaje' => 'No existe una cuenta con ese DNI, email o usuario.'];

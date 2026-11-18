@@ -74,6 +74,25 @@ function requerirPersonal(): array
     return $usuario;
 }
 
+/** Indica si el usuario tiene acceso al panel administrativo (no docentes). */
+function esPersonalAdmin(array $usuario): bool
+{
+    return ($usuario['tipo'] ?? '') === 'personal'
+        && in_array($usuario['rol'] ?? '', ['preceptor', 'directivo', 'secretaria', 'personal'], true);
+}
+
+/**
+ * Exige que el usuario sea docente (tipo = 'personal', rol = 'docente').
+ */
+function requerirDocente(): array
+{
+    $usuario = requerirPersonal();
+    if (($usuario['rol'] ?? '') !== 'docente') {
+        responder(['ok' => false, 'mensaje' => 'Acceso restringido a docentes.']);
+    }
+    return $usuario;
+}
+
 /**
  * Exige que el usuario sea preceptor (tipo = 'personal', rol = 'preceptor').
  */
@@ -104,8 +123,7 @@ function requerirDirectivo(): array
 function requerirPersonalAdmin(): array
 {
     $usuario = requerirPersonal();
-    $rolesAdmin = ['preceptor', 'directivo', 'secretaria', 'personal'];
-    if (!in_array($usuario['rol'] ?? '', $rolesAdmin, true)) {
+    if (!esPersonalAdmin($usuario)) {
         responder(['ok' => false, 'mensaje' => 'Sin permisos para acceder al panel administrativo.']);
     }
     return $usuario;

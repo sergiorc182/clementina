@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
+</head>
+<body data-page="">
+
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación del panel"></aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar" id="admin-topbar" role="banner"></header>
+
+      <main id="contenido" class="admin-content">
+
+        <div class="page-head">
+          <div>
+            <h1 class="page-head__title" id="page-titulo">Configuración</h1>
+            <p class="page-head__text" id="page-texto"></p>
+          </div>
+          <div class="page-head__actions">
+            <button type="button" class="btn btn--primary" id="btn-nuevo">
+              <i data-lucide="plus" class="icon--sm"></i><span id="btn-nuevo-texto">Nuevo</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar mb-4">
+          <div class="field field--icon" style="flex:1 1 280px; margin:0;">
+            <i data-lucide="search" class="field__icon icon--sm"></i>
+            <input type="search" id="input-busqueda" class="input" placeholder="Buscar…" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="table-wrap table-wrap--stack">
+          <table class="table" id="tabla-config" aria-label="Registros de configuración">
+            <thead>
+              <tr id="tabla-head"></tr>
+            </thead>
+            <tbody id="tabla-body">
+              <tr><td colspan="10" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-config" role="dialog" aria-modal="true" aria-labelledby="modal-config-titulo">
+    <div class="modal__dialog" style="max-width:640px;">
+      <div class="modal__header">
+        <span class="modal__icon"><i data-lucide="settings" class="icon" id="modal-config-icon"></i></span>
+        <div>
+          <div class="modal__title" id="modal-config-titulo">Registro</div>
+          <p class="modal__text" id="modal-config-subtitulo"></p>
+        </div>
+      </div>
+      <div class="modal__body" id="modal-config-body"></div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline btn--sm" id="btn-cancelar-config">Cancelar</button>
+        <button type="button" class="btn btn--primary btn--sm" id="btn-guardar-config">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="../../vista/estilo/app.js?v=15"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
+  <script src="estilo/configuracion.js?v=1"></script>
+</body>
+</html>

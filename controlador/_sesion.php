@@ -148,7 +148,7 @@ function clementinaLeerRevocaciones(): array
     if (!is_readable($archivo)) {
         return [];
     }
-    $datos = json_decode((string) @file_get_contents($archivo), true);
+    $datos = json_decode((string) file_get_contents($archivo), true);
     if (!is_array($datos)) {
         return [];
     }
@@ -175,9 +175,9 @@ function clementinaRevocarJti(string $jti, int $exp): void
     $revocaciones = clementinaLeerRevocaciones();
     $revocaciones[$jti] = $exp;
     if (!is_dir(dirname($archivo))) {
-        @mkdir(dirname($archivo), 0755, true);
+        mkdir(dirname($archivo), 0755, true);
     }
-    $handle = @fopen($archivo, 'c+');
+    $handle = fopen($archivo, 'c+');
     if ($handle === false) {
         return;
     }
@@ -273,44 +273,12 @@ function csrfTokenValido(string $token): bool
     return $esperado !== '' && $token !== '' && hash_equals($esperado, $token);
 }
 
-function clementinaArchivoBloqueoRotacion(): string
-{
-    return dirname(__DIR__) . '/config/.token_rotation.lock';
-}
-
-function clementinaAdquirirBloqueoRotacion()
-{
-    $archivo = clementinaArchivoBloqueoRotacion();
-    if (!is_dir(dirname($archivo))
-        && !@mkdir(dirname($archivo), 0755, true)
-        && !is_dir(dirname($archivo))) {
-        return null;
-    }
-
-    $handle = @fopen($archivo, 'c');
-    if ($handle === false) {
-        return null;
-    }
-    if (!flock($handle, LOCK_EX)) {
-        fclose($handle);
-        return null;
-    }
-
-    return $handle;
-}
-
-function clementinaLiberarBloqueoRotacion($handle): void
-{
-    if (!is_resource($handle)) {
-        return;
-    }
-    flock($handle, LOCK_UN);
-    fclose($handle);
-}
-
-function clementinaCrearTokenAutenticacion(array $u): array
+/** Establece las cookies persistentes de autenticación y la cookie informativa. */
+function establecerCookieAutenticacion(array $u): void
 {
     $expira = time() + CLEMENTINA_TOKEN_LIFETIME;
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
     $jti = bin2hex(random_bytes(16));
     $payload = json_encode([
         'id'   => (int) $u['id'],
@@ -319,25 +287,12 @@ function clementinaCrearTokenAutenticacion(array $u): array
         'iat'  => time(),
         'exp'  => $expira,
         'jti'  => $jti,
-    ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    ], JSON_UNESCAPED_UNICODE);
 
     $firma = hash_hmac('sha256', $payload, clementinaSecret());
+    $token = base64_encode($payload . '::' . $firma);
 
-    return [
-        'token'  => base64_encode($payload . '::' . $firma),
-        'expira' => $expira,
-        'jti'    => $jti,
-    ];
-}
-
-function establecerCookieAutenticacion(array $u, ?array $credencial = null): bool
-{
-    $credencial = $credencial ?? clementinaCrearTokenAutenticacion($u);
-    $token = (string) $credencial['token'];
-    $expira = (int) $credencial['expira'];
-    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-
-    $cookieAuth = setcookie(CLEMENTINA_AUTH_COOKIE, $token, [
+    setcookie(CLEMENTINA_AUTH_COOKIE, $token, [
         'expires'  => $expira,
         'path'     => '/',
         'secure'   => $secure,
@@ -355,7 +310,7 @@ function establecerCookieAutenticacion(array $u, ?array $credencial = null): boo
         'tipo'     => $u['tipo'],
     ], JSON_UNESCAPED_UNICODE);
 
-    $cookieUsuario = setcookie(CLEMENTINA_USER_COOKIE, $datosVisibles, [
+    setcookie(CLEMENTINA_USER_COOKIE, $datosVisibles, [
         'expires'  => $expira,
         'path'     => '/',
         'secure'   => $secure,
@@ -363,26 +318,8 @@ function establecerCookieAutenticacion(array $u, ?array $credencial = null): boo
         'samesite' => 'Lax',
     ]);
 
-    return $cookieAuth && $cookieUsuario;
-}
-
-function clementinaRevocarTokenCookie(): array
-{
-    if (empty($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
-        return ['aplicable' => false, 'revocado' => true];
-    }
-
-    $token = clementinaLeerToken((string) $_COOKIE[CLEMENTINA_AUTH_COOKIE]);
-    if ($token === null) {
-        return ['aplicable' => false, 'revocado' => true];
-    }
-
-    clementinaRevocarJti($token['jti'], (int) $token['exp']);
-
-    return [
-        'aplicable' => true,
-        'revocado' => clementinaTokenRevocado($token['jti']),
-    ];
+    $_SESSION['auth_jti'] = $jti;
+    $_SESSION['auth_exp'] = $expira;
 }
 
 /** Elimina las cookies y revoca el token server-side. */
@@ -390,11 +327,14 @@ function eliminarCookieAutenticacion(): void
 {
     $expira = time() - 3600;
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $jti = '';
+    $jtiExp = 0;
 
     if (!empty($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
         $token = clementinaLeerToken($_COOKIE[CLEMENTINA_AUTH_COOKIE]);
         if ($token !== null) {
-            clementinaRevocarJti($token['jti'], $token['exp']);
+            $jti = (string) $token['jti'];
+            $jtiExp = (int) $token['exp'];
         }
         setcookie(CLEMENTINA_AUTH_COOKIE, '', [
             'expires'  => $expira,
@@ -405,6 +345,15 @@ function eliminarCookieAutenticacion(): void
         ]);
         unset($_COOKIE[CLEMENTINA_AUTH_COOKIE]);
     }
+
+    if ($jti === '' && !empty($_SESSION['auth_jti'])) {
+        $jti = (string) $_SESSION['auth_jti'];
+        $jtiExp = (int) ($_SESSION['auth_exp'] ?? 0);
+    }
+    if ($jti !== '') {
+        clementinaRevocarJti($jti, $jtiExp > time() ? $jtiExp : time() + CLEMENTINA_TOKEN_LIFETIME);
+    }
+    unset($_SESSION['auth_jti'], $_SESSION['auth_exp']);
 
     if (isset($_COOKIE[CLEMENTINA_USER_COOKIE])) {
         setcookie(CLEMENTINA_USER_COOKIE, '', [
@@ -487,6 +436,8 @@ function intentarRestaurarSesionDesdeCookie(): bool
             return false;
         }
 
+        $_SESSION['auth_jti'] = (string) $token['jti'];
+        $_SESSION['auth_exp'] = (int) $token['exp'];
         session_regenerate_id(true);
         return true;
     } catch (Throwable $e) {

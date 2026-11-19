@@ -45,9 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $tope = filtroEntero($_POST['tope_mesas'] ?? null, 0, 999, true);
-    if ($tope === false) {
-        responder(['ok' => false, 'mensaje' => 'El tope de mesas debe ser un número entero entre 0 y 999.']);
-    }
 
     $anioInscripcion = filtroEntero($_POST['anio_inscripcion_carrera'] ?? null, 2000, 2100, true);
     $anioMatricula   = filtroEntero($_POST['anio_matriculacion'] ?? null, 2000, 2100, true);
@@ -113,13 +110,7 @@ try {
 /** Devuelve int, null si está vacío y $opcional, o false si es inválido. */
 function filtroEntero($valor, int $min, int $max, bool $opcional = false)
 {
-    if ($valor === null) {
-        return $opcional ? null : false;
-    }
-    if (!is_scalar($valor) || is_bool($valor)) {
-        return false;
-    }
-    $texto = trim((string) $valor);
+    $texto = trim((string) ($valor ?? ''));
     if ($texto === '') {
         return $opcional ? null : false;
     }

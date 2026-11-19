@@ -61,14 +61,21 @@ class Usuario {
     
     public function login($identificador, $password) {
         try {
-            $stmt = $this->conexion->prepare("
+            $esDocumento = ctype_digit($identificador);
+            $sql = "
                 SELECT id_alumno, numero_documento, legajo, primer_apellido, otros_apellidos,
                        primer_nombre, otros_nombres, email, password_hash
                 FROM alumnos
-                WHERE email = ? OR numero_documento = ?
-                LIMIT 1
-            ");
-            $stmt->execute([$identificador, $identificador]);
+                WHERE email = ?
+            ";
+            $parametros = [$identificador];
+            if ($esDocumento) {
+                $sql .= " OR numero_documento = ?";
+                $parametros[] = $identificador;
+            }
+            $sql .= " LIMIT 1";
+            $stmt = $this->conexion->prepare($sql);
+            $stmt->execute($parametros);
             $alumno = $stmt->fetch();
             
             if ($alumno) {

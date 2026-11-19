@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../vista/estilo/estilo.css?v=15">
-  <link rel="stylesheet" href="vista/estilo/docentes.css?v=3">
+  <link rel="stylesheet" href="vista/estilo/docentes.css?v=1">
 </head>
 <body>
   <div class="admin-shell">
@@ -38,6 +38,18 @@
                 <select id="sel-materia" class="input" aria-label="Materia"></select>
               </label>
             </div>
+            <div class="grid grid--2" style="gap: var(--sp-3); margin-top: var(--sp-3);">
+              <label>Año
+                <select id="sel-anio" class="input" aria-label="Año de inscripción">
+                  <option value="">Todos los años</option>
+                </select>
+              </label>
+              <label>Buscar alumno
+                <input id="buscar-alumno" class="input" type="search"
+                       placeholder="Apellido, nombre, legajo o DNI"
+                       autocomplete="off" aria-label="Buscar alumno">
+              </label>
+            </div>
             <button id="btn-cargar" class="btn btn--primary" style="margin-top: var(--sp-3);">Cargar alumnos</button>
           </div>
         </div>
@@ -56,6 +68,7 @@
                   <tr>
                     <th>Alumno</th>
                     <th>Legajo</th>
+                    <th>Año</th>
                     <th>Nota (0 a 10)</th>
                     <th>Condición</th>
                     <th>Estado</th>
@@ -73,7 +86,7 @@
     </div>
   </div>
   <script src="../vista/estilo/app.js?v=15"></script>
-  <script src="vista/estilo/docentes.js?v=3"></script>
+  <script src="vista/estilo/docentes.js?v=5"></script>
   <script>
     window.addEventListener('pageshow', function (evento) {
       if (!evento.persisted) { return; }
@@ -83,7 +96,14 @@
         .catch(function () { window.location.replace('../vista/login.html'); });
     });
     document.getElementById('btn-salir-docente').addEventListener('click', function () {
-      App.cerrarSesion();
+      fetch('../controlador/cerrar_sesion.php', { method: 'POST', credentials: 'same-origin' })
+        .catch(function () {})
+        .then(function () {
+          try {
+            localStorage.removeItem('clementina_usuario');
+          } catch (e) {}
+          window.location.replace('../vista/login.html');
+        });
     });
   </script>
 </body>

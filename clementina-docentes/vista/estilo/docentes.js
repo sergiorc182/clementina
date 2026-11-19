@@ -2,14 +2,18 @@
   'use strict';
 
   function apiUrl(ruta) {
-    return App.raiz() + '/clementina-docentes/controlador/' + ruta;
+    var base = window.location.pathname.replace(/\/[^/]*$/, '/');
+    return base + 'controlador/' + ruta;
   }
 
   var selCarrera = document.getElementById('sel-carrera');
   var selMateria = document.getElementById('sel-materia');
+  var selAnio = document.getElementById('sel-anio');
+  var buscarAlumno = document.getElementById('buscar-alumno');
   var tbody = document.getElementById('tbody-alumnos');
   var subtabla = document.getElementById('subtabla');
   var materiasMap = {};
+  var aniosMap = {};
 
   async function cargarSesion() {
     try {
@@ -34,13 +38,30 @@
     opt0.value = '';
     opt0.textContent = list.length ? 'Seleccionar...' : 'Sin materias';
     selMateria.appendChild(opt0);
-    list.forEach(function (m) {
-      var o = document.createElement('option');
-      o.value = String(m.id_materia);
-      o.textContent = m.nombre_materia + ' (Año ' + m.anio_cursada + ')';
-      selMateria.appendChild(o);
-    });
-  }
+      list.forEach(function (m) {
+        var o = document.createElement('option');
+        o.value = String(m.id_materia);
+        o.textContent = m.nombre_materia + ' (Año ' + m.anio_cursada + ')';
+        selMateria.appendChild(o);
+      });
+      llenarAnios(idCarrera);
+    }
+
+    function llenarAnios(idCarrera) {
+      var lista = aniosMap[String(idCarrera)] || [];
+      selAnio.innerHTML = '';
+      var todos = document.createElement('option');
+      todos.value = '';
+      todos.textContent = 'Todos los años';
+      selAnio.appendChild(todos);
+      lista.forEach(function (anio) {
+        var o = document.createElement('option');
+        o.value = String(anio);
+        o.textContent = String(anio);
+        selAnio.appendChild(o);
+      });
+    }
+
 
   async function cargarCatalogo() {
     try {
@@ -54,6 +75,7 @@
       (data.materias_por_carrera || []).forEach(function (c) {
         materiasMap[String(c.id_carrera)] = c;
       });
+      aniosMap = data.anios_por_carrera || {};
       selCarrera.innerHTML = '';
       var opt0 = document.createElement('option');
       opt0.value = '';
@@ -149,7 +171,10 @@
     subtabla.textContent = 'Cargando...';
     tbody.innerHTML = '';
     try {
-      var url = apiUrl('mis_alumnos.php?id_carrera=' + encodeURIComponent(idc) + '&id_materia=' + encodeURIComponent(idm));
+      var url = apiUrl('mis_alumnos.php?id_carrera=' + encodeURIComponent(idc)
+        + '&id_materia=' + encodeURIComponent(idm)
+        + '&anio=' + encodeURIComponent(selAnio.value)
+        + '&q=' + encodeURIComponent(buscarAlumno.value.trim()));
       var res = await fetch(url, { credentials: 'same-origin' });
       var data = await res.json();
       if (!data.ok) {
@@ -163,6 +188,7 @@
         tr.dataset.idAlumno = String(a.id_alumno);
         tr.appendChild(celda((a.apellido || '') + ', ' + (a.nombre || '')));
         tr.appendChild(celda(a.legajo || '—'));
+        tr.appendChild(celda(a.anio_inscripcion ? String(a.anio_inscripcion) : '—'));
 
         var tdNota = document.createElement('td');
         var inputNota = document.createElement('input');
@@ -217,6 +243,13 @@
   }
 
   document.getElementById('btn-cargar').addEventListener('click', cargarAlumnos);
+
+  buscarAlumno.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      cargarAlumnos();
+    }
+  });
 
   (async function init() {
     var u = await cargarSesion();

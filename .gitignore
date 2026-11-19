@@ -2,12 +2,9 @@
 config/config.local.php
 config/.hmac_secret
 config/.token_revocations.json
-config/.token_rotation.lock
 config/.login_attempts.json
-config/.registro_verificaciones.json
 .env
 docs/testing/
 docs/datos_prueba_finales.sql
 documentos/cronogramas_finales/*
-!documentos/cronogramas_finales/.htaccess
 documentos/cronogramas_finales/.gitkeep

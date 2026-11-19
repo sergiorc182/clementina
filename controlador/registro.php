@@ -1,119 +1,80 @@
 <?php
-require_once __DIR__ . '/_base.php';
+/**
+ * Controlador: Registro de alumnos
+ *
+ * Recibe POST con `primer_nombre`, `otros_nombres`, `primer_apellido`,
+ * `otros_apellidos`, `dni`, `email`, `telefono` (opcional) y `password`.
+ * Crea el alumno en la tabla `alumnos` y guarda su teléfono en
+ * `domicilios_alumno` (base local `clementina`, esquema normalizado).
+ * Devuelve JSON.
+ */
+
+require_once __DIR__ . '/_sesion.php';
+header('Content-Type: application/json; charset=utf-8');
+
 require_once dirname(__DIR__) . '/modelo/Conexion.php';
-require_once dirname(__DIR__) . '/modelo/VerificacionCorreo.php';
-require_once dirname(__DIR__) . '/modelo/CorreoVerificacion.php';
 
-requerirPostSeguro();
-
-function registroTexto($valor): string
+function responder(array $datos): void
 {
-    return is_scalar($valor) && !is_bool($valor) ? trim((string) $valor) : '';
+    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
-function registroClave($valor): string
-{
-    return is_scalar($valor) && !is_bool($valor) ? (string) $valor : '';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    responder(['ok' => false, 'mensaje' => 'Método no permitido.']);
 }
 
-function registroClaves(string $email, string $dni): array
-{
-    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'desconocida');
-    return [
-        'registro-ip|' . $ip,
-        'registro-identidad|' . hash('sha256', mb_strtolower($email) . '|' . $dni),
-    ];
-}
-
-function registroExcedido(array $claves): ?array
-{
-    foreach ($claves as $clave) {
-        $espera = clementinaEsperaIntentos($clave);
-        if ($espera > 0) {
-            return [
-                'ok' => false,
-                'mensaje' => 'Demasiados intentos de registro. Intentá nuevamente en '
-                    . max(1, (int) ceil($espera / 60)) . ' minuto(s).',
-            ];
-        }
-    }
-    return null;
-}
-
-function registroRechazar(array $claves, string $mensaje): void
-{
-    foreach ($claves as $clave) {
-        clementinaRegistrarFallo($clave);
-    }
-    responder(['ok' => false, 'mensaje' => $mensaje]);
-}
-
-$primerNombre = registroTexto($_POST['primer_nombre'] ?? '');
-$otrosNombres = registroTexto($_POST['otros_nombres'] ?? '');
-$primerApellido = registroTexto($_POST['primer_apellido'] ?? '');
-$otrosApellidos = registroTexto($_POST['otros_apellidos'] ?? '');
-$dni = registroTexto($_POST['dni'] ?? '');
-$email = mb_strtolower(registroTexto($_POST['email'] ?? ''));
-$telefono = registroTexto($_POST['telefono'] ?? '');
-$password = registroClave($_POST['password'] ?? '');
-$password2 = registroClave($_POST['password2'] ?? '');
-
-$clavesIntento = registroClaves($email, $dni);
-$excedido = registroExcedido($clavesIntento);
-if ($excedido !== null) {
-    http_response_code(429);
-    responder($excedido);
-}
+$primerNombre   = trim((string) ($_POST['primer_nombre'] ?? ''));
+$otrosNombres   = trim((string) ($_POST['otros_nombres'] ?? ''));
+$primerApellido = trim((string) ($_POST['primer_apellido'] ?? ''));
+$otrosApellidos = trim((string) ($_POST['otros_apellidos'] ?? ''));
+$dni      = trim((string) ($_POST['dni'] ?? ''));
+$email    = strtolower(trim((string) ($_POST['email'] ?? '')));
+$telefono = trim((string) ($_POST['telefono'] ?? ''));
+$password = (string) ($_POST['password'] ?? '');
+$password2 = (string) ($_POST['password2'] ?? '');
 
 if ($primerNombre === '' || $primerApellido === '' || $email === '' || $password === '') {
-    registroRechazar($clavesIntento, 'Completá los campos obligatorios.');
+    responder(['ok' => false, 'mensaje' => 'Completá los campos obligatorios.']);
 }
-if ($password2 === '' || $password !== $password2) {
-    registroRechazar($clavesIntento, 'Las contraseñas no coinciden.');
+
+if ($password2 !== '' && $password !== $password2) {
+    responder(['ok' => false, 'mensaje' => 'Las contraseñas no coinciden.']);
 }
+
 if (!preg_match('/^\d{6,8}$/', $dni)) {
-    registroRechazar($clavesIntento, 'Ingresá un DNI válido (solo números, sin puntos).');
+    responder(['ok' => false, 'mensaje' => 'Ingresá un DNI válido (solo números, sin puntos).']);
 }
-if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255) {
-    registroRechazar($clavesIntento, 'Ingresá un email válido.');
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    responder(['ok' => false, 'mensaje' => 'Ingresá un email válido.']);
 }
-if (strlen($password) < 6 || strlen($password) > 255) {
-    registroRechazar($clavesIntento, 'La contraseña debe tener entre 6 y 255 caracteres.');
-}
-if (mb_strlen($primerNombre) > 40 || mb_strlen($primerApellido) > 40
-    || mb_strlen($otrosNombres) > 40 || mb_strlen($otrosApellidos) > 40
-    || mb_strlen($telefono) > 45) {
-    registroRechazar($clavesIntento, 'Los datos ingresados superan la longitud permitida.');
+
+if (strlen($password) < 6) {
+    responder(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.']);
 }
 
 $db = Conexion::getInstancia()->getConexion();
-$mensajeGenerico = 'No se pudo completar el registro. Revisá los datos o intentá nuevamente.';
 
+// No permitir repetir email ni DNI.
 $stmt = $db->prepare("SELECT id_alumno FROM alumnos WHERE email = :email LIMIT 1");
-$stmt->execute([':email' => $email]);
+$stmt->bindValue(':email', $email);
+$stmt->execute();
 if ($stmt->fetch()) {
-    registroRechazar($clavesIntento, $mensajeGenerico);
+    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese email.']);
 }
 
 $stmt = $db->prepare(
     "SELECT id_alumno FROM alumnos
      WHERE id_tipo_documento = 'DNI' AND numero_documento = :dni LIMIT 1"
 );
-$stmt->execute([':dni' => $dni]);
+$stmt->bindValue(':dni', $dni, PDO::PARAM_INT);
+$stmt->execute();
 if ($stmt->fetch()) {
-    registroRechazar($clavesIntento, $mensajeGenerico);
+    responder(['ok' => false, 'mensaje' => 'Ya existe una cuenta con ese DNI.']);
 }
 
 $hash = password_hash($password, PASSWORD_DEFAULT);
-if ($hash === false) {
-    registroRechazar($clavesIntento, $mensajeGenerico);
-}
-
-$remitente = trim((string) getenv('CLEMENTINA_MAIL_FROM'));
-$verificacionActiva = $remitente !== '' && filter_var($remitente, FILTER_VALIDATE_EMAIL) !== false;
-$idAlumno = 0;
-$tokenVerificacion = '';
-$nombreCompleto = trim($primerNombre . ' ' . $otrosNombres);
 
 try {
     $db->beginTransaction();
@@ -145,43 +106,15 @@ try {
         $stmt->execute();
     }
 
-    if ($verificacionActiva) {
-        $verificacion = new VerificacionCorreo(clementinaSecret());
-        $emitida = $verificacion->emitir($idAlumno, $email, $dni);
-        if ($emitida['ok']) {
-            $tokenVerificacion = (string) $emitida['token'];
-        }
-    }
-
     $db->commit();
-} catch (Throwable $e) {
+
+    responder([
+        'ok'      => true,
+        'mensaje' => '¡Registro exitoso! Ya podés ingresar con tu email y contraseña.',
+    ]);
+} catch (PDOException $e) {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    if ($verificacionActiva && $idAlumno > 0) {
-        (new VerificacionCorreo(clementinaSecret()))->descartar($idAlumno);
-    }
-    responder(['ok' => false, 'mensaje' => $mensajeGenerico]);
+    responder(['ok' => false, 'mensaje' => 'Error al registrar. Intentá de nuevo.']);
 }
-
-$verificacionPendiente = false;
-$mensaje = '¡Registro exitoso! Ya podés ingresar con tu DNI y contraseña.';
-
-if ($tokenVerificacion !== '') {
-    $correo = new CorreoVerificacion();
-    $enviado = $correo->enviar($email, $nombreCompleto, $tokenVerificacion);
-    if ($enviado['enviado']) {
-        $verificacionPendiente = true;
-        $mensaje = '¡Registro exitoso! Revisá tu correo para verificar la cuenta antes de ingresar.';
-    } else {
-        (new VerificacionCorreo(clementinaSecret()))->descartar($idAlumno);
-    }
-}
-
-clementinaLimpiarIntentos($clavesIntento[1]);
-
-responder([
-    'ok' => true,
-    'mensaje' => $mensaje,
-    'verificacion_pendiente' => $verificacionPendiente,
-]);

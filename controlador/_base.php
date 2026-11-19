@@ -25,6 +25,20 @@ function requerirMetodo(string $metodo): void
     }
 }
 
+/** Extrae el host de una URL o de un Host HTTP (con o sin esquema). */
+function clementinaHostDe(string $valor): ?string
+{
+    $valor = trim($valor);
+    if ($valor === '') {
+        return null;
+    }
+    if (strpos($valor, '://') === false) {
+        $valor = 'http://' . $valor;
+    }
+    $host = parse_url($valor, PHP_URL_HOST);
+    return is_string($host) && $host !== '' ? strtolower($host) : null;
+}
+
 /** Verifica el origen de la solicitud cuando el navegador lo informa. */
 function requerirOrigenSeguro(): void
 {
@@ -32,10 +46,9 @@ function requerirOrigenSeguro(): void
     if ($origen === '') {
         return;
     }
-    $hostOrigen = parse_url($origen, PHP_URL_HOST);
-    $hostLocal  = parse_url((string) ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST);
-    if (!is_string($hostOrigen) || !is_string($hostLocal)
-        || strtolower($hostOrigen) !== strtolower($hostLocal)) {
+    $hostOrigen = clementinaHostDe($origen);
+    $hostLocal  = clementinaHostDe((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($hostOrigen === null || $hostLocal === null || $hostOrigen !== $hostLocal) {
         http_response_code(403);
         responder(['ok' => false, 'mensaje' => 'Origen de la solicitud no permitido.']);
     }
@@ -131,6 +144,18 @@ function requerirDocente(): array
     $usuario = requerirPersonal();
     if (($usuario['rol'] ?? '') !== 'docente') {
         responder(['ok' => false, 'mensaje' => 'Acceso restringido a docentes.']);
+    }
+    return $usuario;
+}
+
+/**
+ * Exige docente o preceptor: ambos pueden usar el panel de calificaciones.
+ */
+function requerirDocenteOPreceptor(): array
+{
+    $usuario = requerirPersonal();
+    if (!in_array($usuario['rol'] ?? '', ['docente', 'preceptor'], true)) {
+        responder(['ok' => false, 'mensaje' => 'Acceso restringido a docentes y preceptores.']);
     }
     return $usuario;
 }

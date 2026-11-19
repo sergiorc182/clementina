@@ -8,7 +8,8 @@ require_once __DIR__ . '/_base.php';
 require_once __DIR__ . '/../modelo/DocenteNotas.php';
 
 requerirPostSeguro();
-$docente = requerirDocente();
+$docente = requerirDocenteOPreceptor();
+$esPreceptor = ($docente['rol'] ?? '') === 'preceptor';
 
 $idAlumno = isset($_POST['id_alumno']) ? (int) $_POST['id_alumno'] : 0;
 $idCarrera = isset($_POST['id_carrera']) ? (int) $_POST['id_carrera'] : 0;
@@ -25,7 +26,8 @@ try {
         $idAlumno,
         $idCarrera,
         $idMateria,
-        $_POST
+        $_POST,
+        $esPreceptor
     );
     responder([
         'ok' => true,
@@ -35,5 +37,20 @@ try {
 } catch (InvalidArgumentException | RuntimeException $e) {
     responder(['ok' => false, 'mensaje' => $e->getMessage()]);
 } catch (Throwable $e) {
-    responderErrorServidor('Clementina Docentes', $e);
+    error_log(
+        '[Clementina Docentes] ' . get_class($e) . ' en ' . $e->getFile() . ':' . $e->getLine()
+        . ' - ' . $e->getMessage()
+        . ' | post=' . json_encode([
+            'id_alumno' => $idAlumno,
+            'id_carrera' => $idCarrera,
+            'id_materia' => $idMateria,
+            'nota' => $_POST['nota'] ?? null,
+            'tipo_alumno' => $_POST['tipo_alumno'] ?? null,
+        ])
+    );
+    responder([
+        'ok' => false,
+        'mensaje' => 'No se pudo completar la operación. Intentá nuevamente. ('
+            . get_class($e) . ': ' . $e->getMessage() . ')',
+    ]);
 }

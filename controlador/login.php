@@ -11,7 +11,6 @@
 require_once __DIR__ . '/_sesion.php';
 header('Content-Type: application/json; charset=utf-8');
 require_once '../modelo/Usuario.php';
-require_once '../modelo/VerificacionCorreo.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido']);
@@ -23,11 +22,6 @@ $password = $_POST['password'] ?? '';
 
 if ($usuario === '' || $password === '') {
     echo json_encode(['ok' => false, 'mensaje' => 'Ingresá usuario y contraseña.']);
-    exit;
-}
-
-if (VerificacionCorreo::hayPendiente($usuario)) {
-    echo json_encode(['ok' => false, 'mensaje' => 'Verificá tu correo antes de ingresar.']);
     exit;
 }
 

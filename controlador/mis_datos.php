@@ -1,6 +1,8 @@
 <?php
-require_once __DIR__ . '/_base.php';
+require_once __DIR__ . '/_sesion.php';
 require_once '../modelo/Usuario.php';
+
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['id_usuario'])) {
     echo json_encode(['error' => 'No autorizado']);
@@ -15,7 +17,12 @@ if (($_SESSION['tipo_usuario'] ?? '') !== 'alumno') {
 $usuarioModel = new Usuario();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    requerirCsrf();
+    $tokenCsrf = (string) ($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!csrfTokenValido($tokenCsrf)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'mensaje' => 'Token de seguridad inválido. Recargá la página.']);
+        exit;
+    }
 
     $datos = [
         'primer_nombre' => trim($_POST['primer_nombre'] ?? ''),
@@ -65,72 +72,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $uActualizado = [
-        'id'       => $_SESSION['id_usuario'],
-        'tipo'     => $_SESSION['tipo_usuario'],
-        'rol'      => $_SESSION['rol'],
-        'nombre'   => trim($datos['primer_nombre'] . ' ' . $datos['otros_nombres']),
-        'apellido' => trim($datos['primer_apellido'] . ' ' . $datos['otros_apellidos']),
-        'dni'      => $_SESSION['dni'] ?? '',
-        'legajo'   => $_SESSION['legajo'] ?? null,
-        'email'    => $datos['email'],
-    ];
+    $resultado = $usuarioModel->actualizarDatosAlumno($_SESSION['id_usuario'], $datos);
 
-    $bloqueo = clementinaAdquirirBloqueoRotacion();
-    if ($bloqueo === null) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'mensaje' => 'No se pudo completar la renovación de la sesión.']);
-        exit;
+    if ($resultado['ok']) {
+        $_SESSION['nombre'] = trim($datos['primer_nombre'] . ' ' . $datos['otros_nombres']);
+        $_SESSION['apellido'] = trim($datos['primer_apellido'] . ' ' . $datos['otros_apellidos']);
+        $_SESSION['email'] = $datos['email'];
+        $uActualizado = [
+            'id'       => $_SESSION['id_usuario'],
+            'tipo'     => $_SESSION['tipo_usuario'],
+            'rol'      => $_SESSION['rol'],
+            'nombre'   => $_SESSION['nombre'],
+            'apellido' => $_SESSION['apellido'],
+            'dni'      => $_SESSION['dni'] ?? '',
+            'legajo'   => $_SESSION['legajo'] ?? null,
+            'email'    => $_SESSION['email'],
+        ];
+        establecerCookieAutenticacion($uActualizado);
     }
 
-    $codigoRespuesta = 200;
-    $respuesta = ['ok' => false, 'mensaje' => 'No se pudo completar la renovación de la sesión.'];
-
-    try {
-        $tokenActual = clementinaLeerToken((string) ($_COOKIE[CLEMENTINA_AUTH_COOKIE] ?? ''));
-        if ($tokenActual === null) {
-            $codigoRespuesta = 401;
-            $respuesta = ['ok' => false, 'mensaje' => 'La sesión guardada no es válida. Volvé a ingresar.'];
-        } else {
-            $credencialNueva = null;
-            try {
-                $credencialNueva = clementinaCrearTokenAutenticacion($uActualizado);
-            } catch (Throwable $e) {
-                error_log('mis_datos: fallo al generar la credencial renovada.');
-                $codigoRespuesta = 500;
-                $respuesta = ['ok' => false, 'mensaje' => 'No se pudo completar la renovación de la sesión.'];
-            }
-
-            if ($credencialNueva !== null) {
-                $resultado = $usuarioModel->actualizarDatosAlumno($_SESSION['id_usuario'], $datos);
-                $respuesta = $resultado;
-
-                if ($resultado['ok']) {
-                    clementinaRevocarJti($tokenActual['jti'], (int) $tokenActual['exp']);
-                    if (!clementinaTokenRevocado($tokenActual['jti'])) {
-                        $codigoRespuesta = 500;
-                        $respuesta = ['ok' => false, 'mensaje' => 'No se pudo revocar la credencial anterior.'];
-                    } elseif (!establecerCookieAutenticacion($uActualizado, $credencialNueva)) {
-                        $codigoRespuesta = 500;
-                        $respuesta = ['ok' => false, 'mensaje' => 'No se pudo completar la renovación de la sesión.'];
-                    } else {
-                        $_SESSION['nombre'] = $uActualizado['nombre'];
-                        $_SESSION['apellido'] = $uActualizado['apellido'];
-                        $_SESSION['email'] = $uActualizado['email'];
-                    }
-                }
-            }
-        }
-    } catch (Throwable $e) {
-        error_log('mis_datos: fallo inesperado durante la renovación.');
-        $codigoRespuesta = 500;
-        $respuesta = ['ok' => false, 'mensaje' => 'No se pudo completar la renovación de la sesión.'];
-    } finally {
-        clementinaLiberarBloqueoRotacion($bloqueo);
-    }
-
-    http_response_code($codigoRespuesta);
-    echo json_encode($respuesta);
+    echo json_encode($resultado);
     exit;
 }
 

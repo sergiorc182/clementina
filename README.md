@@ -34,7 +34,7 @@ Reglas que aplicamos:
 - La inscripción solo funciona entre las fechas cargadas en `parametros_mesas`.
 - Se listan las materias de las carreras donde el alumno está matriculado y que todavía no aprobó (nota menor a 4).
 - No se exigen correlativas: el alumno puede inscribirse a cualquier materia pendiente, sea regular o libre.
-- Los llamados definidos son 1 = Primer llamado y 2 = Segundo llamado; la inscripción sigue siendo una sola por materia y turno.
+- Hay un solo llamado por turno (antes eran dos, ver más abajo).
 - No hay un tope fijo de mesas: puede anotarse en todas las materias que necesite rendir.
 - Se puede cancelar mientras la inscripción esté abierta.
 
@@ -57,7 +57,7 @@ Inscripción a finales
 - Filtros: "Todas", "Puedo rendir" y "Ya me anoté", con la cantidad de cada uno, más un desplegable por año y un buscador por nombre. El buscador aparece con más de 8 materias y el desplegable si hay más de un año.
 - Antes de inscribir pide confirmación y avisa si va como regular o libre.
 - No hay tope fijo: los botones "Inscribirme" no se deshabilitan por cantidad de mesas.
-- Los llamados quedaron definidos como 1 = Primer llamado y 2 = Segundo llamado. El selector aparece cuando hay más de un llamado y el envío usa el valor elegido; no se cambió la regla de una inscripción por materia y turno.
+- Se sacó el segundo llamado. `LLAMADOS` en `modelo/InscripcionFinal.php` quedó con uno solo y la pantalla ya no muestra el selector. Si en algún momento vuelve a haber más de uno, alcanza con agregarlo a esa constante y el selector vuelve a aparecer.
 
 En las dos pantallas
 
@@ -117,15 +117,6 @@ Para avisar al grupo:
   - Diseño responsivo adaptativo que transforma las filas en tarjetas legibles en dispositivos móviles (`table-wrap--stack`).
 - Corrección de escritura: Se corrigieron los caracteres dañados por doble codificación UTF-8 (mojibake) y erratas ortográficas en todas las vistas.
 - Versiones de cache busting actualizadas (`app.js?v=14`, `finales.js?v=16`, `estilo.css?v=15`).
-
-## Quinta tanda: sesión, registro y archivos
-
-- Cierre de sesión: el botón ya no descarta la cookie de autenticación antes de pedir el POST; la revocación se hace en servidor y el cliente solo destruye la sesión cuando la respuesta es válida.
-- Período de finales: "Mis finales" consulta el registro vigente por `id_registro`, para no mostrar un período equivocado cuando hay varias filas en `parametros_mesas`.
-- Parámetros: el tope de mesas acepta valores enteros entre 0 y 999, y deja el campo vacío cuando no se configura. Los valores inválidos se rechazan sin guardar nada.
-- Registro: pasa por el manejo común de POST/CSRF, valida todos los campos en servidor, limita los intentos por IP y por identidad, y responde con un mensaje genérico cuando el correo o el documento ya existen.
-- Verificación de correo: si hay `CLEMENTINA_MAIL_FROM`, el alta genera un enlace firmado, bloquea el primer ingreso hasta confirmarlo y expira el enlace. El estado temporal queda fuera de la base y el correo no se exponen en logs. Sin correo configurado se mantiene el registro directo de siempre.
-- Cronogramas de finales: los PDF se validan por contenido y tamaño, se guardan con un sufijo aleatorio y se crean de forma exclusiva, de modo que dos archivos con el mismo nombre no se sobrescriban. Los archivos anteriores siguen disponibles.
 
 ## Probar en local
 

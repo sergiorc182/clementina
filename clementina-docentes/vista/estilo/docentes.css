@@ -1,7 +1,7 @@
 /* Estilos docentes (basado en admin) */
-@import url('../../../clementina-preceptores/vista/estilo/admin.css');
+@import url('../../clementina-preceptores/vista/estilo/admin.css');
 
-body { background: var(--bg); }
+body { background: var(--color-bg); }
 
 .docentes-wrap {
   max-width: 1100px;

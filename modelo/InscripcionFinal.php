@@ -30,7 +30,7 @@ class InscripcionFinal
     private const SIN_VERIFICAR = 'N';
 
     public const TURNOS   = [1 => 'Febrero', 2 => 'Agosto', 3 => 'Diciembre'];
-    public const LLAMADOS = [1 => 'Primer llamado', 2 => 'Segundo llamado'];
+    public const LLAMADOS = [1 => 'Primer llamado'];
 
     private $db;
     private $idAlumno;
@@ -43,12 +43,6 @@ class InscripcionFinal
     {
         $this->db       = Conexion::getInstancia()->getConexion();
         $this->idAlumno = $idAlumno;
-    }
-
-    /** Etiqueta del llamado, con fallback para registros históricos. */
-    public static function etiquetaLlamado(int $idLlamado): string
-    {
-        return self::LLAMADOS[$idLlamado] ?? ('Llamado ' . $idLlamado);
     }
 
     /** Nombre del turno según la tabla `turnos` (con fallback local). */
@@ -124,8 +118,7 @@ class InscripcionFinal
         }
 
         $stmt = $this->db->prepare(
-            "SELECT pm.id_registro,
-                    pm.anio_mesas AS anio,
+            "SELECT pm.anio_mesas AS anio,
                     pm.id_turno,
                     pm.fecha_inicio,
                     pm.fecha_fin,
@@ -273,7 +266,7 @@ class InscripcionFinal
                 'id_materia'        => (int) $fila['id_materia'],
                 'materia'           => $fila['materia'],
                 'id_llamado'        => $idLlamado,
-                'llamado'           => self::etiquetaLlamado($idLlamado),
+                'llamado'           => self::LLAMADOS[$idLlamado] ?? ('Llamado ' . $idLlamado),
                 'fecha_inscripcion' => $fila['fecha_inscripcion'],
             ];
         }

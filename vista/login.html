@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="estilo/estilo.css?v=15">
+  <link rel="stylesheet" href="estilo/password-toggle.css?v=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body class="auth">
@@ -62,7 +63,7 @@
           <label class="label" for="password">Contraseña</label>
           <i data-lucide="lock" class="field__icon"></i>
           <input class="input" type="password" id="password" name="password"
-                 placeholder="Tu contraseña"
+                 data-password-toggle placeholder="Tu contraseña"
                  autocomplete="current-password" required>
         </div>
 
@@ -150,13 +151,13 @@
         <div class="field">
           <label class="label" for="reg-password">Contraseña <span class="req">*</span></label>
           <input class="input" type="password" id="reg-password" name="password"
-                 placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+                 data-password-toggle placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
         </div>
 
         <div class="field">
           <label class="label" for="reg-password2">Repetir contraseña <span class="req">*</span></label>
           <input class="input" type="password" id="reg-password2" name="password2"
-                 placeholder="Repetí tu contraseña" autocomplete="new-password" required>
+                 data-password-toggle placeholder="Repetí tu contraseña" autocomplete="new-password" required>
         </div>
 
         <p id="mensaje-registro" class="mensaje" role="alert"></p>
@@ -174,6 +175,7 @@
     </section>
   </div>
   <script src="estilo/app.js?v=15"></script>
+  <script src="estilo/password-toggle.js?v=1"></script>
   <script>
     (function () {
       'use strict';
@@ -332,14 +334,12 @@
             if (resultado.ok) {
               mostrarMensaje(mensajeReg, resultado.mensaje, 'ok');
               limpiarMensaje(mensajeLogin);
-              if (!resultado.verificacion_pendiente) {
-                document.getElementById('usuario').value = dni;
-                document.getElementById('password').value = '';
-                setTimeout(function () {
-                  tarjetaReg.classList.add('oculto');
-                  tarjetaLogin.classList.remove('oculto');
-                }, 900);
-              }
+              document.getElementById('usuario').value = dni;
+              document.getElementById('password').value = '';
+              setTimeout(function () {
+                tarjetaReg.classList.add('oculto');
+                tarjetaLogin.classList.remove('oculto');
+              }, 900);
             } else {
               mostrarMensaje(mensajeReg, resultado.mensaje || 'Error al registrarse.', 'error');
             }

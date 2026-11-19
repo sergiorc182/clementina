@@ -2,7 +2,7 @@
 require_once __DIR__ . '/_base.php';
 
 requerirMetodo('GET');
-$usuario = requerirDocente();
+$usuario = requerirDocenteOPreceptor();
 
 responder([
     'ok'   => true,

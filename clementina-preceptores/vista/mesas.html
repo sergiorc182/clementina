@@ -68,11 +68,11 @@
             var estadoTexto = mesas.estado === 'abierto' ? 'Abierto' : mesas.estado === 'proximo' ? 'Próximo' : 'Cerrado';
             contenedor.innerHTML =
               '<div class="data-list">' +
-              fila('Turno',         (mesas.turno || '—') + ' ' + (mesas.anio_mesas || '')) +
-              fila('Estado',        '<span class="badge ' + estadoBadge + '">' + estadoTexto + '</span>') +
-              fila('Inicio',        fmtFecha(mesas.fecha_inicio)) +
-              fila('Cierre',        fmtFecha(mesas.fecha_fin)) +
-              fila('Tope de mesas', mesas.tope_mesas ? mesas.tope_mesas + ' mesas por alumno' : '—') +
+              fila('Turno',         esc(mesas.turno || '—') + ' ' + esc(mesas.anio_mesas || '')) +
+              fila('Estado',        '<span class="badge ' + estadoBadge + '">' + esc(estadoTexto) + '</span>') +
+              fila('Inicio',        esc(fmtFecha(mesas.fecha_inicio))) +
+              fila('Cierre',        esc(fmtFecha(mesas.fecha_fin))) +
+              fila('Tope de mesas', mesas.tope_mesas ? esc(mesas.tope_mesas) + ' mesas por alumno' : '—') +
               '</div>';
             App.iconos();
           })
@@ -81,8 +81,13 @@
           });
       }
 
+      function esc(valor) {
+        return String(valor == null ? '' : valor).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
       function fila(label, value) {
-        return '<div class="data-row"><dt class="data-row__label">' + label + '</dt><dd class="data-row__value">' + value + '</dd></div>';
+        return '<div class="data-row"><dt class="data-row__label">' + esc(label) + '</dt><dd class="data-row__value">' + value + '</dd></div>';
       }
       function fmtFecha(iso) {
         if (!iso) { return '—'; }

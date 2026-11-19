@@ -24,6 +24,7 @@ if (!ConfigAdmin::entidadValida($entidad)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requerirCsrf();
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
     $pk = [];

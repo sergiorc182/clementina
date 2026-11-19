@@ -15,6 +15,7 @@ requerirPersonalAdmin();
 $modelo = new ParametrosAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requerirCsrf();
     $accion = trim((string) ($_POST['accion'] ?? ''));
     if ($accion !== 'guardar') {
         responder(['ok' => false, 'mensaje' => 'Acción no válida.']);

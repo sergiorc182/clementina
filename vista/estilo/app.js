@@ -527,5 +527,27 @@
     }
   };
 
+  App.cookie = function (nombre) {
+    var patron = new RegExp('(?:^|;\\s*)' + nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]+)');
+    var coincidencia = document.cookie.match(patron);
+    return coincidencia ? decodeURIComponent(coincidencia[1]) : '';
+  };
+
+  (function () {
+    var fetchOriginal = window.fetch.bind(window);
+    window.fetch = function (entrada, opciones) {
+      var init = opciones || {};
+      var metodo = String(init.method || (entrada && entrada.method) || 'GET').toUpperCase();
+      if (metodo !== 'GET' && metodo !== 'HEAD') {
+        var cabeceras = new Headers(init.headers || {});
+        if (!cabeceras.has('X-CSRF-Token')) {
+          cabeceras.set('X-CSRF-Token', App.cookie('csrf_token'));
+        }
+        init.headers = cabeceras;
+      }
+      return fetchOriginal(entrada, init);
+    };
+  })();
+
   window.App = App;
 })();

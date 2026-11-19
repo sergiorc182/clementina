@@ -49,29 +49,57 @@ class DocenteAsignacionesAdmin
     public function crear(int $idPersonal, int $idCarrera, int $idMateria): array
     {
         try {
-            $st = $this->db->prepare("INSERT INTO docente_asignaciones (id_personal, id_carrera, id_materia)
-                VALUES (?, ?, ?)");
-            $st->execute([$idPersonal, $idCarrera, $idMateria]);
-            return ['ok' => true, 'mensaje' => 'Asignaci��n creada.'];
-        } catch (PDOException $e) {
-            if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
-                return ['ok' => false, 'mensaje' => 'Esa asignaci��n ya existe.'];
+            $docente = $this->db->prepare(
+                "SELECT id_personal FROM personal
+                 WHERE id_personal = ? AND id_tipo_personal = 'D'
+                 LIMIT 1"
+            );
+            $docente->execute([$idPersonal]);
+            if (!$docente->fetch()) {
+                return ['ok' => false, 'mensaje' => 'La persona seleccionada no es personal docente.'];
             }
-            if ((int) ($e->errorInfo[1] ?? 0) === 1452) {
-                return ['ok' => false, 'mensaje' => 'Carrera/materia inv��lida o docente inv��lido.'];
+
+            $relacion = $this->db->prepare(
+                "SELECT 1 FROM carrera_materias
+                 WHERE id_carrera = ? AND id_materia = ?
+                 LIMIT 1"
+            );
+            $relacion->execute([$idCarrera, $idMateria]);
+            if (!$relacion->fetch()) {
+                return ['ok' => false, 'mensaje' => 'La materia no pertenece a la carrera seleccionada.'];
+            }
+
+            $st = $this->db->prepare(
+                "INSERT INTO docente_asignaciones (id_personal, id_carrera, id_materia)
+                 VALUES (?, ?, ?)"
+            );
+            $st->execute([$idPersonal, $idCarrera, $idMateria]);
+            return ['ok' => true, 'mensaje' => 'Asignación creada.'];
+        } catch (PDOException $e) {
+            $codigo = (int) ($e->errorInfo[1] ?? 0);
+            if ($codigo === 1062) {
+                return ['ok' => false, 'mensaje' => 'Esa asignación ya existe.'];
+            }
+            if ($codigo === 1452) {
+                return ['ok' => false, 'mensaje' => 'Carrera, materia o docente inválido.'];
             }
             error_log('[DocenteAsignacionesAdmin] ' . $e->getMessage());
-            return ['ok' => false, 'mensaje' => 'No se pudo crear la asignaci��n.'];
+            return ['ok' => false, 'mensaje' => 'No se pudo crear la asignación.'];
         }
     }
 
     public function eliminar(int $idAsignacion): array
     {
-        $st = $this->db->prepare("DELETE FROM docente_asignaciones WHERE id_asignacion = ?");
-        $st->execute([$idAsignacion]);
-        if ($st->rowCount() < 1) {
-            return ['ok' => false, 'mensaje' => 'No encontrada.'];
+        try {
+            $st = $this->db->prepare("DELETE FROM docente_asignaciones WHERE id_asignacion = ?");
+            $st->execute([$idAsignacion]);
+            if ($st->rowCount() < 1) {
+                return ['ok' => false, 'mensaje' => 'No se encontró la asignación.'];
+            }
+            return ['ok' => true, 'mensaje' => 'Asignación eliminada.'];
+        } catch (PDOException $e) {
+            error_log('[DocenteAsignacionesAdmin] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'No se pudo eliminar la asignación.'];
         }
-        return ['ok' => true, 'mensaje' => 'Asignaci��n eliminada.'];
     }
 }

@@ -85,7 +85,8 @@ class InscripcionFinal
          * lugar de febrero) y la pantalla mostraba un turno equivocado.
          */
         $fila = $this->db->query(
-            "SELECT anio_mesas   AS anio,
+            "SELECT id_registro,
+                    anio_mesas   AS anio,
                     id_turno,
                     fecha_inicio,
                     fecha_fin,
@@ -160,6 +161,7 @@ class InscripcionFinal
         $idTurno = (int) $fila['id_turno'];
 
         return [
+            'id_registro'  => (int) $fila['id_registro'],
             'anio'         => (int) $fila['anio'],
             'id_turno'     => $idTurno,
             'turno'        => $this->nombreTurno($idTurno),
@@ -350,27 +352,72 @@ class InscripcionFinal
             throw new DomainException('Ya estás inscripto en esa materia para este turno.');
         }
 
-        // Los datos personales ya no se copian: se leen de `alumnos` con JOIN.
-        $stmt = $this->db->prepare(
-            "INSERT INTO inscripciones
-               (id_alumno, id_carrera, id_materia, anio, id_turno,
-                id_llamado, estado, verificada, fecha_hora)
-             VALUES
-               (:alumno, :carrera, :materia, :anio, :turno,
-                :llamado, :estado, :verificada, NOW())"
-        );
-        $this->bindAlumno($stmt);
-        $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
-        $stmt->bindValue(':materia', $idMateria, PDO::PARAM_INT);
-        $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
-        $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
-        $stmt->bindValue(':llamado', $idLlamado, PDO::PARAM_INT);
-        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
-        $stmt->bindValue(':verificada', self::SIN_VERIFICAR);
-        $stmt->execute();
+        // Serializamos las inscripciones del período bloqueando su fila.
+        // Evita duplicados cuando dos pedidos llegan al mismo tiempo sin
+        // agregar índices ni modificar el esquema.
+        $this->db->beginTransaction();
+        try {
+            $bloqueo = $this->db->prepare(
+                "SELECT id_registro FROM parametros_mesas WHERE id_registro = ? FOR UPDATE"
+            );
+            $bloqueo->execute([(int) $periodo['id_registro']]);
+            if (!$bloqueo->fetch()) {
+                throw new DomainException('El turno seleccionado ya no está disponible.');
+            }
 
-        if ($stmt->rowCount() === 0) {
-            throw new DomainException('No se pudo registrar la inscripción.');
+            $duplicado = $this->db->prepare(
+                "SELECT 1 FROM inscripciones
+                 WHERE id_alumno = :alumno
+                   AND id_carrera = :carrera
+                   AND id_materia = :materia
+                   AND anio = :anio
+                   AND id_turno = :turno
+                   AND estado = :estado
+                 LIMIT 1"
+            );
+            $this->bindAlumno($duplicado);
+            $duplicado->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $duplicado->bindValue(':materia', $idMateria, PDO::PARAM_INT);
+            $duplicado->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
+            $duplicado->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+            $duplicado->bindValue(':estado', self::ESTADO_ACTIVA);
+            $duplicado->execute();
+            if ($duplicado->fetch()) {
+                throw new DomainException('Ya estás inscripto en esa materia para este turno.');
+            }
+
+            $stmt = $this->db->prepare(
+                "INSERT INTO inscripciones
+                   (id_alumno, id_carrera, id_materia, anio, id_turno,
+                    id_llamado, estado, verificada, fecha_hora)
+                 VALUES
+                   (:alumno, :carrera, :materia, :anio, :turno,
+                    :llamado, :estado, :verificada, NOW())"
+            );
+            $this->bindAlumno($stmt);
+            $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $stmt->bindValue(':materia', $idMateria, PDO::PARAM_INT);
+            $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
+            $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+            $stmt->bindValue(':llamado', $idLlamado, PDO::PARAM_INT);
+            $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
+            $stmt->bindValue(':verificada', self::SIN_VERIFICAR);
+            $stmt->execute();
+
+            $this->db->commit();
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
+                throw new DomainException('Ya estás inscripto en esa materia para este turno.');
+            }
+            throw $e;
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
     }
 

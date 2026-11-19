@@ -21,6 +21,7 @@ $modelo = new AlumnoAdmin();
 
 // Actualización de datos administrativos y de contacto
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requerirCsrf();
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
     if ($accion === 'crear_alumno') {

@@ -16,7 +16,7 @@
     <div class="admin-main docentes-wrap">
       <header class="admin-topbar">
         <div class="admin-topbar__title">Panel Docentes</div>
-        <a class="btn btn--ghost btn--sm" href="../vista/login.html">Salir</a>
+        <button type="button" class="btn btn--ghost btn--sm" id="btn-salir-docente">Salir</button>
       </header>
       <main class="admin-content">
         <section class="welcome" style="margin-bottom: var(--sp-5); width:100%;">
@@ -56,22 +56,42 @@
                   <tr>
                     <th>Alumno</th>
                     <th>Legajo</th>
-                    <th>Nota (historial)</th>
-                    <th>Tipo/estado</th>
-                    <th>Promocionado</th>
-                    <th>Nota FINAL</th>
+                    <th>Nota (0 a 10)</th>
+                    <th>Condición</th>
+                    <th>Estado</th>
+                    <th>Acta</th>
+                    <th>Acción</th>
                   </tr>
                 </thead>
                 <tbody id="tbody-alumnos"></tbody>
               </table>
             </div>
-            <p class="note" style="margin-top: var(--sp-3);">La carga/guardado de parciales y “nota FINAL” requiere tablas adicionales en BD (no creadas aquí). Por ahora se muestra el estado desde <code>historial_academico</code>; si querés guardado real, definimos el esquema y lo aplicamos con tu aprobación.</p>
+            <p class="note" style="margin-top: var(--sp-3);">Guardar actualiza <code>historial_academico</code>: nota, condición y fecha de aprobación automática cuando la nota es 4 o mayor. El acta y las validaciones institucionales siguen a cargo de preceptoría.</p>
           </div>
         </div>
       </main>
     </div>
   </div>
-  <script src="../vista/estilo/app.js?v=14"></script>
-  <script src="vista/estilo/docentes.js?v=1"></script>
+  <script src="../vista/estilo/app.js?v=15"></script>
+  <script src="vista/estilo/docentes.js?v=3"></script>
+  <script>
+    window.addEventListener('pageshow', function (evento) {
+      if (!evento.persisted) { return; }
+      fetch('../controlador/verificar_sesion.php', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (!d.ok) { window.location.replace('../vista/login.html'); } })
+        .catch(function () { window.location.replace('../vista/login.html'); });
+    });
+    document.getElementById('btn-salir-docente').addEventListener('click', function () {
+      fetch('../controlador/cerrar_sesion.php', { method: 'POST', credentials: 'same-origin' })
+        .catch(function () {})
+        .then(function () {
+          try {
+            localStorage.removeItem('clementina_usuario');
+          } catch (e) {}
+          window.location.replace('../vista/login.html');
+        });
+    });
+  </script>
 </body>
 </html>

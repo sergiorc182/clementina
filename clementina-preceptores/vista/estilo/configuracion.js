@@ -277,6 +277,15 @@
     });
   }
 
+  function siguienteId(nombreCampo) {
+    var maximo = 0;
+    filas.forEach(function (fila) {
+      var valor = parseInt(fila[nombreCampo], 10);
+      if (!isNaN(valor) && valor > maximo) { maximo = valor; }
+    });
+    return maximo + 1;
+  }
+
   function formulario(fila, modo) {
     return '<form id="form-config" novalidate><div class="form-grid">' +
       cfg.campos.map(function (campo) {
@@ -285,7 +294,7 @@
         var limpiar = modo === 'copiar' && esPk && cfg.limpiarPkAlCopiar;
         var soloLectura = modo === 'editar' && esPk;
 
-        if (limpiar) { valor = ''; }
+        if (limpiar) { valor = siguienteId(campo.name); }
 
         return campoHTML(campo, valor, soloLectura);
       }).join('') +

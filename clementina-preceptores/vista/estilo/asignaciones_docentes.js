@@ -29,10 +29,21 @@
       tbody.innerHTML = '';
       (data.asignaciones || []).forEach(function (a) {
         var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + (a.apellidos || '') + ', ' + (a.nombres || '') + '</td>' +
-          '<td>' + (a.nombre_carrera_corto || a.nombre_carrera || '') + '</td>' +
-          '<td>' + (a.nombre_materia || '') + '</td>' +
-          '<td><button type="button" class="btn btn--ghost btn--sm btn-del" data-id="' + a.id_asignacion + '">Quitar</button></td>';
+        [(a.apellidos || '') + ', ' + (a.nombres || ''),
+         a.nombre_carrera_corto || a.nombre_carrera || '',
+         a.nombre_materia || ''].forEach(function (valor) {
+          var td = document.createElement('td');
+          td.textContent = valor;
+          tr.appendChild(td);
+        });
+        var tdAccion = document.createElement('td');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn--ghost btn--sm btn-del';
+        btn.textContent = 'Quitar';
+        btn.setAttribute('data-id', String(a.id_asignacion));
+        tdAccion.appendChild(btn);
+        tr.appendChild(tdAccion);
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll('.btn-del').forEach(function (btn) {

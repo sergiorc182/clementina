@@ -25,6 +25,7 @@ try {
     $finales = new InscripcionFinal((int) $usuario['id']);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        requerirCsrf();
         $accion    = (string) ($_POST['accion'] ?? '');
         $idCarrera = (int) ($_POST['id_carrera'] ?? 0);
         $idMateria = (int) ($_POST['id_materia'] ?? 0);

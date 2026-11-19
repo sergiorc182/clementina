@@ -91,12 +91,19 @@ if ($metodo === 'GET') {
 
         responder(['ok' => false, 'mensaje' => 'Acción no reconocida.']);
     } catch (Throwable $e) {
-        responder(['ok' => false, 'mensaje' => 'Error al consultar datos: ' . $e->getMessage()]);
+        error_log('[InscripcionCarreras GET] ' . $e->getMessage());
+        responder(['ok' => false, 'mensaje' => 'No se pudieron cargar los datos. Intentá nuevamente.']);
     }
 }
 
 // 3. Manejo de registro POST
 if ($metodo === 'POST') {
+    $tokenCsrf = (string) ($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!csrfTokenValido($tokenCsrf)) {
+        http_response_code(403);
+        responder(['ok' => false, 'mensaje' => 'Token de seguridad inválido. Recargá la página e intentá nuevamente.']);
+    }
+
     $idCarrera = (int) ($_POST['idcarrera'] ?? 0);
     $idSede    = (int) ($_POST['idsede'] ?? 0);
     $idTurno   = (int) ($_POST['idturno'] ?? 0);
@@ -113,10 +120,13 @@ if ($metodo === 'POST') {
             'mensaje' => '¡Inscripción registrada con éxito!',
             'datos'   => $resultado,
         ]);
+    } catch (RuntimeException $e) {
+        responder(['ok' => false, 'mensaje' => $e->getMessage()]);
     } catch (Throwable $e) {
+        error_log('[InscripcionCarreras POST] ' . $e->getMessage());
         responder([
             'ok'      => false,
-            'mensaje' => $e->getMessage(),
+            'mensaje' => 'No se pudo completar la inscripción. Intentá nuevamente.',
         ]);
     }
 }

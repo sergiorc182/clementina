@@ -1,19 +1,233 @@
 <?php
 /**
- * Gestión centralizada de sesiones y cookies de autenticación persistente.
+ * Gestión centralizada de sesiones, cookies de autenticación y CSRF.
  * ISFT 182 "Clementina"
  *
- * Configura cookies de sesión de larga duración (30 días) para que
- * el usuario permanezca autenticado tras cerrar el navegador, y gestiona
- * la cookie de recuperación 'clementina_auth' y la cookie informativa
- * 'clementina_user' para acceso inmediato en el frontend.
+ * Los tres paneles comparten esta sesión (cookies con path '/'). El token
+ * persistente tiene vencimiento, identificador único y revocación en
+ * servidor. El secreto HMAC vive fuera del código.
  */
 
 if (!defined('CLEMENTINA_AUTH_COOKIE')) {
     define('CLEMENTINA_AUTH_COOKIE', 'clementina_auth');
     define('CLEMENTINA_USER_COOKIE', 'clementina_user');
-    define('CLEMENTINA_COOKIE_LIFETIME', 30 * 24 * 3600); // 30 días
-    define('CLEMENTINA_SECRET_KEY', 'clementina_isft182_secure_token_key_2026');
+    define('CLEMENTINA_CSRF_COOKIE', 'csrf_token');
+    define('CLEMENTINA_TOKEN_LIFETIME', 12 * 3600);
+    define('CLEMENTINA_COOKIE_LIFETIME', CLEMENTINA_TOKEN_LIFETIME);
+    define('CLEMENTINA_LOGIN_MAX', max(1, (int) ((getenv('LOGIN_RATE_MAX') !== false ? getenv('LOGIN_RATE_MAX') : '5'))));
+    define('CLEMENTINA_LOGIN_WINDOW', max(1, (int) ((getenv('LOGIN_RATE_WINDOW') !== false ? getenv('LOGIN_RATE_WINDOW') : '900'))));
+}
+
+function clementinaArchivoIntentos(): string
+{
+    return dirname(__DIR__) . '/config/.login_attempts.json';
+}
+
+function clementinaConIntentos(callable $callback)
+{
+    $archivo = clementinaArchivoIntentos();
+    $directorio = dirname($archivo);
+    if (!is_dir($directorio)) {
+        @mkdir($directorio, 0755, true);
+    }
+
+    $handle = @fopen($archivo, 'c+');
+    if ($handle === false) {
+        error_log('[Clementina Rate Limit] No se pudo abrir el archivo de intentos.');
+        $datos = [];
+        $ahora = time();
+        return $callback($datos, $ahora);
+    }
+
+    flock($handle, LOCK_EX);
+    rewind($handle);
+    $datos = json_decode((string) stream_get_contents($handle), true);
+    if (!is_array($datos)) {
+        $datos = [];
+    }
+
+    $ahora = time();
+    foreach ($datos as $clave => $registro) {
+        if (!is_array($registro) || (int) ($registro['reset'] ?? 0) <= $ahora) {
+            unset($datos[$clave]);
+        }
+    }
+
+    $resultado = $callback($datos, $ahora);
+
+    rewind($handle);
+    ftruncate($handle, 0);
+    fwrite($handle, json_encode($datos));
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+    @chmod($archivo, 0600);
+
+    return $resultado;
+}
+
+function clementinaClaveIntento(string $usuario): string
+{
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'desconocida');
+    $identificador = mb_strtolower(trim($usuario));
+    return hash('sha256', $ip . '|' . $identificador);
+}
+
+function clementinaEsperaIntentos(string $usuario): int
+{
+    $clave = clementinaClaveIntento($usuario);
+    return (int) clementinaConIntentos(function (array &$datos, int $ahora) use ($clave): int {
+        $registro = $datos[$clave] ?? null;
+        if ($registro === null) {
+            return 0;
+        }
+        if ((int) $registro['count'] < CLEMENTINA_LOGIN_MAX) {
+            return 0;
+        }
+        $datos[$clave] = $registro;
+        return max(0, (int) $registro['reset'] - $ahora);
+    });
+}
+
+function clementinaRegistrarFallo(string $usuario): void
+{
+    $clave = clementinaClaveIntento($usuario);
+    clementinaConIntentos(function (array &$datos, int $ahora) use ($clave): void {
+        $registro = $datos[$clave] ?? ['count' => 0, 'reset' => $ahora + CLEMENTINA_LOGIN_WINDOW];
+        $registro['count'] = (int) $registro['count'] + 1;
+        $registro['reset'] = $ahora + CLEMENTINA_LOGIN_WINDOW;
+        $datos[$clave] = $registro;
+    });
+}
+
+function clementinaLimpiarIntentos(string $usuario): void
+{
+    $clave = clementinaClaveIntento($usuario);
+    clementinaConIntentos(function (array &$datos) use ($clave): void {
+        unset($datos[$clave]);
+    });
+}
+
+/**
+ * Secreto HMAC: variable de entorno o archivo externo al código.
+ * Si no existe se genera uno nuevo (rotación del secreto expuesto).
+ */
+function clementinaSecret(): string
+{
+    $entorno = getenv('CLEMENTINA_HMAC_SECRET');
+    if (is_string($entorno) && $entorno !== '') {
+        return $entorno;
+    }
+
+    $archivo = dirname(__DIR__) . '/config/.hmac_secret';
+    if (is_readable($archivo)) {
+        $valor = trim((string) file_get_contents($archivo));
+        if ($valor !== '') {
+            return $valor;
+        }
+    }
+
+    $valor = bin2hex(random_bytes(32));
+    if (!is_dir(dirname($archivo))) {
+        mkdir(dirname($archivo), 0755, true);
+    }
+    file_put_contents($archivo, $valor, LOCK_EX);
+    @chmod($archivo, 0600);
+
+    return $valor;
+}
+
+function clementinaArchivoRevocaciones(): string
+{
+    return dirname(__DIR__) . '/config/.token_revocations.json';
+}
+
+function clementinaLeerRevocaciones(): array
+{
+    $archivo = clementinaArchivoRevocaciones();
+    if (!is_readable($archivo)) {
+        return [];
+    }
+    $datos = json_decode((string) file_get_contents($archivo), true);
+    if (!is_array($datos)) {
+        return [];
+    }
+    $vigentes = [];
+    foreach ($datos as $jti => $exp) {
+        if ((int) $exp > time()) {
+            $vigentes[(string) $jti] = (int) $exp;
+        }
+    }
+    return $vigentes;
+}
+
+function clementinaTokenRevocado(string $jti): bool
+{
+    return isset(clementinaLeerRevocaciones()[$jti]);
+}
+
+function clementinaRevocarJti(string $jti, int $exp): void
+{
+    if ($jti === '') {
+        return;
+    }
+    $archivo = clementinaArchivoRevocaciones();
+    $revocaciones = clementinaLeerRevocaciones();
+    $revocaciones[$jti] = $exp;
+    if (!is_dir(dirname($archivo))) {
+        mkdir(dirname($archivo), 0755, true);
+    }
+    $handle = fopen($archivo, 'c+');
+    if ($handle === false) {
+        return;
+    }
+    flock($handle, LOCK_EX);
+    rewind($handle);
+    ftruncate($handle, 0);
+    fwrite($handle, json_encode($revocaciones));
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+    @chmod($archivo, 0600);
+}
+
+/** Decodifica y verifica el token persistente; devuelve null si no es válido. */
+function clementinaLeerToken(string $token): ?array
+{
+    $raw = base64_decode($token, true);
+    if ($raw === false || strpos($raw, '::') === false) {
+        return null;
+    }
+
+    [$payload, $firma] = explode('::', $raw, 2);
+    $esperada = hash_hmac('sha256', $payload, clementinaSecret());
+    if (!hash_equals($esperada, $firma)) {
+        return null;
+    }
+
+    $data = json_decode($payload, true);
+    if (!is_array($data)) {
+        return null;
+    }
+
+    $iat = (int) ($data['iat'] ?? 0);
+    $exp = (int) ($data['exp'] ?? 0);
+    $ahora = time();
+    if ($iat <= 0 || $exp <= $ahora || $iat > $ahora + 60) {
+        return null;
+    }
+    if ($exp - $iat > CLEMENTINA_TOKEN_LIFETIME) {
+        return null;
+    }
+
+    $jti = (string) ($data['jti'] ?? '');
+    if ($jti === '' || clementinaTokenRevocado($jti)) {
+        return null;
+    }
+
+    $data['jti'] = $jti;
+    $data['exp'] = $exp;
+    return $data;
 }
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -28,23 +242,53 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/**
- * Establece las cookies persistentes de sesión y de usuario en el navegador.
- */
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if (empty($_COOKIE[CLEMENTINA_CSRF_COOKIE]) || $_COOKIE[CLEMENTINA_CSRF_COOKIE] !== $_SESSION['csrf_token']) {
+    setcookie(CLEMENTINA_CSRF_COOKIE, $_SESSION['csrf_token'], [
+        'expires'  => time() + CLEMENTINA_TOKEN_LIFETIME,
+        'path'     => '/',
+        'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/** Token CSRF de la sesión (para formularios o cabecera X-CSRF-Token). */
+function csrfToken(): string
+{
+    return (string) ($_SESSION['csrf_token'] ?? '');
+}
+
+function csrfCampo(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
+function csrfTokenValido(string $token): bool
+{
+    $esperado = csrfToken();
+    return $esperado !== '' && $token !== '' && hash_equals($esperado, $token);
+}
+
+/** Establece las cookies persistentes de autenticación y la cookie informativa. */
 function establecerCookieAutenticacion(array $u): void
 {
-    $expira = time() + CLEMENTINA_COOKIE_LIFETIME;
+    $expira = time() + CLEMENTINA_TOKEN_LIFETIME;
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 
-    // 1. Token criptográfico de autenticación (HttpOnly)
     $payload = json_encode([
-        'id'   => $u['id'],
+        'id'   => (int) $u['id'],
         'tipo' => $u['tipo'],
         'rol'  => $u['rol'],
-        't'    => time(),
+        'iat'  => time(),
+        'exp'  => $expira,
+        'jti'  => bin2hex(random_bytes(16)),
     ], JSON_UNESCAPED_UNICODE);
 
-    $firma = hash_hmac('sha256', $payload, CLEMENTINA_SECRET_KEY);
+    $firma = hash_hmac('sha256', $payload, clementinaSecret());
     $token = base64_encode($payload . '::' . $firma);
 
     setcookie(CLEMENTINA_AUTH_COOKIE, $token, [
@@ -55,11 +299,10 @@ function establecerCookieAutenticacion(array $u): void
         'samesite' => 'Lax',
     ]);
 
-    // 2. Cookie informativa accesible desde JavaScript para mostrar datos inmediatamente
     $datosVisibles = json_encode([
         'nombre'   => $u['nombre'],
         'apellido' => $u['apellido'],
-        'usuario'  => $u['dni'] ?: $u['email'],
+        'usuario'  => ($u['usuario'] ?? null) ?: ($u['dni'] ?: $u['email']),
         'dni'      => $u['dni'],
         'legajo'   => $u['legajo'],
         'rol'      => $u['rol'],
@@ -75,15 +318,17 @@ function establecerCookieAutenticacion(array $u): void
     ]);
 }
 
-/**
- * Elimina las cookies de autenticación persistente al cerrar sesión.
- */
+/** Elimina las cookies y revoca el token server-side. */
 function eliminarCookieAutenticacion(): void
 {
     $expira = time() - 3600;
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 
-    if (isset($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
+    if (!empty($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
+        $token = clementinaLeerToken($_COOKIE[CLEMENTINA_AUTH_COOKIE]);
+        if ($token !== null) {
+            clementinaRevocarJti($token['jti'], $token['exp']);
+        }
         setcookie(CLEMENTINA_AUTH_COOKIE, '', [
             'expires'  => $expira,
             'path'     => '/',
@@ -106,41 +351,26 @@ function eliminarCookieAutenticacion(): void
     }
 }
 
-/**
- * Intenta restaurar la sesión desde la cookie 'clementina_auth' si la sesión PHP expiró.
- */
+/** Restaura la sesión desde el token persistente válido. */
 function intentarRestaurarSesionDesdeCookie(): bool
 {
     if (!empty($_SESSION['id_usuario'])) {
         return true;
     }
-
     if (empty($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
         return false;
     }
 
-    $raw = base64_decode($_COOKIE[CLEMENTINA_AUTH_COOKIE], true);
-    if ($raw === false || strpos($raw, '::') === false) {
+    $token = clementinaLeerToken($_COOKIE[CLEMENTINA_AUTH_COOKIE]);
+    if ($token === null || empty($token['id']) || empty($token['tipo'])) {
         return false;
     }
 
-    [$payload, $firma] = explode('::', $raw, 2);
-    $firmaEsperada = hash_hmac('sha256', $payload, CLEMENTINA_SECRET_KEY);
-    if (!hash_equals($firmaEsperada, $firma)) {
-        return false;
-    }
-
-    $data = json_decode($payload, true);
-    if (!is_array($data) || empty($data['id']) || empty($data['tipo'])) {
-        return false;
-    }
-
-    // Validar usuario contra la base de datos
     try {
         require_once dirname(__DIR__) . '/modelo/Conexion.php';
         $db = Conexion::getInstancia()->getConexion();
 
-        if ($data['tipo'] === 'alumno') {
+        if ($token['tipo'] === 'alumno') {
             $stmt = $db->prepare("
                 SELECT id_alumno, numero_documento, legajo, primer_apellido, otros_apellidos,
                        primer_nombre, otros_nombres, email
@@ -148,7 +378,7 @@ function intentarRestaurarSesionDesdeCookie(): bool
                 WHERE id_alumno = ?
                 LIMIT 1
             ");
-            $stmt->execute([(int) $data['id']]);
+            $stmt->execute([(int) $token['id']]);
             $a = $stmt->fetch();
             if (!$a) {
                 return false;
@@ -163,17 +393,14 @@ function intentarRestaurarSesionDesdeCookie(): bool
             $_SESSION['email']        = $a['email'];
             $_SESSION['dni']          = $a['numero_documento'];
             $_SESSION['legajo']       = $a['legajo'];
-            return true;
-        }
-
-        if ($data['tipo'] === 'personal') {
+        } elseif ($token['tipo'] === 'personal') {
             $stmt = $db->prepare("
                 SELECT id_personal, apellidos, nombres, usuario_sistema, id_tipo_personal
                 FROM personal
                 WHERE id_personal = ?
                 LIMIT 1
             ");
-            $stmt->execute([(int) $data['id']]);
+            $stmt->execute([(int) $token['id']]);
             $p = $stmt->fetch();
             if (!$p) {
                 return false;
@@ -189,14 +416,17 @@ function intentarRestaurarSesionDesdeCookie(): bool
             $_SESSION['email']        = null;
             $_SESSION['dni']          = null;
             $_SESSION['legajo']       = null;
-            return true;
+        } else {
+            return false;
         }
+
+        session_regenerate_id(true);
+        return true;
     } catch (Throwable $e) {
+        error_log('[Clementina Sesión] No se pudo restaurar la sesión: ' . $e->getMessage());
         return false;
     }
-
-    return false;
 }
 
-// Auto-restaurar sesión al cargar si está ausente pero la cookie existe
+// Auto-restaurar sesión al cargar si está ausente pero el token es válido.
 intentarRestaurarSesionDesdeCookie();

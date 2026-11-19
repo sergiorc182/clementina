@@ -94,11 +94,11 @@ Ahora todo el código usa la base de `docs/esquema_normalizado.sql`.
 - `modelo/Alumno.php`: `buscarPorDocumento()` pasó a `buscarPorId()`, que ahora también trae el legajo (con eso se completa la columna en Mis finales) y el teléfono desde `domicilios_alumno`. Se agregó `idPorDocumento()`.
 - `modelo/InscripcionFinal.php`: las mismas reglas, con las tablas nuevas (`parametros_mesas`, `carrera_materias`, `historial_academico`). La inscripción ya no copia nombre y email del alumno, guarda solo `id_alumno`. Si hay más de un registro en `parametros_mesas`, se usa el vigente y, si no hay ninguno vigente, el próximo a abrir; si ya pasaron todos, el último cerrado.
 - Historial académico: se trajo lo que subió lore a `main` (modelo, controlador y las dos vistas) y se adaptó a la base nueva. El controlador usa `_base.php` como el resto y, si falla la base, el detalle queda en el log y al alumno le aparece un mensaje común. El personal consulta un alumno pasando `?dni=`.
-- `docs/datos_prueba_finales.sql` agrega datos de prueba para las pantallas de finales (carreras, materias, matrícula, historial y períodos de mesas). La tabla `correlatividades` puede seguir existiendo en el esquema, pero el módulo de finales ya no la usa. Se importa después de `docs/esquema_normalizado.sql`. Usuarios de prueba: `alumno@clementina.edu.ar` (o DNI 12345678), clave `123456`; y `admin`, clave `123456`.
+- El paquete no incluye datos ni usuarios de prueba. Después de importar `docs/esquema_normalizado.sql`, cargar las cuentas institucionales con `password_hash()` y los catálogos académicos reales. La tabla `correlatividades` puede seguir existiendo en el esquema, pero el módulo de finales ya no la usa.
 
 Para avisar al grupo:
 
-- `esquema_normalizado.sql` no se importa entero: `tipos_documento.descripcion` es `VARCHAR(30)` y "Documento Nacional de Identidad" tiene 31 letras, así que el INSERT de ejemplo falla. Hay que agrandar la columna o acortar el texto. En la base de prueba lo acortamos.
+- `esquema_normalizado.sql` ya usa `tipos_documento.descripcion VARCHAR(50)`, por lo que "Documento Nacional de Identidad" se importa sin recortes. El esquema solo siembra catálogos mínimos; no crea usuarios con claves conocidas.
 - `turnos` la usan las mesas (1 Febrero, 2 Agosto, 3 Diciembre) y también `matriculacion` (que parece ser turno de cursada). Conviene separarlas en dos tablas.
 
 ## Cuarta tanda: sesión, datos, comprobantes y nuevo régimen de finales
@@ -120,15 +120,18 @@ Para avisar al grupo:
 
 ## Probar en local
 
-1. Iniciar MySQL/MariaDB y revisar `config/config.php` (por defecto: base `clementina`, usuario `root`, sin clave).
-2. Importar `docs/esquema_normalizado.sql`, después `docs/datos_ubicaciones.sql` (países, provincias y localidades de “Mis datos”) y, si hace falta datos para las pantallas de finales, `docs/datos_prueba_finales.sql`.
-3. Levantar el servidor desde la raíz del proyecto:
+1. Iniciar MySQL/MariaDB y proveer `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `APP_ENV` y `CLEMENTINA_HMAC_SECRET` por variables de entorno. En local se puede usar `APP_ENV=testing`; en producción la aplicación falla rápido si faltan valores reales.
+2. Importar `docs/esquema_normalizado.sql` y después `docs/datos_ubicaciones.sql` (países, provincias y localidades de “Mis datos”). No hay scripts de datos de prueba en el paquete.
+3. Crear al menos una cuenta institucional con `password_hash()` y cargar los catálogos académicos reales antes de habilitar el acceso.
+4. Levantar el servidor desde la raíz del proyecto:
    `C:\xampp\php\php.exe -S 127.0.0.1:8000 -t .`
-4. Abrir `http://127.0.0.1:8000/vista/login.html` e ingresar con `alumno@clementina.edu.ar` / `123456`.
+5. Abrir `http://127.0.0.1:8000/vista/login.html` e ingresar con la cuenta institucional creada.
 
 ## Pendiente
 
+- Recibir la resolución institucional con correlatividades, tope de mesas, segundo llamado y fecha/hora/aula, y cargarla en `parametros_*`.
+- Cargar los PDF institucionales de cronogramas en `documentos/cronogramas_finales`.
 - Probar todo contra la base normalizada cargada con los datos reales de producción cuando se complete la migración institucional.
-- `config/config.php` está subido con la clave de la base. Conviene aislarla en variables de entorno o archivo fuera del repositorio.
+- Credenciales y secreto HMAC provisionados por variables de entorno; ver `docs/procedimiento_despliegue.md`.
 - Fecha, hora y aula específicas por materia cuando se carguen en el esquema de mesas.
 - Definir la interfaz de gestión institucional para el estado `verificada` de la tabla `inscripciones`.

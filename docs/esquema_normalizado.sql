@@ -255,7 +255,7 @@ CREATE TABLE carrera_materias (
     REFERENCES materias (id_materia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Asignaci��n de docentes (personal tipo D) a materias por carrera
+-- Asignación de docentes (personal tipo D) a materias por carrera
 CREATE TABLE docente_asignaciones (
   id_asignacion BIGINT NOT NULL AUTO_INCREMENT,
   id_personal   INT NOT NULL,
@@ -453,12 +453,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================================
 
 -- =====================================================================
--- DATOS DE PRUEBA (opcionales)
--- Contraseñas en claro: admin y alumno@clementina.edu.ar -> 123456
--- docente1 -> password
--- Hash bcrypt ($2y$10$...) generado con password_hash(); sirve para
--- probar el login antes de migrar los datos reales (ver análisis H).
--- Order: primero los catálogos que referencian los INSERT de abajo.
+-- CATÁLOGOS MÍNIMOS PARA ARRANQUE
+-- Solo tipos de documento, tipos de personal y el país placeholder que
+-- exige el DEFAULT de alumnos.id_pais_nacimiento. No se incluyen usuarios
+-- ni credenciales de prueba: las cuentas institucionales se crean aparte.
+-- Orden: primero los catálogos que referencian los INSERT de abajo.
 -- =====================================================================
 
 INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
@@ -476,26 +475,3 @@ INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
 -- docs/datos_ubicaciones.sql (se importa después de este esquema).
 INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES
   ('ZZ', 'ZZZ', 'No especificado', 'No especificada', 1000);
-
--- Usuario alumno de prueba -> login con email: alumno@clementina.edu.ar
-INSERT INTO alumnos
-  (id_tipo_documento, numero_documento, legajo, primer_apellido,
-   primer_nombre, email, password_hash)
-VALUES
-  ('DNI', 12345678, '2024-DNI-12345678', 'González',
-   'María', 'alumno@clementina.edu.ar',
-   '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq');
-
--- Usuario personal de prueba -> login con usuario de sistema: admin
-INSERT INTO personal
-  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
-VALUES
-   ('Pérez', 'Juan Carlos', 'admin',
-    '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq', 'A');
-
--- Usuario docente de prueba -> login con usuario de sistema: docente1
-INSERT INTO personal
-  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
-VALUES
-  ('Docente', 'Prueba', 'docente1',
-   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'D');

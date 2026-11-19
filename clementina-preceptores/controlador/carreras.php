@@ -21,6 +21,7 @@ if ($usuario === '') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requerirCsrf();
     $accion = trim((string) ($_POST['accion'] ?? ''));
     $id     = (int) ($_POST['id_carrera'] ?? 0);
 

@@ -54,7 +54,8 @@ class Usuario {
             return ['ok' => true, 'mensaje' => 'Registro exitoso. Ahora podés iniciar sesión con tu DNI.'];
         } catch (PDOException $e) {
             $this->conexion->rollBack();
-            return ['ok' => false, 'mensaje' => 'Error al registrarse: ' . $e->getMessage()];
+            error_log('[Clementina Registro] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'No se pudo completar el registro. Intentá nuevamente.'];
         }
     }
     
@@ -117,6 +118,7 @@ class Usuario {
                     'rol' => $roles[$personal['id_tipo_personal']] ?? 'personal',
                     'nombre' => $personal['nombres'],
                     'apellido' => $personal['apellidos'],
+                    'usuario' => $personal['usuario_sistema'],
                     'email' => null,
                     'dni' => null,
                     'legajo' => null
@@ -126,7 +128,8 @@ class Usuario {
             
             return ['ok' => false, 'mensaje' => 'No existe una cuenta con ese DNI, email o usuario.'];
         } catch (PDOException $e) {
-            return ['ok' => false, 'mensaje' => 'Error al iniciar sesión: ' . $e->getMessage()];
+            error_log('[Clementina Login] ' . $e->getMessage());
+            return ['ok' => false, 'mensaje' => 'No se pudo completar el inicio de sesión. Intentá nuevamente.'];
         }
     }
     

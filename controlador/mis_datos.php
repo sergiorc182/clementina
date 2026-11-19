@@ -17,6 +17,13 @@ if (($_SESSION['tipo_usuario'] ?? '') !== 'alumno') {
 $usuarioModel = new Usuario();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $tokenCsrf = (string) ($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!csrfTokenValido($tokenCsrf)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'mensaje' => 'Token de seguridad inválido. Recargá la página.']);
+        exit;
+    }
+
     $datos = [
         'primer_nombre' => trim($_POST['primer_nombre'] ?? ''),
         'otros_nombres' => trim($_POST['otros_nombres'] ?? ''),

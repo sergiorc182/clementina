@@ -28,7 +28,8 @@ if ($idCarrera > 0 && $archivo !== '') {
         responder(['ok' => false, 'mensaje' => 'El archivo no existe.']);
     }
 
-    $disposicion = isset($_GET['descargar']) ? 'attachment' : 'inline';
+    $descargar = isset($_GET['descargar']) && (string) $_GET['descargar'] !== '0';
+    $disposicion = $descargar ? 'attachment' : 'inline';
     header('Content-Type: application/pdf');
     header('Content-Length: ' . (string) filesize($ruta));
     header('Content-Disposition: ' . $disposicion . '; filename="' . $modelo->nombreVisible($archivo) . '"');

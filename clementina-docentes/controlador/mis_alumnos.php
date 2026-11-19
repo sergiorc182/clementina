@@ -37,7 +37,7 @@ try {
         }
     }
     if (!$permitida) {
-        responder(['ok' => false, 'mensaje' => 'No ten��s asignada esa materia.']);
+        responder(['ok' => false, 'mensaje' => 'No tenés asignada esa materia.']);
     }
 
     $alumnos = $modelo->alumnosPorCarreraMateria($idCarrera, $idMateria);

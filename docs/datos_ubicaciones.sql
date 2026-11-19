@@ -1,4 +1,4 @@
--- Países, provincias y localidades de prueba para el formulario de "Mis datos".
+-- Países, provincias y localidades para el formulario de "Mis datos".
 -- Se puede importar después de docs/esquema_normalizado.sql, tanto en una base
 -- nueva como en una existente: los INSERT actualizan los nombres si ya existen.
 -- Corrige además los acentos que quedaron como "?" en importaciones viejas.

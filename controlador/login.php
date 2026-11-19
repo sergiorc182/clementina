@@ -9,7 +9,7 @@
  */
 
 require_once __DIR__ . '/_sesion.php';
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 require_once '../modelo/Usuario.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -25,13 +25,27 @@ if ($usuario === '' || $password === '') {
     exit;
 }
 
+$espera = clementinaEsperaIntentos($usuario);
+if ($espera > 0) {
+    http_response_code(429);
+    echo json_encode([
+        'ok' => false,
+        'mensaje' => 'Demasiados intentos fallidos. Intentá nuevamente en '
+            . max(1, (int) ceil($espera / 60)) . ' minuto(s).',
+    ]);
+    exit;
+}
+
 $modelo    = new Usuario();
 $resultado = $modelo->login($usuario, $password);
 
 if (!$resultado['ok']) {
+    clementinaRegistrarFallo($usuario);
     echo json_encode($resultado);
     exit;
 }
+
+clementinaLimpiarIntentos($usuario);
 
 $u = $resultado['usuario'];
 
@@ -41,7 +55,7 @@ session_regenerate_id(true);
 $_SESSION['id_usuario']  = $u['id'];
 $_SESSION['tipo_usuario'] = $u['tipo'];
 $_SESSION['rol']         = $u['rol'];
-$_SESSION['usuario']     = $u['dni'] ?: $u['email'];
+$_SESSION['usuario']     = ($u['usuario'] ?? null) ?: ($u['dni'] ?: $u['email']);
 $_SESSION['nombre']      = $u['nombre'];
 $_SESSION['apellido']    = $u['apellido'];
 $_SESSION['email']       = $u['email'];
@@ -70,7 +84,7 @@ echo json_encode([
         'id'       => $u['id'],
         'nombre'   => $u['nombre'],
         'apellido' => $u['apellido'],
-        'usuario'  => $u['dni'] ?: $u['email'],
+        'usuario'  => ($u['usuario'] ?? null) ?: ($u['dni'] ?: $u['email']),
         'dni'      => $u['dni'],
         'legajo'   => $u['legajo'],
         'rol'      => $u['rol'],

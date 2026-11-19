@@ -25,6 +25,48 @@ function requerirMetodo(string $metodo): void
     }
 }
 
+/** Verifica el origen de la solicitud cuando el navegador lo informa. */
+function requerirOrigenSeguro(): void
+{
+    $origen = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origen === '') {
+        return;
+    }
+    $hostOrigen = parse_url($origen, PHP_URL_HOST);
+    $hostLocal  = parse_url((string) ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST);
+    if (!is_string($hostOrigen) || !is_string($hostLocal)
+        || strtolower($hostOrigen) !== strtolower($hostLocal)) {
+        http_response_code(403);
+        responder(['ok' => false, 'mensaje' => 'Origen de la solicitud no permitido.']);
+    }
+}
+
+/** Valida el token CSRF enviado en POST o en la cabecera X-CSRF-Token. */
+function requerirCsrf(): void
+{
+    $token = (string) ($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!csrfTokenValido($token)) {
+        http_response_code(403);
+        responder(['ok' => false, 'mensaje' => 'Token de seguridad inválido. Recargá la página e intentá nuevamente.']);
+    }
+    requerirOrigenSeguro();
+}
+
+/** Atajo para endpoints que solo aceptan POST con protección CSRF. */
+function requerirPostSeguro(): void
+{
+    requerirMetodo('POST');
+    requerirCsrf();
+}
+
+/** Respuesta genérica ante errores internos; el detalle queda en el log. */
+function responderErrorServidor(string $contexto, Throwable $e): void
+{
+    error_log('[' . $contexto . '] ' . $e->getMessage());
+    http_response_code(500);
+    responder(['ok' => false, 'mensaje' => 'No se pudo completar la operación. Intentá nuevamente.']);
+}
+
 /**
  * Devuelve el usuario en sesión o corta el pedido si no hay ninguno.
  * Lee la sesión que arma controlador/login.php (claves planas:

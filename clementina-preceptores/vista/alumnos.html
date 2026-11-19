@@ -717,6 +717,7 @@
       }
 
       function mostrarEstado(estado) {
+        if (estado !== 'tabla') { document.getElementById('tabla-body').innerHTML = ''; }
         document.getElementById('tabla-wrap').hidden     = (estado !== 'tabla');
         document.getElementById('estado-carga').hidden   = (estado !== 'carga');
         document.getElementById('estado-vacio').hidden   = (estado !== 'vacio');

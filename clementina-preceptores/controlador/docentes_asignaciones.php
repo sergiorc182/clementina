@@ -16,12 +16,12 @@ if ($metodo === 'GET') {
             'asignaciones' => $modelo->listarAsignaciones(),
         ]);
     } catch (Throwable $e) {
-        error_log('[Clementina DocentesAsignaciones] ' . $e->getMessage());
-        responder(['ok' => false, 'mensaje' => 'No se pudieron cargar los datos.']);
+        responderErrorServidor('Clementina DocentesAsignaciones', $e);
     }
 }
 
 if ($metodo === 'POST') {
+    requerirCsrf();
     $accion = trim((string) ($_POST['accion'] ?? ''));
     if ($accion === 'crear') {
         $idPersonal = (int) ($_POST['id_personal'] ?? 0);
@@ -35,11 +35,11 @@ if ($metodo === 'POST') {
     if ($accion === 'eliminar') {
         $idAsignacion = (int) ($_POST['id_asignacion'] ?? 0);
         if ($idAsignacion <= 0) {
-            responder(['ok' => false, 'mensaje' => 'Asignaci��n inv��lida.']);
+            responder(['ok' => false, 'mensaje' => 'Asignación inválida.']);
         }
         responder($modelo->eliminar($idAsignacion));
     }
-    responder(['ok' => false, 'mensaje' => 'Acci��n no v��lida.']);
+    responder(['ok' => false, 'mensaje' => 'Acción no válida.']);
 }
 
-responder(['ok' => false, 'mensaje' => 'M��todo no permitido.']);
+responder(['ok' => false, 'mensaje' => 'Método no permitido.']);

@@ -83,6 +83,62 @@
     }
   }
 
+  function estadoNota(nota, tipo) {
+    var n = parseInt(nota, 10);
+    if (isNaN(n)) { n = 0; }
+    var t = String(tipo || '').trim().toUpperCase();
+    if (n >= 4) { return t === 'P' ? 'Promocionada' : 'Aprobada'; }
+    if (n > 0) { return 'Desaprobada'; }
+    if (t === 'R') { return 'Regular'; }
+    if (t === 'L') { return 'Libre'; }
+    return 'En curso';
+  }
+
+  function celda(texto) {
+    var td = document.createElement('td');
+    td.textContent = texto;
+    return td;
+  }
+
+  async function guardarNota(alumno, fila) {
+    var inputNota = fila.querySelector('.nota-input');
+    var inputCond = fila.querySelector('.cond-input');
+    var boton = fila.querySelector('.btn-guardar');
+    var nota = String(inputNota.value || '').trim();
+    if (nota === '') {
+      alert('Ingresá una nota.');
+      return;
+    }
+    boton.disabled = true;
+    boton.textContent = 'Guardando...';
+    try {
+      var cuerpo = new URLSearchParams();
+      cuerpo.append('id_alumno', String(alumno.id_alumno));
+      cuerpo.append('id_carrera', String(selCarrera.value));
+      cuerpo.append('id_materia', String(selMateria.value));
+      cuerpo.append('nota', nota);
+      cuerpo.append('tipo_alumno', inputCond.value);
+      var res = await fetch(apiUrl('guardar_nota.php'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: cuerpo.toString()
+      });
+      var data = await res.json();
+      if (!data.ok) {
+        alert(data.mensaje || 'No se pudo guardar la nota.');
+        return;
+      }
+      subtabla.textContent = 'Nota guardada para ' + (alumno.apellido || '') + ', ' + (alumno.nombre || '') + '.';
+      await cargarAlumnos();
+    } catch (e) {
+      alert('No se pudo guardar la nota.');
+    } finally {
+      boton.disabled = false;
+      boton.textContent = 'Guardar';
+    }
+  }
+
   async function cargarAlumnos() {
     var idc = selCarrera.value;
     var idm = selMateria.value;
@@ -104,16 +160,55 @@
       subtabla.textContent = rows.length + ' alumno(s)';
       rows.forEach(function (a) {
         var tr = document.createElement('tr');
-        var nota = a.nota != null && String(a.nota) !== '0' ? String(a.nota) : (a.nota === '0' || a.nota === 0 ? '0' : '—');
-        var tipo = (a.tipo_alumno || '').trim() || '—';
-        var promo = (parseInt(a.nota, 10) >= 4 && tipo.toUpperCase() === 'P') ? 'Sí' : (parseInt(a.nota, 10) >= 4 ? 'No (aprobado)' : '—');
-        var notaFinal = (a.fecha_aprobacion && a.nota && parseInt(a.nota, 10) > 0) ? String(a.nota) : '—';
-        tr.innerHTML = '<td>' + ((a.apellido || '') + ', ' + (a.nombre || '')) + '</td>' +
-          '<td>' + (a.legajo || '—') + '</td>' +
-          '<td>' + nota + '</td>' +
-          '<td>' + tipo + '</td>' +
-          '<td>' + promo + '</td>' +
-          '<td>' + notaFinal + '</td>';
+        tr.dataset.idAlumno = String(a.id_alumno);
+        tr.appendChild(celda((a.apellido || '') + ', ' + (a.nombre || '')));
+        tr.appendChild(celda(a.legajo || '—'));
+
+        var tdNota = document.createElement('td');
+        var inputNota = document.createElement('input');
+        inputNota.type = 'number';
+        inputNota.min = '0';
+        inputNota.max = '10';
+        inputNota.step = '1';
+        inputNota.className = 'input nota-input';
+        inputNota.setAttribute('aria-label', 'Nota de ' + (a.nombre || 'alumno'));
+        inputNota.value = (a.nota !== null && a.nota !== undefined) ? String(a.nota) : '';
+        inputNota.placeholder = '—';
+        tdNota.appendChild(inputNota);
+        tr.appendChild(tdNota);
+
+        var tdCond = document.createElement('td');
+        var inputCond = document.createElement('select');
+        inputCond.className = 'input cond-input';
+        inputCond.setAttribute('aria-label', 'Condición de ' + (a.nombre || 'alumno'));
+        [['X', 'Sin condición'], ['R', 'Regular'], ['P', 'Promocionado'], ['L', 'Libre']].forEach(function (op) {
+          var option = document.createElement('option');
+          option.value = op[0];
+          option.textContent = op[1];
+          inputCond.appendChild(option);
+        });
+        var condActual = String(a.tipo_alumno || '').trim().toUpperCase();
+        if (['P', 'R', 'L', 'X'].indexOf(condActual) === -1) { condActual = 'X'; }
+        inputCond.value = condActual;
+        tdCond.appendChild(inputCond);
+        tr.appendChild(tdCond);
+
+        tr.appendChild(celda(estadoNota(a.nota, condActual)));
+
+        var tomo = parseInt(a.tomo_acta, 10);
+        var folio = parseInt(a.folio_acta, 10);
+        var acta = (tomo > 0 && folio > 0) ? ('T. ' + tomo + ' / F. ' + folio) : '—';
+        tr.appendChild(celda(acta));
+
+        var tdAccion = document.createElement('td');
+        var boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'btn btn--primary btn--sm btn-guardar';
+        boton.textContent = 'Guardar';
+        boton.addEventListener('click', function () { guardarNota(a, tr); });
+        tdAccion.appendChild(boton);
+        tr.appendChild(tdAccion);
+
         tbody.appendChild(tr);
       });
     } catch (e) {

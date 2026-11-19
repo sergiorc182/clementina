@@ -83,14 +83,7 @@
         .catch(function () { window.location.replace('../vista/login.html'); });
     });
     document.getElementById('btn-salir-docente').addEventListener('click', function () {
-      fetch('../controlador/cerrar_sesion.php', { method: 'POST', credentials: 'same-origin' })
-        .catch(function () {})
-        .then(function () {
-          try {
-            localStorage.removeItem('clementina_usuario');
-          } catch (e) {}
-          window.location.replace('../vista/login.html');
-        });
+      App.cerrarSesion();
     });
   </script>
 </body>

@@ -118,6 +118,15 @@ Para avisar al grupo:
 - Corrección de escritura: Se corrigieron los caracteres dañados por doble codificación UTF-8 (mojibake) y erratas ortográficas en todas las vistas.
 - Versiones de cache busting actualizadas (`app.js?v=14`, `finales.js?v=16`, `estilo.css?v=15`).
 
+## Quinta tanda: sesión, registro y archivos
+
+- Cierre de sesión: el botón ya no descarta la cookie de autenticación antes de pedir el POST; la revocación se hace en servidor y el cliente solo destruye la sesión cuando la respuesta es válida.
+- Período de finales: "Mis finales" consulta el registro vigente por `id_registro`, para no mostrar un período equivocado cuando hay varias filas en `parametros_mesas`.
+- Parámetros: el tope de mesas acepta valores enteros entre 0 y 999, y deja el campo vacío cuando no se configura. Los valores inválidos se rechazan sin guardar nada.
+- Registro: pasa por el manejo común de POST/CSRF, valida todos los campos en servidor, limita los intentos por IP y por identidad, y responde con un mensaje genérico cuando el correo o el documento ya existen.
+- Verificación de correo: si hay `CLEMENTINA_MAIL_FROM`, el alta genera un enlace firmado, bloquea el primer ingreso hasta confirmarlo y expira el enlace. El estado temporal queda fuera de la base y el correo no se exponen en logs. Sin correo configurado se mantiene el registro directo de siempre.
+- Cronogramas de finales: los PDF se validan por contenido y tamaño, se guardan con un sufijo aleatorio y se crean de forma exclusiva, de modo que dos archivos con el mismo nombre no se sobrescriban. Los archivos anteriores siguen disponibles.
+
 ## Probar en local
 
 1. Iniciar MySQL/MariaDB y proveer `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `APP_ENV` y `CLEMENTINA_HMAC_SECRET` por variables de entorno. En local se puede usar `APP_ENV=testing`; en producción la aplicación falla rápido si faltan valores reales.

@@ -332,12 +332,14 @@
             if (resultado.ok) {
               mostrarMensaje(mensajeReg, resultado.mensaje, 'ok');
               limpiarMensaje(mensajeLogin);
-              document.getElementById('usuario').value = dni;
-              document.getElementById('password').value = '';
-              setTimeout(function () {
-                tarjetaReg.classList.add('oculto');
-                tarjetaLogin.classList.remove('oculto');
-              }, 900);
+              if (!resultado.verificacion_pendiente) {
+                document.getElementById('usuario').value = dni;
+                document.getElementById('password').value = '';
+                setTimeout(function () {
+                  tarjetaReg.classList.add('oculto');
+                  tarjetaLogin.classList.remove('oculto');
+                }, 900);
+              }
             } else {
               mostrarMensaje(mensajeReg, resultado.mensaje || 'Error al registrarse.', 'error');
             }

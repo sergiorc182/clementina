@@ -166,7 +166,8 @@ class CronogramaFinales
             ];
         }
 
-        if (($archivo['size'] ?? 0) > self::TAMANIO_MAXIMO) {
+        $tamano = (int) ($archivo['size'] ?? 0);
+        if ($tamano <= 0 || $tamano > self::TAMANIO_MAXIMO) {
             return ['ok' => false, 'mensaje' => 'El archivo supera el máximo de 10 MB.'];
         }
 
@@ -180,18 +181,59 @@ class CronogramaFinales
             return ['ok' => false, 'mensaje' => 'No se pudo recibir el archivo. Intentá de nuevo.'];
         }
 
-        if (class_exists('finfo')) {
-            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
-            if ($mime !== 'application/pdf') {
-                return ['ok' => false, 'mensaje' => 'El contenido del archivo no es un PDF válido.'];
-            }
+        if (!class_exists('finfo')) {
+            return ['ok' => false, 'mensaje' => 'No se pudo validar el contenido del archivo.'];
+        }
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        if ($mime !== 'application/pdf') {
+            return ['ok' => false, 'mensaje' => 'El contenido del archivo no es un PDF válido.'];
         }
 
-        $slug    = $this->slugificar((string) pathinfo($nombreOriginal, PATHINFO_FILENAME));
-        $carpeta = $this->carpetaCarrera($idCarrera);
-        $destino = $carpeta . DIRECTORY_SEPARATOR . date('Ymd-His') . '__' . $slug . '.pdf';
+        $cabecera = @fopen($tmp, 'rb');
+        if ($cabecera === false) {
+            return ['ok' => false, 'mensaje' => 'No se pudo leer el archivo recibido.'];
+        }
+        $inicio = fread($cabecera, 5);
+        fclose($cabecera);
+        if ($inicio !== '%PDF-') {
+            return ['ok' => false, 'mensaje' => 'El contenido del archivo no es un PDF válido.'];
+        }
+        if ((int) filesize($tmp) !== $tamano) {
+            return ['ok' => false, 'mensaje' => 'No se pudo recibir el archivo. Intentá de nuevo.'];
+        }
 
-        if (!move_uploaded_file($tmp, $destino)) {
+        $slug = $this->slugificar((string) pathinfo($nombreOriginal, PATHINFO_FILENAME));
+        $carpeta = $this->carpetaCarrera($idCarrera);
+        if ($carpeta === null) {
+            return ['ok' => false, 'mensaje' => 'No se pudo preparar la carpeta de la carrera.'];
+        }
+
+        $destino = '';
+        $salida = false;
+        for ($intento = 0; $intento < 5; $intento++) {
+            $candidato = $carpeta . DIRECTORY_SEPARATOR . date('Ymd-His') . '__' . $slug
+                . '-' . bin2hex(random_bytes(6)) . '.pdf';
+            $salida = @fopen($candidato, 'xb');
+            if ($salida !== false) {
+                $destino = $candidato;
+                break;
+            }
+        }
+        if ($salida === false) {
+            return ['ok' => false, 'mensaje' => 'No se pudo generar un nombre único para el archivo.'];
+        }
+
+        $entrada = @fopen($tmp, 'rb');
+        if ($entrada === false) {
+            fclose($salida);
+            @unlink($destino);
+            return ['ok' => false, 'mensaje' => 'No se pudo leer el archivo recibido.'];
+        }
+        $copiado = stream_copy_to_stream($entrada, $salida);
+        fclose($entrada);
+        fclose($salida);
+        if ($copiado === false || $copiado !== $tamano) {
+            @unlink($destino);
             return ['ok' => false, 'mensaje' => 'No se pudo guardar el archivo en el servidor.'];
         }
 
@@ -243,14 +285,15 @@ class CronogramaFinales
         }
         $slug   = substr($nombreArchivo, $pos + 2);
         $sinExt = (string) preg_replace('/\.pdf$/i', '', $slug);
+        $sinExt = (string) preg_replace('/-[a-f0-9]{12}$/', '', $sinExt);
         return ucfirst(str_replace('-', ' ', $sinExt)) . '.pdf';
     }
 
-    private function carpetaCarrera(int $idCarrera): string
+    private function carpetaCarrera(int $idCarrera): ?string
     {
         $dir = $this->base . DIRECTORY_SEPARATOR . (int) $idCarrera;
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0775, true);
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            return null;
         }
         return $dir;
     }

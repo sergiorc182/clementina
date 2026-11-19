@@ -318,6 +318,25 @@ function establecerCookieAutenticacion(array $u): void
     ]);
 }
 
+function clementinaRevocarTokenCookie(): array
+{
+    if (empty($_COOKIE[CLEMENTINA_AUTH_COOKIE])) {
+        return ['aplicable' => false, 'revocado' => true];
+    }
+
+    $token = clementinaLeerToken((string) $_COOKIE[CLEMENTINA_AUTH_COOKIE]);
+    if ($token === null) {
+        return ['aplicable' => false, 'revocado' => true];
+    }
+
+    clementinaRevocarJti($token['jti'], (int) $token['exp']);
+
+    return [
+        'aplicable' => true,
+        'revocado' => clementinaTokenRevocado($token['jti']),
+    ];
+}
+
 /** Elimina las cookies y revoca el token server-side. */
 function eliminarCookieAutenticacion(): void
 {

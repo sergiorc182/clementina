@@ -199,11 +199,7 @@
             tipo: 'danger'
           }).then(function (ok) {
             if (!ok) { return; }
-            fetch(App.controlador('cerrar_sesion.php'), { method: 'POST' })
-              .catch(function () { /* no importa el resultado */ })
-              .finally(function () {
-                window.location.href = self.urlLogin();
-              });
+            App.cerrarSesion();
           });
         });
       }

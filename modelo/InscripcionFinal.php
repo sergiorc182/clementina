@@ -118,7 +118,8 @@ class InscripcionFinal
         }
 
         $stmt = $this->db->prepare(
-            "SELECT pm.anio_mesas AS anio,
+            "SELECT pm.id_registro,
+                    pm.anio_mesas AS anio,
                     pm.id_turno,
                     pm.fecha_inicio,
                     pm.fecha_fin,

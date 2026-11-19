@@ -3,6 +3,7 @@ config/config.local.php
 config/.hmac_secret
 config/.token_revocations.json
 config/.login_attempts.json
+config/.registro_verificaciones.json
 .env
 docs/testing/
 docs/datos_prueba_finales.sql

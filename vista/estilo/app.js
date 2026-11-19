@@ -152,15 +152,42 @@
     /* Cierra la sesión y redirige al login */
     cerrarSesion: function () {
       var self = this;
-      try {
-        document.cookie = 'clementina_user=; Max-Age=0; path=/;';
-        document.cookie = 'clementina_auth=; Max-Age=0; path=/;';
-        localStorage.removeItem('clementina_usuario');
-      } catch (e) {}
-      return fetch(this.controlador('cerrar_sesion.php'), { method: 'POST' })
-        .catch(function () { /* no importa el resultado */ })
-        .then(function () {
+      return fetch(this.controlador('cerrar_sesion.php'), {
+        method: 'POST',
+        credentials: 'same-origin'
+      })
+        .then(function (resp) {
+          return resp.json().catch(function () { return null; }).then(function (datos) {
+            return { respuesta: resp, datos: datos };
+          });
+        })
+        .then(function (resultado) {
+          if (!resultado.respuesta.ok || !resultado.datos || !resultado.datos.ok) {
+            if (self.toast) {
+              self.toast({
+                tipo: 'error',
+                titulo: 'No se pudo cerrar la sesión',
+                texto: (resultado.datos && resultado.datos.mensaje) || 'Revisá tu conexión e intentá nuevamente.'
+              });
+            }
+            return false;
+          }
+          try {
+            document.cookie = 'clementina_user=; Max-Age=0; path=/;';
+            localStorage.removeItem('clementina_usuario');
+          } catch (e) {}
           window.location.href = self.vista('login.html');
+          return true;
+        })
+        .catch(function () {
+          if (self.toast) {
+            self.toast({
+              tipo: 'error',
+              titulo: 'No se pudo cerrar la sesión',
+              texto: 'Revisá tu conexión e intentá nuevamente.'
+            });
+          }
+          return false;
         });
     },
 

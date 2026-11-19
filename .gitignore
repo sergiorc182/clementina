@@ -2,6 +2,7 @@
 config/config.local.php
 config/.hmac_secret
 config/.token_revocations.json
+config/.token_rotation.lock
 config/.login_attempts.json
 config/.registro_verificaciones.json
 .env

@@ -14,6 +14,8 @@
 
 require_once __DIR__ . '/../../controlador/_base.php';
 require_once __DIR__ . '/../modelo/AlumnoAdmin.php';
+require_once __DIR__ . '/../../modelo/ActivacionCuenta.php';
+require_once __DIR__ . '/../../modelo/CorreoInvitacion.php';
 
 requerirPersonalAdmin();
 
@@ -87,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $numeroDomicilio = (int) $numeroTxtDom;
         }
 
-        responder($modelo->crear([
+        $resultado = $modelo->crear([
             'id_tipo_documento' => $idTipo,
             'numero_documento'  => (int) $numeroTxt,
             'legajo'            => $legajo === '' ? null : $legajo,
@@ -103,7 +105,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'numero'            => $numeroDomicilio,
             'piso'              => $piso === '' ? null : $piso,
             'depto'             => $depto === '' ? null : $depto,
-        ]));
+        ]);
+
+        $token = (string) ($resultado['invitacion_token'] ?? '');
+        unset($resultado['invitacion_token']);
+
+        if ($resultado['ok'] && $token !== '') {
+            $alumno = $resultado['alumno'] ?? [];
+            $envio = (new CorreoInvitacion())->enviar(
+                (string) ($alumno['email'] ?? ''),
+                trim((string) ($alumno['nombre'] ?? '') . ' ' . (string) ($alumno['apellido'] ?? '')),
+                $token
+            );
+            $resultado['correo_enviado'] = $envio['enviado'];
+            $resultado['mensaje'] = $envio['enviado']
+                ? 'Alumno creado. Se envió la invitación para activar la cuenta.'
+                : 'Alumno creado. La activación quedó pendiente y no se envió correo: el servicio no está configurado o no está disponible.';
+        }
+
+        responder($resultado);
+    }
+
+    if ($accion === 'reenviar_invitacion') {
+        $idAlumno = (int) ($_POST['id_alumno'] ?? 0);
+        if ($idAlumno <= 0) {
+            responder(['ok' => false, 'mensaje' => 'Alumno no válido.']);
+        }
+
+        $invitacion = (new ActivacionCuenta())->emitir($idAlumno);
+        $token = (string) ($invitacion['token'] ?? '');
+        unset($invitacion['token']);
+
+        if (!$invitacion['ok'] || $token === '') {
+            responder($invitacion);
+        }
+
+        $envio = (new CorreoInvitacion())->enviar(
+            (string) ($invitacion['email'] ?? ''),
+            (string) ($invitacion['nombre'] ?? ''),
+            $token
+        );
+        responder([
+            'ok' => true,
+            'correo_enviado' => $envio['enviado'],
+            'mensaje' => $envio['enviado']
+                ? 'Se envió una nueva invitación para activar la cuenta.'
+                : 'La invitación se renovó, pero no se envió correo: el servicio no está configurado o no está disponible.',
+        ]);
     }
 
     if ($accion === 'eliminar_alumno') {

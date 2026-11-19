@@ -32,9 +32,6 @@
               Este es tu espacio para gestionar finales, mesas de examen y tu situación académica.
             </p>
           </div>
-          <div class="welcome__actions" data-solo-invitado hidden>
-            <a class="btn btn--secondary" href="vista/login.html">Ingresar</a>
-          </div>
         </section>
 
         <!-- Accesos rápidos -->
@@ -279,10 +276,8 @@
 
       App.montarLayout({ protegida: true }).then(function (usuario) {
         var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
-        var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
 
         soloUsuario.forEach(function (el) { el.hidden = !usuario; });
-        soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
 
         if (usuario) {
           var nombre = (usuario.nombre || '').trim();

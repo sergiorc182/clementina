@@ -70,6 +70,7 @@
                 <th>Legajo</th>
                 <th>Carrera/s</th>
                 <th>Email</th>
+                <th>Credencial</th>
                 <th class="col-actions">Acciones</th>
               </tr>
             </thead>
@@ -242,6 +243,8 @@
             abrirDetalle(id, true);
           } else if (accion === 'copiar') {
             abrirCopiaAlumno(id);
+          } else if (accion === 'reenviar') {
+            reenviarInvitacion(id);
           } else if (accion === 'eliminar') {
             eliminarAlumno(id);
           }
@@ -294,8 +297,10 @@
             '<td data-label="Legajo"><span class="badge badge--neutral">' + esc(a.legajo || '—') + '</span></td>' +
             '<td data-label="Carrera/s">' + esc(a.carreras || '—') + '</td>' +
             '<td data-label="Email"><a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a></td>' +
+            '<td data-label="Credencial">' + credencialBadge(a.credencial_estado) + '</td>' +
             '<td class="col-actions" data-label="Acciones">' +
               botonAccion('detalle', 'Ver legajo', 'eye', a.id_alumno) +
+              (a.credencial_estado === 'activa' ? '' : botonAccion('reenviar', 'Reenviar invitación', 'mail', a.id_alumno)) +
               botonAccion('editar', 'Editar datos', 'pencil', a.id_alumno) +
               botonAccion('copiar', 'Copiar alumno', 'copy', a.id_alumno) +
               botonAccion('eliminar', 'Borrar alumno', 'trash-2', a.id_alumno) +
@@ -314,6 +319,17 @@
         return '<button type="button" class="btn btn--ghost btn--icon btn--sm" title="' + titulo +
           '" aria-label="' + titulo + '" data-accion="' + accion + '" data-id="' + id + '">' +
           '<i data-lucide="' + icono + '"></i></button> ';
+      }
+
+      function credencialBadge(estado) {
+        var estados = {
+          activa: ['badge--success', 'Activa'],
+          pendiente: ['badge--warning', 'Pendiente'],
+          vencida: ['badge--error', 'Vencida'],
+          sin_invitacion: ['badge--neutral', 'Sin invitación']
+        };
+        var dato = estados[estado] || estados.sin_invitacion;
+        return '<span class="badge ' + dato[0] + '">' + dato[1] + '</span>';
       }
 
       function pintarPaginacion(total, paginas, pagina) {
@@ -384,6 +400,7 @@
           dl('Email',       '<a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a>') +
           dl('Teléfono',    esc(a.telefono_principal || '—')) +
           dl('Carrera/s',   carreras) +
+          dl('Credencial',  credencialBadge(a.credencial_estado)) +
           dl('Alta',        fmtFecha(a.alta_registro)) +
           dl('Domicilio',   esc(a.calle ? (a.calle + (a.numero_calle ? ' ' + a.numero_calle : '') + (a.piso ? ', P' + a.piso : '') + (a.depto ? ' D' + a.depto : '')) : '—'));
 
@@ -602,6 +619,39 @@
             App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo crear el alumno. Revisá tu conexión.' });
           })
           .then(function () { btn.disabled = false; });
+      }
+
+      function reenviarInvitacion(idAlumno) {
+        App.confirmar({
+          tipo: 'info',
+          titulo: 'Reenviar invitación',
+          texto: 'Se generará un nuevo enlace de activación. El anterior dejará de ser válido.',
+          confirmar: 'Reenviar'
+        }).then(function (ok) {
+          if (!ok) { return; }
+
+          var datos = new URLSearchParams();
+          datos.append('accion', 'reenviar_invitacion');
+          datos.append('id_alumno', idAlumno);
+
+          fetch(AppAdmin.controladorAdmin('alumnos.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: datos.toString()
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              App.toast({
+                tipo: !res.ok ? 'error' : (res.correo_enviado ? 'success' : 'warning'),
+                titulo: !res.ok ? 'No se pudo reenviar' : 'Invitación actualizada',
+                texto: res.mensaje || 'Intentá nuevamente.'
+              });
+              if (res.ok) { cargar(paginaActual, busquedaActual); }
+            })
+            .catch(function () {
+              App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo reenviar la invitación.' });
+            });
+        });
       }
 
       function eliminarAlumno(idAlumno) {

@@ -59,7 +59,7 @@
     estadoActual   = estado    !== undefined ? estado    : estadoActual;
 
     var tbody = document.getElementById('tabla-body');
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando inscripciones…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando inscripciones…</td></tr>';
 
     var params = '?pagina=' + paginaActual;
     if (busquedaActual) { params += '&q=' + encodeURIComponent(busquedaActual); }
@@ -86,7 +86,7 @@
 
   function pintarVacio() {
     document.getElementById('tabla-body').innerHTML =
-      '<tr><td colspan="8" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">' +
+      '<tr><td colspan="9" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">' +
       'No hay inscripciones con ese criterio.</td></tr>';
     document.getElementById('paginacion').innerHTML = '';
     document.getElementById('total-info').textContent = '';
@@ -100,6 +100,7 @@
         '<td data-label="Materia">' + esc(i.materia) + '</td>' +
         '<td data-label="Carrera">' + esc(i.carrera) + '</td>' +
         '<td data-label="Turno">' + esc(i.turno) + '</td>' +
+        '<td data-label="Llamado">' + esc(i.llamado || '—') + '</td>' +
         '<td data-label="Año" class="num">' + esc(i.anio) + '</td>' +
         '<td data-label="Fecha inscripción">' + fmtFechaHora(i.fecha_hora) + '</td>' +
         '<td data-label="Estado"><span class="badge ' + (activa ? 'badge--success' : 'badge--warning') + '">' +

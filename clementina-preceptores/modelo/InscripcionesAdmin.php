@@ -8,6 +8,7 @@
  */
 
 require_once __DIR__ . '/../../modelo/Conexion.php';
+require_once __DIR__ . '/../../modelo/InscripcionFinal.php';
 
 class InscripcionesAdmin
 {
@@ -70,6 +71,7 @@ class InscripcionesAdmin
                    c.nombre_carrera_corto AS carrera,
                    i.id_turno,
                    COALESCE(t.turno, CONCAT('Turno ', i.id_turno)) AS turno,
+                   i.id_llamado,
                    i.anio,
                    i.estado,
                    i.fecha_hora
@@ -91,8 +93,13 @@ class InscripcionesAdmin
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
+        $inscripciones = array_map(function (array $fila): array {
+            $fila['llamado'] = InscripcionFinal::etiquetaLlamado((int) $fila['id_llamado']);
+            return $fila;
+        }, $stmt->fetchAll());
+
         return [
-            'inscripciones' => $stmt->fetchAll(),
+            'inscripciones' => $inscripciones,
             'total'         => $total,
             'paginas'       => (int)ceil($total / $porPagina),
         ];

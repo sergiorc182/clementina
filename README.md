@@ -34,7 +34,7 @@ Reglas que aplicamos:
 - La inscripción solo funciona entre las fechas cargadas en `parametros_mesas`.
 - Se listan las materias de las carreras donde el alumno está matriculado y que todavía no aprobó (nota menor a 4).
 - No se exigen correlativas: el alumno puede inscribirse a cualquier materia pendiente, sea regular o libre.
-- Hay un solo llamado por turno (antes eran dos, ver más abajo).
+- Los llamados definidos son 1 = Primer llamado y 2 = Segundo llamado; la inscripción sigue siendo una sola por materia y turno.
 - No hay un tope fijo de mesas: puede anotarse en todas las materias que necesite rendir.
 - Se puede cancelar mientras la inscripción esté abierta.
 
@@ -57,7 +57,7 @@ Inscripción a finales
 - Filtros: "Todas", "Puedo rendir" y "Ya me anoté", con la cantidad de cada uno, más un desplegable por año y un buscador por nombre. El buscador aparece con más de 8 materias y el desplegable si hay más de un año.
 - Antes de inscribir pide confirmación y avisa si va como regular o libre.
 - No hay tope fijo: los botones "Inscribirme" no se deshabilitan por cantidad de mesas.
-- Se sacó el segundo llamado. `LLAMADOS` en `modelo/InscripcionFinal.php` quedó con uno solo y la pantalla ya no muestra el selector. Si en algún momento vuelve a haber más de uno, alcanza con agregarlo a esa constante y el selector vuelve a aparecer.
+- Los llamados quedaron definidos como 1 = Primer llamado y 2 = Segundo llamado. El selector aparece cuando hay más de un llamado y el envío usa el valor elegido; no se cambió la regla de una inscripción por materia y turno.
 
 En las dos pantallas
 

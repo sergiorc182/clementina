@@ -1,5 +1,5 @@
 /* Estilos docentes (basado en admin) */
-@import url('../../clementina-preceptores/vista/estilo/admin.css');
+@import url('../../../clementina-preceptores/vista/estilo/admin.css');
 
 body { background: var(--color-bg); }
 

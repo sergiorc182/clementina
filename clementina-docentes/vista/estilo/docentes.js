@@ -2,8 +2,7 @@
   'use strict';
 
   function apiUrl(ruta) {
-    var base = window.location.pathname.replace(/\/[^/]*$/, '/');
-    return base + '../controlador/' + ruta;
+    return App.raiz() + '/clementina-docentes/controlador/' + ruta;
   }
 
   var selCarrera = document.getElementById('sel-carrera');

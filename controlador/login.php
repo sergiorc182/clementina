@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$usuario  = trim($_POST['usuario'] ?? '');
-$password = $_POST['password'] ?? '';
+$usuario  = trim((string) ($_POST['usuario'] ?? ''));
+$password = (string) ($_POST['password'] ?? '');
 
 if ($usuario === '' || $password === '') {
     echo json_encode(['ok' => false, 'mensaje' => 'Ingresá usuario y contraseña.']);
@@ -41,13 +41,28 @@ $resultado = $modelo->login($usuario, $password);
 
 if (!$resultado['ok']) {
     clementinaRegistrarFallo($usuario);
-    echo json_encode($resultado);
+    echo json_encode([
+        'ok' => false,
+        'mensaje' => 'No se pudo iniciar sesión. Verificá tus credenciales e intentá nuevamente.',
+    ]);
+    exit;
+}
+
+$u = $resultado['usuario'];
+
+if (clementinaVerificacionCorreoHabilitada()
+    && ($u['tipo'] ?? '') === 'alumno'
+    && empty($resultado['correo_confirmado'])) {
+    echo json_encode([
+        'ok' => false,
+        'mensaje' => 'Verificá tu correo antes de ingresar.',
+        'verificacion_pendiente' => true,
+        'requiere_verificacion' => true,
+    ]);
     exit;
 }
 
 clementinaLimpiarIntentos($usuario);
-
-$u = $resultado['usuario'];
 
 // Regenerar el ID de sesión al autenticar para prevenir session fixation
 session_regenerate_id(true);

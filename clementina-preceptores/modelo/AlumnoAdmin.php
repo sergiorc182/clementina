@@ -65,6 +65,12 @@ class AlumnoAdmin
                    ) AS nombre,
                    a.email,
                    a.alta_registro,
+                   CASE
+                     WHEN a.password_hash IS NOT NULL THEN 'activa'
+                     WHEN a.activacion_token_hash IS NOT NULL AND a.activacion_expira_en > NOW() THEN 'pendiente'
+                     WHEN a.activacion_token_hash IS NOT NULL THEN 'vencida'
+                     ELSE 'sin_invitacion'
+                   END AS credencial_estado,
                    GROUP_CONCAT(c.nombre_carrera_corto ORDER BY c.nombre_carrera SEPARATOR ', ') AS carreras
             FROM alumnos a
             LEFT JOIN matriculacion m ON m.id_alumno = a.id_alumno
@@ -111,6 +117,12 @@ class AlumnoAdmin
                    a.cantidad_hijos,
                    a.cantidad_familiares_a_cargo,
                    a.alta_registro,
+                   CASE
+                     WHEN a.password_hash IS NOT NULL THEN 'activa'
+                     WHEN a.activacion_token_hash IS NOT NULL AND a.activacion_expira_en > NOW() THEN 'pendiente'
+                     WHEN a.activacion_token_hash IS NOT NULL THEN 'vencida'
+                     ELSE 'sin_invitacion'
+                   END AS credencial_estado,
                    p.nombre AS pais_nacimiento,
                    l.nombre AS localidad_nacimiento,
                    d.calle,
@@ -178,7 +190,7 @@ class AlumnoAdmin
      *                     legajo, primer_apellido, otros_apellidos,
      *                     primer_nombre, otros_nombres, email,
      *                     fecha_nacimiento, sexo, telefono_principal,
-     *                     calle, numero, piso, depto, password.
+     *                     calle, numero, piso, depto.
      */
     public function crear(array $datos): array
     {
@@ -204,15 +216,20 @@ class AlumnoAdmin
         try {
             $this->db->beginTransaction();
 
+            $token = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $token);
+
             $stmt = $this->db->prepare("
                 INSERT INTO alumnos
                     (id_tipo_documento, numero_documento, legajo,
                      primer_apellido, otros_apellidos, primer_nombre, otros_nombres,
-                     email, fecha_nacimiento, sexo, password_hash, alta_registro)
+                     email, fecha_nacimiento, sexo, alta_registro,
+                     activacion_token_hash, activacion_expira_en)
                 VALUES
                     (:tipo, :documento, :legajo,
                      :primer_apellido, :otros_apellidos, :primer_nombre, :otros_nombres,
-                     :email, :fecha_nacimiento, :sexo, :password_hash, NOW())
+                     :email, :fecha_nacimiento, :sexo, NOW(),
+                     :activacion_hash, DATE_ADD(NOW(), INTERVAL 48 HOUR))
             ");
             $this->bindValor($stmt, ':tipo', $datos['id_tipo_documento']);
             $this->bindValor($stmt, ':documento', $datos['numero_documento'], PDO::PARAM_INT);
@@ -224,7 +241,7 @@ class AlumnoAdmin
             $this->bindValor($stmt, ':email', $datos['email']);
             $this->bindValor($stmt, ':fecha_nacimiento', $datos['fecha_nacimiento']);
             $this->bindValor($stmt, ':sexo', $datos['sexo']);
-            $this->bindValor($stmt, ':password_hash', password_hash((string) $datos['password'], PASSWORD_DEFAULT));
+            $this->bindValor($stmt, ':activacion_hash', $tokenHash);
             $stmt->execute();
 
             $id = (int) $this->db->lastInsertId();
@@ -252,6 +269,7 @@ class AlumnoAdmin
                 'ok'      => true,
                 'mensaje' => 'Alumno creado correctamente.',
                 'alumno'  => $this->obtenerPorId($id),
+                'invitacion_token' => $token,
             ];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {

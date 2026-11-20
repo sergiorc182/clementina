@@ -367,59 +367,6 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Buscadores de asignaciones docentes                                  */
-/* ------------------------------------------------------------------ */
-
-.buscador label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-2);
-}
-.buscador .note { min-height: 20px; margin-top: 6px; }
-.buscar-caja { position: relative; }
-.buscar-resultados {
-  position: absolute;
-  z-index: 60;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  max-height: 260px;
-  overflow-y: auto;
-  padding: 4px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  box-shadow: var(--shadow-lg);
-}
-.buscar-opcion {
-  display: block;
-  width: 100%;
-  padding: 9px 10px;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.875rem;
-  text-align: left;
-  cursor: pointer;
-}
-.buscar-opcion:hover { background: var(--surface-3); }
-.buscar-opcion small {
-  display: block;
-  margin-top: 2px;
-  color: var(--text-2);
-  font-size: 0.75rem;
-}
-.buscar-vacio {
-  padding: 10px;
-  color: var(--text-2);
-  font-size: 0.875rem;
-}
-
-/* ------------------------------------------------------------------ */
 /* Sidebar overlay en móvil                                             */
 /* ------------------------------------------------------------------ */
 

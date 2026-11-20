@@ -30,7 +30,7 @@ class InscripcionFinal
     private const SIN_VERIFICAR = 'N';
 
     public const TURNOS   = [1 => 'Febrero', 2 => 'Agosto', 3 => 'Diciembre'];
-    public const LLAMADOS = [1 => 'Primer llamado'];
+    public const LLAMADOS = [1 => 'Primer llamado', 2 => 'Segundo llamado'];
 
     private $db;
     private $idAlumno;
@@ -43,6 +43,12 @@ class InscripcionFinal
     {
         $this->db       = Conexion::getInstancia()->getConexion();
         $this->idAlumno = $idAlumno;
+    }
+
+    /** Etiqueta del llamado, con fallback para registros históricos. */
+    public static function etiquetaLlamado(int $idLlamado): string
+    {
+        return self::LLAMADOS[$idLlamado] ?? ('Llamado ' . $idLlamado);
     }
 
     /** Nombre del turno según la tabla `turnos` (con fallback local). */
@@ -118,7 +124,8 @@ class InscripcionFinal
         }
 
         $stmt = $this->db->prepare(
-            "SELECT pm.anio_mesas AS anio,
+            "SELECT pm.id_registro,
+                    pm.anio_mesas AS anio,
                     pm.id_turno,
                     pm.fecha_inicio,
                     pm.fecha_fin,
@@ -167,7 +174,7 @@ class InscripcionFinal
             'turno'        => $this->nombreTurno($idTurno),
             'fecha_inicio' => $inicio,
             'fecha_fin'    => $fin,
-            'tope'         => (int) $fila['tope'],
+            'tope'         => $fila['tope'] === null ? null : (int) $fila['tope'],
             'abierto'      => $hoy >= $inicio && $hoy <= $fin,
         ];
     }
@@ -266,7 +273,7 @@ class InscripcionFinal
                 'id_materia'        => (int) $fila['id_materia'],
                 'materia'           => $fila['materia'],
                 'id_llamado'        => $idLlamado,
-                'llamado'           => self::LLAMADOS[$idLlamado] ?? ('Llamado ' . $idLlamado),
+                'llamado'           => self::etiquetaLlamado($idLlamado),
                 'fecha_inscripcion' => $fila['fecha_inscripcion'],
             ];
         }
@@ -317,7 +324,7 @@ class InscripcionFinal
                 'turno'       => $this->nombreTurno($idTurno),
                 'fecha_inicio' => $fila['fecha_inicio'],
                 'fecha_fin'    => $fila['fecha_fin'],
-                'tope_mesas'   => (int) $fila['tope'],
+                'tope_mesas'   => $fila['tope'] === null ? null : (int) $fila['tope'],
                 'materias'     => array_map(function (array $i): array {
                     return ['materia' => $i['materia'], 'llamado' => $i['llamado']];
                 }, $this->inscripciones($periodo)),
@@ -358,12 +365,16 @@ class InscripcionFinal
         $this->db->beginTransaction();
         try {
             $bloqueo = $this->db->prepare(
-                "SELECT id_registro FROM parametros_mesas WHERE id_registro = ? FOR UPDATE"
+                "SELECT tope_mesas FROM parametros_mesas WHERE id_registro = ? FOR UPDATE"
             );
             $bloqueo->execute([(int) $periodo['id_registro']]);
-            if (!$bloqueo->fetch()) {
+            $filaBloqueo = $bloqueo->fetch();
+            if (!$filaBloqueo) {
                 throw new DomainException('El turno seleccionado ya no está disponible.');
             }
+            $tope = $filaBloqueo['tope_mesas'] === null
+                ? null
+                : (int) $filaBloqueo['tope_mesas'];
 
             $duplicado = $this->db->prepare(
                 "SELECT 1 FROM inscripciones
@@ -384,6 +395,24 @@ class InscripcionFinal
             $duplicado->execute();
             if ($duplicado->fetch()) {
                 throw new DomainException('Ya estás inscripto en esa materia para este turno.');
+            }
+
+            if ($tope !== null) {
+                $conteo = $this->db->prepare(
+                    "SELECT COUNT(*) FROM inscripciones
+                     WHERE id_alumno = :alumno
+                       AND anio = :anio
+                       AND id_turno = :turno
+                       AND estado = :estado"
+                );
+                $this->bindAlumno($conteo);
+                $conteo->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
+                $conteo->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+                $conteo->bindValue(':estado', self::ESTADO_ACTIVA);
+                $conteo->execute();
+                if ((int) $conteo->fetchColumn() >= $tope) {
+                    throw new DomainException('Alcanzaste el tope de mesas permitidas para este turno.');
+                }
             }
 
             $stmt = $this->db->prepare(
@@ -429,25 +458,43 @@ class InscripcionFinal
     {
         $periodo = $this->periodoAbierto();
 
-        $stmt = $this->db->prepare(
-            "DELETE FROM inscripciones
-             WHERE id_alumno = :alumno
-               AND id_carrera = :carrera
-               AND id_materia = :materia
-               AND anio = :anio
-               AND id_turno = :turno
-               AND estado = :estado"
-        );
-        $this->bindAlumno($stmt);
-        $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
-        $stmt->bindValue(':materia', $idMateria, PDO::PARAM_INT);
-        $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
-        $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
-        $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
-        $stmt->execute();
+        $this->db->beginTransaction();
+        try {
+            $bloqueo = $this->db->prepare(
+                "SELECT id_registro FROM parametros_mesas WHERE id_registro = ? FOR UPDATE"
+            );
+            $bloqueo->execute([(int) $periodo['id_registro']]);
+            if (!$bloqueo->fetch()) {
+                throw new DomainException('El turno seleccionado ya no está disponible.');
+            }
 
-        if ($stmt->rowCount() === 0) {
-            throw new DomainException('No estabas inscripto en esa materia.');
+            $stmt = $this->db->prepare(
+                "DELETE FROM inscripciones
+                 WHERE id_alumno = :alumno
+                   AND id_carrera = :carrera
+                   AND id_materia = :materia
+                   AND anio = :anio
+                   AND id_turno = :turno
+                   AND estado = :estado"
+            );
+            $this->bindAlumno($stmt);
+            $stmt->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $stmt->bindValue(':materia', $idMateria, PDO::PARAM_INT);
+            $stmt->bindValue(':anio', $periodo['anio'], PDO::PARAM_INT);
+            $stmt->bindValue(':turno', $periodo['id_turno'], PDO::PARAM_INT);
+            $stmt->bindValue(':estado', self::ESTADO_ACTIVA);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                throw new DomainException('No estabas inscripto en esa materia.');
+            }
+
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
     }
 

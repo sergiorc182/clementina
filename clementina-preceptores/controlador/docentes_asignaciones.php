@@ -8,26 +8,13 @@ $modelo = new DocenteAsignacionesAdmin();
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 if ($metodo === 'GET') {
-    $accion = trim((string) ($_GET['accion'] ?? ''));
-    $q = trim((string) ($_GET['q'] ?? ''));
     try {
-        if ($accion === 'buscar_docentes') {
-            responder(['ok' => true, 'docentes' => $modelo->buscarDocentes($q)]);
-        }
-        if ($accion === 'buscar_materias') {
-            responder(['ok' => true, 'carreras_materias' => $modelo->buscarMaterias($q)]);
-        }
-        if ($accion === 'asignaciones') {
-            $idPersonal = (int) ($_GET['id_personal'] ?? 0);
-            if ($idPersonal <= 0) {
-                responder(['ok' => false, 'mensaje' => 'Docente no válido.']);
-            }
-            responder([
-                'ok' => true,
-                'asignaciones' => $modelo->listarAsignacionesPorDocente($idPersonal),
-            ]);
-        }
-        responder(['ok' => false, 'mensaje' => 'Acción no válida.']);
+        responder([
+            'ok' => true,
+            'docentes' => $modelo->listarDocentes(),
+            'carreras_materias' => $modelo->carrerasMateriasFlat(),
+            'asignaciones' => $modelo->listarAsignaciones(),
+        ]);
     } catch (Throwable $e) {
         responderErrorServidor('Clementina DocentesAsignaciones', $e);
     }

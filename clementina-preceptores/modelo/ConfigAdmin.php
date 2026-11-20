@@ -228,6 +228,11 @@ class ConfigAdmin
                 case 'carrera_sede_turno':
                     return $this->actualizarRelacionSedeTurno($pk, $datos);
             }
+        } catch (DomainException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['ok' => false, 'mensaje' => $e->getMessage()];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
@@ -259,36 +264,114 @@ class ConfigAdmin
 
     private function actualizarRelacionMateria(array $pk, array $datos): array
     {
-        $stmt = $this->db->prepare(
-            "UPDATE carrera_materias
-             SET id_carrera = :c, id_materia = :m, anio_cursada = :anio
-             WHERE id_carrera = :pc AND id_materia = :pm"
-        );
-        $stmt->execute([
-            ':c'    => $datos['id_carrera'],
-            ':m'    => $datos['id_materia'],
-            ':anio' => $datos['anio_cursada'],
-            ':pc'   => $pk['id_carrera'],
-            ':pm'   => $pk['id_materia'],
-        ]);
+        $carrera = (int) $datos['id_carrera'];
+        $materia = (int) $datos['id_materia'];
+        $carreraActual = (int) $pk['id_carrera'];
+        $materiaActual = (int) $pk['id_materia'];
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM carrera_materias
+                 WHERE id_carrera = :pc AND id_materia = :pm
+                 LIMIT 1 FOR UPDATE"
+            );
+            $stmt->execute([':pc' => $carreraActual, ':pm' => $materiaActual]);
+            if (!$stmt->fetchColumn()) {
+                throw new DomainException('La relación ya no existe.');
+            }
+
+            if ($carrera !== $carreraActual || $materia !== $materiaActual) {
+                $stmt = $this->db->prepare(
+                    "SELECT 1 FROM carrera_materias
+                     WHERE id_carrera = :c AND id_materia = :m
+                     LIMIT 1"
+                );
+                $stmt->execute([':c' => $carrera, ':m' => $materia]);
+                if ($stmt->fetchColumn()) {
+                    throw new DomainException('Ya existe una relación con esa carrera y materia.');
+                }
+
+                $bloqueos = $this->buscarDependenciasRelacion($carreraActual, $materiaActual);
+                if ($bloqueos) {
+                    throw new DomainException(
+                        'No se puede modificar la relación porque tiene datos asociados: '
+                        . implode(', ', $bloqueos) . '.'
+                    );
+                }
+            }
+
+            $stmt = $this->db->prepare(
+                "UPDATE carrera_materias
+                 SET id_carrera = :c, id_materia = :m, anio_cursada = :anio
+                 WHERE id_carrera = :pc AND id_materia = :pm"
+            );
+            $stmt->execute([
+                ':c'    => $carrera,
+                ':m'    => $materia,
+                ':anio' => $datos['anio_cursada'],
+                ':pc'   => $carreraActual,
+                ':pm'   => $materiaActual,
+            ]);
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+
         return ['ok' => true, 'mensaje' => 'Relación actualizada correctamente.'];
     }
 
     private function actualizarRelacionSedeTurno(array $pk, array $datos): array
     {
-        $stmt = $this->db->prepare(
-            "UPDATE carrera_sede_turno
-             SET id_carrera = :c, id_sede = :s, id_turno = :t
-             WHERE id_carrera = :pc AND id_sede = :ps AND id_turno = :pt"
-        );
-        $stmt->execute([
-            ':c'  => $datos['id_carrera'],
-            ':s'  => $datos['id_sede'],
-            ':t'  => $datos['id_turno'],
-            ':pc' => $pk['id_carrera'],
-            ':ps' => $pk['id_sede'],
-            ':pt' => $pk['id_turno'],
-        ]);
+        $carrera = (int) $datos['id_carrera'];
+        $sede = (int) $datos['id_sede'];
+        $turno = (int) $datos['id_turno'];
+        $carreraActual = (int) $pk['id_carrera'];
+        $sedeActual = (int) $pk['id_sede'];
+        $turnoActual = (int) $pk['id_turno'];
+
+        if ($carrera === $carreraActual && $sede === $sedeActual && $turno === $turnoActual) {
+            return ['ok' => true, 'mensaje' => 'Relación actualizada correctamente.'];
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM carrera_sede_turno
+                 WHERE id_carrera = :pc AND id_sede = :ps AND id_turno = :pt
+                 LIMIT 1 FOR UPDATE"
+            );
+            $stmt->execute([':pc' => $carreraActual, ':ps' => $sedeActual, ':pt' => $turnoActual]);
+            if (!$stmt->fetchColumn()) {
+                throw new DomainException('La relación ya no existe.');
+            }
+            if ($this->matriculacionesAsociadas($carreraActual, $sedeActual, $turnoActual) > 0) {
+                throw new DomainException('No se puede modificar la relación porque tiene matriculaciones asociadas.');
+            }
+
+            $stmt = $this->db->prepare(
+                "UPDATE carrera_sede_turno
+                 SET id_carrera = :c, id_sede = :s, id_turno = :t
+                 WHERE id_carrera = :pc AND id_sede = :ps AND id_turno = :pt"
+            );
+            $stmt->execute([
+                ':c'  => $carrera,
+                ':s'  => $sede,
+                ':t'  => $turno,
+                ':pc' => $carreraActual,
+                ':ps' => $sedeActual,
+                ':pt' => $turnoActual,
+            ]);
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
         return ['ok' => true, 'mensaje' => 'Relación actualizada correctamente.'];
     }
 
@@ -309,7 +392,15 @@ class ConfigAdmin
                 case 'carrera_sede_turno':
                     return $this->eliminarRelacionSedeTurno($pk);
             }
+        } catch (DomainException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['ok' => false, 'mensaje' => $e->getMessage()];
         } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log('[Clementina ConfigAdmin eliminar] ' . $e->getMessage());
             return ['ok' => false, 'mensaje' => 'No se pudo eliminar el registro. Intentá nuevamente.'];
         }
@@ -369,49 +460,119 @@ class ConfigAdmin
 
     private function eliminarRelacionMateria(array $pk): array
     {
-        $stmt = $this->db->prepare(
-            "SELECT 1 FROM historial_academico
-             WHERE id_carrera = :c AND id_materia = :m
-             UNION ALL
-             SELECT 1 FROM inscripciones
-             WHERE id_carrera = :c2 AND id_materia = :m2
-             LIMIT 1"
-        );
-        $stmt->execute([
-            ':c' => $pk['id_carrera'], ':m' => $pk['id_materia'],
-            ':c2' => $pk['id_carrera'], ':m2' => $pk['id_materia'],
-        ]);
-        if ($stmt->fetchColumn()) {
-            return [
-                'ok'      => false,
-                'mensaje' => 'No se puede eliminar la relación porque tiene historial o inscripciones asociadas.',
-            ];
+        $carrera = (int) $pk['id_carrera'];
+        $materia = (int) $pk['id_materia'];
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM carrera_materias
+                 WHERE id_carrera = :c AND id_materia = :m
+                 LIMIT 1 FOR UPDATE"
+            );
+            $stmt->execute([':c' => $carrera, ':m' => $materia]);
+            if (!$stmt->fetchColumn()) {
+                throw new DomainException('La relación ya no existe.');
+            }
+
+            $bloqueos = $this->buscarDependenciasRelacion($carrera, $materia);
+            if ($bloqueos) {
+                throw new DomainException(
+                    'No se puede eliminar la relación porque tiene datos asociados: '
+                    . implode(', ', $bloqueos) . '.'
+                );
+            }
+
+            $stmt = $this->db->prepare(
+                "DELETE FROM carrera_materias WHERE id_carrera = :c AND id_materia = :m"
+            );
+            $stmt->execute([':c' => $carrera, ':m' => $materia]);
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
 
-        $stmt = $this->db->prepare(
-            "DELETE FROM carrera_materias WHERE id_carrera = :c AND id_materia = :m"
-        );
-        $stmt->execute([':c' => $pk['id_carrera'], ':m' => $pk['id_materia']]);
         return ['ok' => true, 'mensaje' => 'Relación eliminada correctamente.'];
     }
 
     private function eliminarRelacionSedeTurno(array $pk): array
     {
-        $stmt = $this->db->prepare(
-            "DELETE FROM carrera_sede_turno
-             WHERE id_carrera = :c AND id_sede = :s AND id_turno = :t"
-        );
-        $stmt->execute([
-            ':c' => $pk['id_carrera'],
-            ':s' => $pk['id_sede'],
-            ':t' => $pk['id_turno'],
-        ]);
+        $carrera = (int) $pk['id_carrera'];
+        $sede = (int) $pk['id_sede'];
+        $turno = (int) $pk['id_turno'];
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM carrera_sede_turno
+                 WHERE id_carrera = :c AND id_sede = :s AND id_turno = :t
+                 LIMIT 1 FOR UPDATE"
+            );
+            $stmt->execute([':c' => $carrera, ':s' => $sede, ':t' => $turno]);
+            if (!$stmt->fetchColumn()) {
+                throw new DomainException('La relación ya no existe.');
+            }
+            if ($this->matriculacionesAsociadas($carrera, $sede, $turno) > 0) {
+                throw new DomainException('No se puede eliminar la relación porque tiene matriculaciones asociadas.');
+            }
+
+            $stmt = $this->db->prepare(
+                "DELETE FROM carrera_sede_turno
+                 WHERE id_carrera = :c AND id_sede = :s AND id_turno = :t"
+            );
+            $stmt->execute([':c' => $carrera, ':s' => $sede, ':t' => $turno]);
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+
         return ['ok' => true, 'mensaje' => 'Relación eliminada correctamente.'];
     }
 
     /* ================================================================== */
     /* Utilidades                                                          */
     /* ================================================================== */
+
+    private function buscarDependenciasRelacion(int $idCarrera, int $idMateria): array
+    {
+        $dependencias = [
+            'asignaciones docentes'   => ['docente_asignaciones', 'id_carrera', 'id_materia'],
+            'correlatividades'        => ['correlatividades', 'id_carrera', 'id_materia'],
+            'historial académico'     => ['historial_academico', 'id_carrera', 'id_materia'],
+            'inscripciones a finales' => ['inscripciones', 'id_carrera', 'id_materia'],
+            'matriculaciones'         => ['matriculacion_detalle', 'id_carrera', 'id_materia'],
+        ];
+
+        $encontradas = [];
+        foreach ($dependencias as $etiqueta => $info) {
+            [$tabla, $columnaCarrera, $columnaMateria] = $info;
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) FROM {$tabla}
+                 WHERE {$columnaCarrera} = :c AND {$columnaMateria} = :m"
+            );
+            $stmt->execute([':c' => $idCarrera, ':m' => $idMateria]);
+            if ((int) $stmt->fetchColumn() > 0) {
+                $encontradas[] = $etiqueta;
+            }
+        }
+        return $encontradas;
+    }
+
+    private function matriculacionesAsociadas(int $idCarrera, int $idSede, int $idTurno): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM matriculacion
+             WHERE id_carrera = :c AND id_sede = :s AND id_turno = :t"
+        );
+        $stmt->execute([':c' => $idCarrera, ':s' => $idSede, ':t' => $idTurno]);
+        return (int) $stmt->fetchColumn();
+    }
 
     private function buscarDependencias(array $dependencias, int $id): array
     {

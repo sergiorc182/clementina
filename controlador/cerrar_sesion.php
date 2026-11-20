@@ -1,14 +1,22 @@
 <?php
-/**
- * Controlador: Cerrar sesión
- *
- * Destruye la sesión y la cookie, y responde { ok: true }.
- */
+require_once __DIR__ . '/_base.php';
 
-require_once __DIR__ . '/_sesion.php';
+requerirPostSeguro();
+requerirSesion();
 
-eliminarCookieAutenticacion();
+$revocacion = clementinaRevocarTokenCookie();
+
+if (!$revocacion['revocado']) {
+    http_response_code(500);
+    responder([
+        'ok' => false,
+        'mensaje' => 'No se pudo revocar el token de autenticación.',
+        'token_revocado' => false,
+    ]);
+}
+
 $_SESSION = [];
+eliminarCookieAutenticacion();
 
 if (ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();
@@ -25,8 +33,9 @@ if (ini_get('session.use_cookies')) {
 
 session_destroy();
 
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode([
-    'ok'      => true,
+responder([
+    'ok' => true,
     'mensaje' => 'Sesión cerrada.',
-], JSON_UNESCAPED_UNICODE);
+    'token_revocado' => (bool) $revocacion['revocado'],
+    'revocacion_aplicable' => (bool) $revocacion['aplicable'],
+]);

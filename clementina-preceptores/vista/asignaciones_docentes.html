@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
-  <link rel="stylesheet" href="estilo/admin.css?v=2">
+  <link rel="stylesheet" href="estilo/admin.css?v=1">
 </head>
 <body data-page="asignaciones-docentes">
   <a class="salto" href="#contenido">Saltar al contenido</a>
@@ -26,54 +26,29 @@
         </section>
 
         <div class="card" style="margin-bottom: var(--sp-5);">
-          <div class="card__header">
-            <div>
-              <div class="card__title">Nueva asignación</div>
-              <div class="card__subtitle">Buscá por nombre; no se cargan listados completos.</div>
-            </div>
-          </div>
+          <div class="card__header"><div class="card__title">Nueva asignación</div></div>
           <div class="card__body">
-            <div class="grid grid--2" style="gap: var(--sp-3);">
-              <div class="buscador">
-                <label for="buscar-docente">Docente</label>
-                <div class="buscar-caja">
-                  <input id="buscar-docente" class="input" type="search" placeholder="Apellido, nombre o usuario" autocomplete="off" aria-describedby="seleccion-docente">
-                  <div class="buscar-resultados" id="resultados-docente" hidden></div>
-                </div>
-                <p class="note" id="seleccion-docente">Buscá y elegí un docente.</p>
-              </div>
-              <div class="buscador">
-                <label for="buscar-materia">Carrera / Materia</label>
-                <div class="buscar-caja">
-                  <input id="buscar-materia" class="input" type="search" placeholder="Nombre de materia o carrera" autocomplete="off" aria-describedby="seleccion-materia">
-                  <div class="buscar-resultados" id="resultados-materia" hidden></div>
-                </div>
-                <p class="note" id="seleccion-materia">Buscá y elegí una materia.</p>
+            <div class="grid grid--3" style="gap: var(--sp-3);">
+              <label>Docente
+                <select id="sel-docente" class="input"></select>
+              </label>
+              <label>Carrera / Materia
+                <select id="sel-cm" class="input"></select>
+              </label>
+              <div style="align-self: end;">
+                <button id="btn-crear" class="btn btn--primary">Asignar</button>
               </div>
             </div>
-            <div style="margin-top: var(--sp-3);">
-              <button id="btn-crear" class="btn btn--primary" disabled>Asignar</button>
-            </div>
-            <p class="note" id="msg-asig" style="margin-top: var(--sp-2);" aria-live="polite"></p>
+            <p class="note" id="msg-asig" style="margin-top: var(--sp-2);"></p>
           </div>
         </div>
 
         <div class="card">
-          <div class="card__header">
-            <div>
-              <div class="card__title" id="titulo-asig">Materias asignadas</div>
-              <div class="card__subtitle" id="subtitulo-asig">Seleccioná un docente para ver sus asignaciones.</div>
-            </div>
-          </div>
+          <div class="card__header"><div class="card__title">Asignaciones actuales</div></div>
           <div class="card__body">
-            <div class="empty" id="estado-asig">
-              <div class="empty__icon"><i data-lucide="user" class="icon"></i></div>
-              <div class="empty__title" id="estado-titulo">Sin docente seleccionado</div>
-              <div class="empty__text" id="estado-texto">Buscá un docente arriba para ver sus carreras y materias asignadas.</div>
-            </div>
-            <div class="table-wrap" id="tabla-asig" hidden>
+            <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Carrera</th><th>Materia</th><th>Año</th><th></th></tr></thead>
+                <thead><tr><th>Docente</th><th>Carrera</th><th>Materia</th><th></th></tr></thead>
                 <tbody id="tbody-asig"></tbody>
               </table>
             </div>
@@ -83,8 +58,8 @@
     </div>
   </div>
   <script src="../../vista/estilo/app.js?v=15"></script>
-  <script src="estilo/app-admin.js?v=7"></script>
-  <script src="estilo/asignaciones_docentes.js?v=3"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
+  <script src="estilo/asignaciones_docentes.js?v=2"></script>
   <script>
     AppAdmin.montarAdmin({ titulo: 'Asignaciones docentes', subtitulo: 'Personal docente por carrera y materia' });
   </script>

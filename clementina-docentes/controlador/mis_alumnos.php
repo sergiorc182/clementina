@@ -8,29 +8,17 @@ require_once __DIR__ . '/_base.php';
 require_once __DIR__ . '/../modelo/DocenteNotas.php';
 
 requerirMetodo('GET');
-$docente = requerirDocenteOPreceptor();
-$esPreceptor = ($docente['rol'] ?? '') === 'preceptor';
+$docente = requerirDocente();
 
 try {
     $modelo = new DocenteNotas();
-    $asignadas = $esPreceptor
-        ? $modelo->catalogoCompleto()
-        : $modelo->carrerasConMateriasAsignadas((int) $docente['id']);
-
-    $aniosPorCarrera = [];
-    foreach ($asignadas as $a) {
-        $idCarrera = (int) $a['id_carrera'];
-        if (!isset($aniosPorCarrera[$idCarrera])) {
-            $aniosPorCarrera[$idCarrera] = $modelo->aniosDisponibles($idCarrera);
-        }
-    }
+    $asignadas = $modelo->carrerasConMateriasAsignadas((int) $docente['id']);
 
     if (isset($_GET['catalogo']) && $_GET['catalogo'] === '1') {
         responder([
             'ok' => true,
             'carreras' => $asignadas,
             'materias_por_carrera' => $modelo->materiasPorCarreraMap($asignadas),
-            'anios_por_carrera' => $aniosPorCarrera,
         ]);
     }
 
@@ -48,20 +36,14 @@ try {
             break;
         }
     }
-    if (!$esPreceptor && !$permitida) {
+    if (!$permitida) {
         responder(['ok' => false, 'mensaje' => 'No tenés asignada esa materia.']);
     }
 
-    $anio = isset($_GET['anio']) ? max(0, (int) $_GET['anio']) : 0;
-    $busqueda = trim((string) ($_GET['q'] ?? ''));
-
-    $alumnos = $modelo->alumnosPorCarreraMateria($idCarrera, $idMateria, $anio, $busqueda);
+    $alumnos = $modelo->alumnosPorCarreraMateria($idCarrera, $idMateria);
     responder([
         'ok' => true,
         'alumnos' => $alumnos,
-        'anio' => $anio,
-        'busqueda' => $busqueda,
-        'anios' => $aniosPorCarrera[$idCarrera] ?? [],
         'carreras' => $asignadas,
         'materias_por_carrera' => $modelo->materiasPorCarreraMap($asignadas),
     ]);

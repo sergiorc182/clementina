@@ -156,7 +156,7 @@
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
   <script src="../vista/estilo/app.js?v=15"></script>
-  <script src="vista/estilo/app-admin.js?v=7"></script>
+  <script src="vista/estilo/app-admin.js?v=4"></script>
   <script>
     (function () {
       'use strict';
@@ -204,8 +204,11 @@
           if (mesas.estado === 'abierto') {
             alerta.className = 'alert alert--success mt-4 mb-6';
             alertaTit.textContent = 'Inscripción a finales abierta';
+            var topeTexto = mesas.tope_mesas === null || mesas.tope_mesas === undefined
+              ? 'Sin límite'
+              : (Number(mesas.tope_mesas) === 0 ? 'Sin cupo' : String(mesas.tope_mesas));
             alertaTxt.textContent = 'Turno ' + (mesas.turno || '') + ' ' + (mesas.anio_mesas || '') +
-              ' · Hasta el ' + fmtFecha(mesas.fecha_fin) + ' · Tope: ' + (mesas.tope_mesas || '—') + ' mesas/alumno.';
+              ' · Hasta el ' + fmtFecha(mesas.fecha_fin) + ' · Tope: ' + topeTexto + '.';
           } else if (mesas.estado === 'proximo') {
             alerta.className = 'alert alert--info mt-4 mb-6';
             alertaTit.textContent = 'Próximo período de inscripción';

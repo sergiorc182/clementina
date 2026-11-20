@@ -12,7 +12,7 @@ Fecha: 2026-11-18. Aplica a un servidor con Apache + PHP 8.2 + MariaDB 10.4.
 ## Provisión acordada con el usuario
 
 - **Secretos:** variables de entorno en Apache/FPM. No enviar valores por chat. Variables requeridas: `APP_ENV`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `CLEMENTINA_HMAC_SECRET`; opcionales `LOGIN_RATE_MAX`, `LOGIN_RATE_WINDOW`.
-- **Reglas académicas:** pendiente de recibir la resolución institucional con correlatividades, tope de mesas, segundo llamado y fecha/hora/aula.
+- **Reglas académicas aplicadas:** `tope_mesas` es el máximo de inscripciones activas por alumno y período (`NULL` = sin límite, `0` = sin cupo); el derecho a evaluación exige matrícula cabecera y detalle de la materia para ese año académico; las combinaciones carrera/sede/turno con matrículas no se pueden borrar ni modificar. Correlatividades, segundo llamado y fecha/hora/aula siguen pendientes de resolución institucional.
 - **PDF institucionales:** pendiente de carga por el usuario en `documentos/cronogramas_finales`.
 
 Mientras esos tres ítems no estén disponibles, el dictamen permanece **NO APTO PARA PRODUCCIÓN**.
@@ -53,6 +53,8 @@ El paquete no contiene `config.local.php`, `.hmac_secret`, `.token_revocations.j
 - Si la base está vacía: importar `docs/esquema_normalizado.sql`.
 - **Precaución:** ese archivo contiene `CREATE DATABASE IF NOT EXISTS clementina` y `USE clementina`. Si el nombre de la base de producción es distinto, importar una copia sin esas dos líneas.
 - Importar `docs/datos_ubicaciones.sql` para los catálogos de “Mis datos”. El paquete ya no incluye `docs/datos_prueba_finales.sql`; cargar los catálogos académicos y las cuentas institucionales reales por separado.
+- Si la base ya estaba en uso, aplicar `docs/migracion_qa014_qa015.sql` manualmente. Antes: hacer backup, revisar las cuentas con `confirmacion_registro IS NULL` y decidir cuáles requieren reenvío; no copiar estados desde `config/.registro_verificaciones.json`. La migración no activa cuentas automáticamente.
+- Aplicar también `docs/migracion_qa017_qa018_qa021.sql` manualmente. Antes de ejecutarla, revisar el `INSERT IGNORE` de `matriculacion_detalle`: reconstruye el detalle faltante como asistencia presencial (`1`). Si preceptoría documentó situaciones especiales, ajustar esas filas antes de habilitar el panel docente. La restricción agregada sobre `matriculacion` es `RESTRICT`: no elimina ni desactiva matrículas.
 - No ejecutar `DROP`, `TRUNCATE` ni `DELETE` masivos sobre datos reales.
 
 ## 5. Verificación posterior

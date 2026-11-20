@@ -9,6 +9,7 @@
  */
 
 require_once dirname(__DIR__) . '/modelo/Conexion.php';
+require_once dirname(__DIR__) . '/modelo/ValidadorAcademico.php';
 
 class InscripcionCarrera
 {
@@ -179,63 +180,72 @@ class InscripcionCarrera
 
         $anioInscripcion = $param['anio_inscripcion'];
 
-        // 2. Verificar que no esté ya matriculado
-        $stmtCheck = $this->db->prepare("
-            SELECT 1 FROM matriculacion 
-            WHERE id_alumno = :id AND id_carrera = :carrera 
-            LIMIT 1
-        ");
-        $stmtCheck->bindValue(':id', $idAlumno, PDO::PARAM_INT);
-        $stmtCheck->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
-        $stmtCheck->execute();
-        if ($stmtCheck->fetch()) {
-            throw new RuntimeException("Ya te encontrás matriculado en esta carrera.");
+        $this->db->beginTransaction();
+        try {
+            $stmtVal = $this->db->prepare("
+                SELECT 1 FROM carrera_sede_turno
+                WHERE id_carrera = :carrera AND id_sede = :sede AND id_turno = :turno
+                LIMIT 1 FOR UPDATE
+            ");
+            $stmtVal->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $stmtVal->bindValue(':sede', $idSede, PDO::PARAM_INT);
+            $stmtVal->bindValue(':turno', $idTurno, PDO::PARAM_INT);
+            $stmtVal->execute();
+            if (!$stmtVal->fetch()) {
+                throw new RuntimeException("La sede o el turno seleccionados no corresponden a esta carrera.");
+            }
+
+            $stmtCheck = $this->db->prepare("
+                SELECT 1 FROM matriculacion
+                WHERE id_alumno = :id AND id_carrera = :carrera
+                LIMIT 1
+            ");
+            $stmtCheck->bindValue(':id', $idAlumno, PDO::PARAM_INT);
+            $stmtCheck->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $stmtCheck->execute();
+            if ($stmtCheck->fetch()) {
+                throw new RuntimeException("Ya te encontrás matriculado en esta carrera.");
+            }
+
+            $stmtAlu = $this->db->prepare("SELECT numero_documento FROM alumnos WHERE id_alumno = :id LIMIT 1");
+            $stmtAlu->bindValue(':id', $idAlumno, PDO::PARAM_INT);
+            $stmtAlu->execute();
+            $numeroDocumento = (int) $stmtAlu->fetchColumn();
+
+            $stmtIns = $this->db->prepare("
+                INSERT INTO matriculacion (
+                    id_alumno,
+                    id_carrera,
+                    anio_inscripcion,
+                    id_turno,
+                    id_sede,
+                    fecha_alta
+                ) VALUES (
+                    :id,
+                    :carrera,
+                    :anio,
+                    :turno,
+                    :sede,
+                    NOW()
+                )
+            ");
+            $stmtIns->bindValue(':id', $idAlumno, PDO::PARAM_INT);
+            $stmtIns->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
+            $stmtIns->bindValue(':anio', $anioInscripcion, PDO::PARAM_INT);
+            $stmtIns->bindValue(':turno', $idTurno, PDO::PARAM_INT);
+            $stmtIns->bindValue(':sede', $idSede, PDO::PARAM_INT);
+            $stmtIns->execute();
+
+            $validador = new ValidadorAcademico($this->db);
+            $validador->sincronizarDetalleMatriculacion($idAlumno, $idCarrera, $anioInscripcion);
+
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
-
-        // 3. Validar que la combinación carrera/sede/turno sea válida en el instituto
-        $stmtVal = $this->db->prepare("
-            SELECT 1 FROM carrera_sede_turno 
-            WHERE id_carrera = :carrera AND id_sede = :sede AND id_turno = :turno 
-            LIMIT 1
-        ");
-        $stmtVal->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
-        $stmtVal->bindValue(':sede', $idSede, PDO::PARAM_INT);
-        $stmtVal->bindValue(':turno', $idTurno, PDO::PARAM_INT);
-        $stmtVal->execute();
-        if (!$stmtVal->fetch()) {
-            throw new RuntimeException("La sede o el turno seleccionados no corresponden a esta carrera.");
-        }
-
-        // 4. Documento del alumno (para el número de trámite)
-        $stmtAlu = $this->db->prepare("SELECT numero_documento FROM alumnos WHERE id_alumno = :id LIMIT 1");
-        $stmtAlu->bindValue(':id', $idAlumno, PDO::PARAM_INT);
-        $stmtAlu->execute();
-        $numeroDocumento = (int) $stmtAlu->fetchColumn();
-
-        // 5. Insertar en tabla matriculacion
-        $stmtIns = $this->db->prepare("
-            INSERT INTO matriculacion (
-                id_alumno,
-                id_carrera,
-                anio_inscripcion,
-                id_turno,
-                id_sede,
-                fecha_alta
-            ) VALUES (
-                :id,
-                :carrera,
-                :anio,
-                :turno,
-                :sede,
-                NOW()
-            )
-        ");
-        $stmtIns->bindValue(':id', $idAlumno, PDO::PARAM_INT);
-        $stmtIns->bindValue(':carrera', $idCarrera, PDO::PARAM_INT);
-        $stmtIns->bindValue(':anio', $anioInscripcion, PDO::PARAM_INT);
-        $stmtIns->bindValue(':turno', $idTurno, PDO::PARAM_INT);
-        $stmtIns->bindValue(':sede', $idSede, PDO::PARAM_INT);
-        $stmtIns->execute();
 
         // 6. Generar número de trámite
         $nroTramite = sprintf("MAT-%d-%d-%02d", $anioInscripcion, $numeroDocumento, $idCarrera);

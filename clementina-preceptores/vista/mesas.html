@@ -40,7 +40,7 @@
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="../../vista/estilo/app.js?v=15"></script>
-  <script src="estilo/app-admin.js?v=7"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
   <script>
     (function () {
       'use strict';
@@ -66,13 +66,16 @@
             }
             var estadoBadge = mesas.estado === 'abierto' ? 'badge--success' : mesas.estado === 'proximo' ? 'badge--info' : 'badge--warning';
             var estadoTexto = mesas.estado === 'abierto' ? 'Abierto' : mesas.estado === 'proximo' ? 'Próximo' : 'Cerrado';
+            var topeTexto = mesas.tope_mesas === null || mesas.tope_mesas === undefined
+              ? 'Sin límite'
+              : (Number(mesas.tope_mesas) === 0 ? 'Sin cupo' : esc(mesas.tope_mesas));
             contenedor.innerHTML =
               '<div class="data-list">' +
               fila('Turno',         esc(mesas.turno || '—') + ' ' + esc(mesas.anio_mesas || '')) +
               fila('Estado',        '<span class="badge ' + estadoBadge + '">' + esc(estadoTexto) + '</span>') +
               fila('Inicio',        esc(fmtFecha(mesas.fecha_inicio))) +
               fila('Cierre',        esc(fmtFecha(mesas.fecha_fin))) +
-              fila('Tope de mesas', mesas.tope_mesas ? esc(mesas.tope_mesas) + ' mesas por alumno' : '—') +
+              fila('Tope de mesas', topeTexto) +
               '</div>';
             App.iconos();
           })

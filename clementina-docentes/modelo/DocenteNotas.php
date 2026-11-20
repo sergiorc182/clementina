@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/modelo/Conexion.php';
+require_once dirname(__DIR__, 2) . '/modelo/ValidadorAcademico.php';
 
 class DocenteNotas
 {
@@ -27,20 +28,6 @@ class DocenteNotas
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** @return array<int,array> */
-    public function catalogoCompleto(): array
-    {
-        $sql = "SELECT c.id_carrera, c.nombre_carrera, c.nombre_carrera_corto,
-                       m.id_materia, m.nombre_materia, cm.anio_cursada
-                FROM carrera_materias cm
-                INNER JOIN carreras c ON c.id_carrera = cm.id_carrera
-                INNER JOIN materias m ON m.id_materia = cm.id_materia
-                ORDER BY c.nombre_carrera ASC, cm.anio_cursada ASC, m.nombre_materia ASC";
-        $st = $this->db->prepare($sql);
-        $st->execute();
-        return $st->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     /** @param array<int,array> $rows */
     public function materiasPorCarreraMap(array $rows): array
     {
@@ -63,31 +50,12 @@ class DocenteNotas
         return array_values($map);
     }
 
-    /** Años de inscripción disponibles para una carrera. */
-    public function aniosDisponibles(int $idCarrera): array
+    /** Alumnos matriculados en la carrera que tienen historial/inscripción en esa materia (o todos matriculados en carrera). */
+    public function alumnosPorCarreraMateria(int $idCarrera, int $idMateria): array
     {
-        $st = $this->db->prepare(
-            'SELECT DISTINCT anio_inscripcion
-             FROM matriculacion
-             WHERE id_carrera = :c AND anio_inscripcion > 0
-             ORDER BY anio_inscripcion DESC'
-        );
-        $st->bindValue(':c', $idCarrera, PDO::PARAM_INT);
-        $st->execute();
-        return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
-    }
-
-    /** Alumnos matriculados en la carrera, con filtros opcionales de año y búsqueda. */
-    public function alumnosPorCarreraMateria(
-        int $idCarrera,
-        int $idMateria,
-        int $anio = 0,
-        string $busqueda = ''
-    ): array {
         $sql = "SELECT a.id_alumno,
                        a.numero_documento,
                        a.legajo,
-                       mat.anio_inscripcion,
                        TRIM(CONCAT(a.primer_apellido,' ',COALESCE(a.otros_apellidos,''))) AS apellido,
                        TRIM(CONCAT(a.primer_nombre,' ',COALESCE(a.otros_nombres,''))) AS nombre,
                        ha.nota,
@@ -104,40 +72,20 @@ class DocenteNotas
                   ON ha.id_alumno = a.id_alumno
                  AND ha.id_carrera = mat.id_carrera
                  AND ha.id_materia = :id_materia
-                WHERE mat.id_carrera = :id_carrera";
-
-        if ($anio > 0) {
-            $sql .= ' AND mat.anio_inscripcion = :anio';
-        }
-
-        $busqueda = trim($busqueda);
-        if ($busqueda !== '') {
-            $sql .= " AND (
-                a.primer_apellido LIKE :q1
-                OR a.otros_apellidos LIKE :q2
-                OR a.primer_nombre LIKE :q3
-                OR a.otros_nombres LIKE :q4
-                OR a.legajo LIKE :q5
-                OR a.numero_documento LIKE :q6
-            )";
-        }
-
-        $sql .= ' ORDER BY a.primer_apellido ASC, a.primer_nombre ASC';
-
+                WHERE mat.id_carrera = :id_carrera
+                ORDER BY a.primer_apellido ASC, a.primer_nombre ASC";
         $st = $this->db->prepare($sql);
-        $st->bindValue(':id_materia', $idMateria, PDO::PARAM_INT);
-        $st->bindValue(':id_carrera', $idCarrera, PDO::PARAM_INT);
-        if ($anio > 0) {
-            $st->bindValue(':anio', $anio, PDO::PARAM_INT);
-        }
-        if ($busqueda !== '') {
-            $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $busqueda) . '%';
-            for ($i = 1; $i <= 6; $i++) {
-                $st->bindValue(':q' . $i, $like, PDO::PARAM_STR);
+        $st->execute([':id_carrera' => $idCarrera, ':id_materia' => $idMateria]);
+
+        $validador = new ValidadorAcademico($this->db);
+        $permitidos = $validador->alumnosConDerecho($idCarrera, $idMateria);
+        $filas = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+            if (isset($permitidos[(int) $fila['id_alumno']])) {
+                $filas[] = $fila;
             }
         }
-        $st->execute();
-        return $st->fetchAll(PDO::FETCH_ASSOC);
+        return $filas;
     }
 
     /**
@@ -152,8 +100,7 @@ class DocenteNotas
         int $idAlumno,
         int $idCarrera,
         int $idMateria,
-        array $datos,
-        bool $permitirSinAsignacion = false
+        array $datos
     ): array {
         $notaBruta = $datos['nota'] ?? '';
         if ($notaBruta === '' || $notaBruta === null || !is_numeric($notaBruta)) {
@@ -179,8 +126,14 @@ class DocenteNotas
         }
 
         $fecha = trim((string) ($datos['fecha_aprobacion'] ?? ''));
-        if ($fecha !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
-            throw new InvalidArgumentException('La fecha de aprobación no es válida.');
+        if ($fecha !== '') {
+            $partesFecha = array_map('intval', explode('-', $fecha));
+            $fechaValida = preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) === 1
+                && count($partesFecha) === 3
+                && checkdate($partesFecha[1], $partesFecha[2], $partesFecha[0]);
+            if (!$fechaValida) {
+                throw new InvalidArgumentException('La fecha de aprobación no es válida.');
+            }
         }
         if ($nota >= 4 && $fecha === '') {
             $fecha = date('Y-m-d');
@@ -194,41 +147,28 @@ class DocenteNotas
 
         $this->db->beginTransaction();
         try {
-            if (!$permitirSinAsignacion) {
-                $st = $this->db->prepare(
-                    'SELECT 1 FROM docente_asignaciones
-                     WHERE id_personal = :p AND id_carrera = :c AND id_materia = :m LIMIT 1'
-                );
-                $st->execute([':p' => $idPersonal, ':c' => $idCarrera, ':m' => $idMateria]);
-                if (!$st->fetchColumn()) {
-                    throw new RuntimeException('No tenés asignada esa materia.');
-                }
+            $validador = new ValidadorAcademico($this->db);
+            if (!$validador->docenteAsignado($idPersonal, $idCarrera, $idMateria)) {
+                throw new RuntimeException('No tenés asignada esa materia.');
             }
 
             $st = $this->db->prepare(
-                'SELECT 1 FROM matriculacion
-                 WHERE id_alumno = :a AND id_carrera = :c LIMIT 1'
+                'SELECT id_alumno FROM matriculacion
+                 WHERE id_alumno = :a AND id_carrera = :c LIMIT 1 FOR UPDATE'
             );
             $st->execute([':a' => $idAlumno, ':c' => $idCarrera]);
             if (!$st->fetchColumn()) {
                 throw new RuntimeException('El alumno no está matriculado en esa carrera.');
             }
 
-            $st = $this->db->prepare(
-                'SELECT 1 FROM carrera_materias
-                 WHERE id_carrera = :c AND id_materia = :m LIMIT 1'
-            );
-            $st->execute([':c' => $idCarrera, ':m' => $idMateria]);
-            if (!$st->fetchColumn()) {
-                throw new RuntimeException('La materia no pertenece a la carrera.');
-            }
+            $derecho = $validador->verificarDerecho($idAlumno, $idCarrera, $idMateria);
 
             $st = $this->db->prepare(
                 "INSERT INTO historial_academico
-                    (id_alumno, id_carrera, id_materia, nota, tipo_alumno,
+                    (id_alumno, id_carrera, id_materia, anio_regular, nota, tipo_alumno,
                      fecha_aprobacion, tomo_acta, folio_acta, fecha_alta, fecha_mod)
                  VALUES
-                    (:a, :c, :m, :nota, :tipo, :fecha,
+                    (:a, :c, :m, :anio, :nota, :tipo, :fecha,
                      COALESCE(:tomo, 0), COALESCE(:folio, 0), NOW(), NOW())
                  ON DUPLICATE KEY UPDATE
                     nota = VALUES(nota),
@@ -242,6 +182,7 @@ class DocenteNotas
                 ':a' => $idAlumno,
                 ':c' => $idCarrera,
                 ':m' => $idMateria,
+                ':anio' => $derecho['anio'],
                 ':nota' => $nota,
                 ':tipo' => $tipo,
                 ':fecha' => $fecha,
@@ -301,7 +242,7 @@ class DocenteNotas
         return $fila === false ? null : $fila;
     }
 
-    private function numeroOpcional($valor): ?int
+    private function numeroOpcional(mixed $valor): ?int
     {
         if ($valor === null || $valor === '') {
             return null;

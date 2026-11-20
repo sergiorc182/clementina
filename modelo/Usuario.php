@@ -19,14 +19,14 @@ class Usuario {
             $stmt->execute([$tipoDocumento, $numeroDocumento]);
             if ($stmt->fetch()) {
                 $this->conexion->rollBack();
-                return ['ok' => false, 'mensaje' => 'El documento ' . $numeroDocumento . ' ya está registrado.'];
+                return ['ok' => false, 'mensaje' => 'No se pudo completar el registro. Revisá los datos o intentá nuevamente.'];
             }
             
             $stmt = $this->conexion->prepare("SELECT id_alumno FROM alumnos WHERE email = ? LIMIT 1");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 $this->conexion->rollBack();
-                return ['ok' => false, 'mensaje' => 'El email ' . $email . ' ya está registrado.'];
+                return ['ok' => false, 'mensaje' => 'No se pudo completar el registro. Revisá los datos o intentá nuevamente.'];
             }
             
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
@@ -60,33 +60,28 @@ class Usuario {
     }
     
     public function login($identificador, $password) {
+        $mensajeGenerico = 'No se pudo iniciar sesión. Verificá tus credenciales e intentá nuevamente.';
         try {
-            $esDocumento = ctype_digit($identificador);
-            $sql = "
+            $stmt = $this->conexion->prepare("
                 SELECT id_alumno, numero_documento, legajo, primer_apellido, otros_apellidos,
-                       primer_nombre, otros_nombres, email, password_hash
+                       primer_nombre, otros_nombres, email, password_hash, confirmacion_registro
                 FROM alumnos
-                WHERE email = ?
-            ";
-            $parametros = [$identificador];
-            if ($esDocumento) {
-                $sql .= " OR numero_documento = ?";
-                $parametros[] = $identificador;
-            }
-            $sql .= " LIMIT 1";
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->execute($parametros);
+                WHERE email = ? OR numero_documento = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$identificador, $identificador]);
             $alumno = $stmt->fetch();
             
             if ($alumno) {
                 if (empty($alumno['password_hash'])) {
-                    return ['ok' => false, 'mensaje' => 'La cuenta no tiene una contraseña configurada.'];
+                    return ['ok' => false, 'mensaje' => $mensajeGenerico];
                 }
                 if (!password_verify($password, $alumno['password_hash'])) {
-                    return ['ok' => false, 'mensaje' => 'La contraseña es incorrecta.'];
+                    return ['ok' => false, 'mensaje' => $mensajeGenerico];
                 }
                 return [
                     'ok' => true,
+                    'correo_confirmado' => $alumno['confirmacion_registro'] !== null,
                     'usuario' => [
                         'id' => $alumno['id_alumno'],
                         'tipo' => 'alumno',
@@ -111,10 +106,10 @@ class Usuario {
             
             if ($personal) {
                 if (empty($personal['password_hash'])) {
-                    return ['ok' => false, 'mensaje' => 'La cuenta no tiene una contraseña configurada.'];
+                    return ['ok' => false, 'mensaje' => $mensajeGenerico];
                 }
                 if (!password_verify($password, $personal['password_hash'])) {
-                    return ['ok' => false, 'mensaje' => 'La contraseña es incorrecta.'];
+                    return ['ok' => false, 'mensaje' => $mensajeGenerico];
                 }
             $roles = ['A' => 'preceptor', 'D' => 'docente'];
             return [
@@ -133,10 +128,10 @@ class Usuario {
             ];
             }
             
-            return ['ok' => false, 'mensaje' => 'No existe una cuenta con ese DNI, email o usuario.'];
+            return ['ok' => false, 'mensaje' => $mensajeGenerico];
         } catch (PDOException $e) {
             error_log('[Clementina Login] ' . $e->getMessage());
-            return ['ok' => false, 'mensaje' => 'No se pudo completar el inicio de sesión. Intentá nuevamente.'];
+            return ['ok' => false, 'mensaje' => $mensajeGenerico];
         }
     }
     
@@ -177,7 +172,7 @@ class Usuario {
             ");
             $stmt->execute([$datos['email'], $id_alumno]);
             if ($stmt->fetch()) {
-                return ['ok' => false, 'mensaje' => 'El email ' . $datos['email'] . ' ya está registrado por otro usuario.'];
+                return ['ok' => false, 'mensaje' => 'No se pudo actualizar el correo electrónico. Verificá que la dirección ingresada esté disponible e intentá nuevamente.'];
             }
 
             $this->conexion->beginTransaction();

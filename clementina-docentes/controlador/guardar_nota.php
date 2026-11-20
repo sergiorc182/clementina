@@ -8,8 +8,7 @@ require_once __DIR__ . '/_base.php';
 require_once __DIR__ . '/../modelo/DocenteNotas.php';
 
 requerirPostSeguro();
-$docente = requerirDocenteOPreceptor();
-$esPreceptor = ($docente['rol'] ?? '') === 'preceptor';
+$docente = requerirDocente();
 
 $idAlumno = isset($_POST['id_alumno']) ? (int) $_POST['id_alumno'] : 0;
 $idCarrera = isset($_POST['id_carrera']) ? (int) $_POST['id_carrera'] : 0;
@@ -26,31 +25,27 @@ try {
         $idAlumno,
         $idCarrera,
         $idMateria,
-        $_POST,
-        $esPreceptor
+        $_POST
     );
     responder([
         'ok' => true,
         'mensaje' => 'Nota guardada correctamente.',
         'alumno' => $alumno,
     ]);
-} catch (InvalidArgumentException | RuntimeException $e) {
+} catch (InvalidArgumentException $e) {
+    responder(['ok' => false, 'mensaje' => $e->getMessage()]);
+} catch (PDOException $e) {
+    responderErrorServidor(
+        'Clementina Docentes',
+        $e,
+        'No se pudo guardar la nota. Intentá nuevamente o contactá al administrador.'
+    );
+} catch (RuntimeException $e) {
     responder(['ok' => false, 'mensaje' => $e->getMessage()]);
 } catch (Throwable $e) {
-    error_log(
-        '[Clementina Docentes] ' . get_class($e) . ' en ' . $e->getFile() . ':' . $e->getLine()
-        . ' - ' . $e->getMessage()
-        . ' | post=' . json_encode([
-            'id_alumno' => $idAlumno,
-            'id_carrera' => $idCarrera,
-            'id_materia' => $idMateria,
-            'nota' => $_POST['nota'] ?? null,
-            'tipo_alumno' => $_POST['tipo_alumno'] ?? null,
-        ])
+    responderErrorServidor(
+        'Clementina Docentes',
+        $e,
+        'No se pudo guardar la nota. Intentá nuevamente o contactá al administrador.'
     );
-    responder([
-        'ok' => false,
-        'mensaje' => 'No se pudo completar la operación. Intentá nuevamente. ('
-            . get_class($e) . ': ' . $e->getMessage() . ')',
-    ]);
 }

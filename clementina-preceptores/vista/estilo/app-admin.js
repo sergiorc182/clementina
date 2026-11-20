@@ -22,7 +22,6 @@
       seccion: 'Principal',
       items: [
         { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', href: '../index.html' },
-        { id: 'panel-docentes', icon: 'log-in', label: 'Ir al panel docentes', href: '../../clementina-docentes/index.html' },
       ]
     },
     {
@@ -44,7 +43,7 @@
         { id: 'inscripciones', icon: 'calendar-check', label: 'Inscripciones', href: 'inscripciones.html' },
         { id: 'mesas', icon: 'calendar-days', label: 'Mesas de examen', href: 'mesas.html' },
         { id: 'cronogramas', icon: 'file-text', label: 'Cronogramas de finales', href: 'cronogramas_finales.html' },
-        { id: 'asignaciones-docentes', icon: 'user', label: 'Asignaciones docentes', href: 'asignaciones_docentes.html' },
+        { id: 'asignaciones-docentes', icon: 'user-check', label: 'Asignaciones docentes', href: 'asignaciones_docentes.html' },
       ]
     },
   ];
@@ -200,11 +199,7 @@
             tipo: 'danger'
           }).then(function (ok) {
             if (!ok) { return; }
-            fetch(App.controlador('cerrar_sesion.php'), { method: 'POST' })
-              .catch(function () { /* no importa el resultado */ })
-              .finally(function () {
-                window.location.href = self.urlLogin();
-              });
+            App.cerrarSesion();
           });
         });
       }

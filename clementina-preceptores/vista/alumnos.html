@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../vista/estilo/estilo.css?v=15">
   <link rel="stylesheet" href="estilo/admin.css?v=1">
-  <link rel="stylesheet" href="../../vista/estilo/password-toggle.css?v=1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317324D'/%3E%3Cpath d='M22 11.5a7 7 0 1 0 0 9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.2' fill='%2314B8A6'/%3E%3C/svg%3E">
 </head>
 <body data-page="alumnos">
@@ -71,6 +70,7 @@
                 <th>Legajo</th>
                 <th>Carrera/s</th>
                 <th>Email</th>
+                <th>Credencial</th>
                 <th class="col-actions">Acciones</th>
               </tr>
             </thead>
@@ -165,12 +165,6 @@
               <input class="input" id="nuevo-email" name="email" type="email" maxlength="255" required>
             </div>
             <div class="field">
-              <label class="label" for="nuevo-password">Contraseña <span class="req">*</span></label>
-              <input class="input" id="nuevo-password" name="password" type="password"
-                     data-password-toggle placeholder="Mínimo 6 caracteres"
-                     autocomplete="new-password" minlength="6" required>
-            </div>
-            <div class="field">
               <label class="label" for="nuevo-fecha_nacimiento">Fecha de nacimiento</label>
               <input class="input" id="nuevo-fecha_nacimiento" name="fecha_nacimiento" type="date">
             </div>
@@ -216,8 +210,7 @@
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
   <script src="../../vista/estilo/app.js?v=15"></script>
-  <script src="estilo/app-admin.js?v=7"></script>
-  <script src="../../vista/estilo/password-toggle.js?v=1"></script>
+  <script src="estilo/app-admin.js?v=4"></script>
   <script>
     (function () {
       'use strict';
@@ -250,6 +243,8 @@
             abrirDetalle(id, true);
           } else if (accion === 'copiar') {
             abrirCopiaAlumno(id);
+          } else if (accion === 'reenviar') {
+            reenviarInvitacion(id);
           } else if (accion === 'eliminar') {
             eliminarAlumno(id);
           }
@@ -302,8 +297,10 @@
             '<td data-label="Legajo"><span class="badge badge--neutral">' + esc(a.legajo || '—') + '</span></td>' +
             '<td data-label="Carrera/s">' + esc(a.carreras || '—') + '</td>' +
             '<td data-label="Email"><a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a></td>' +
+            '<td data-label="Credencial">' + credencialBadge(a.credencial_estado) + '</td>' +
             '<td class="col-actions" data-label="Acciones">' +
               botonAccion('detalle', 'Ver legajo', 'eye', a.id_alumno) +
+              (a.credencial_estado === 'activa' ? '' : botonAccion('reenviar', 'Reenviar invitación', 'mail', a.id_alumno)) +
               botonAccion('editar', 'Editar datos', 'pencil', a.id_alumno) +
               botonAccion('copiar', 'Copiar alumno', 'copy', a.id_alumno) +
               botonAccion('eliminar', 'Borrar alumno', 'trash-2', a.id_alumno) +
@@ -322,6 +319,17 @@
         return '<button type="button" class="btn btn--ghost btn--icon btn--sm" title="' + titulo +
           '" aria-label="' + titulo + '" data-accion="' + accion + '" data-id="' + id + '">' +
           '<i data-lucide="' + icono + '"></i></button> ';
+      }
+
+      function credencialBadge(estado) {
+        var estados = {
+          activa: ['badge--success', 'Activa'],
+          pendiente: ['badge--warning', 'Pendiente'],
+          vencida: ['badge--error', 'Vencida'],
+          sin_invitacion: ['badge--neutral', 'Sin invitación']
+        };
+        var dato = estados[estado] || estados.sin_invitacion;
+        return '<span class="badge ' + dato[0] + '">' + dato[1] + '</span>';
       }
 
       function pintarPaginacion(total, paginas, pagina) {
@@ -392,6 +400,7 @@
           dl('Email',       '<a href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a>') +
           dl('Teléfono',    esc(a.telefono_principal || '—')) +
           dl('Carrera/s',   carreras) +
+          dl('Credencial',  credencialBadge(a.credencial_estado)) +
           dl('Alta',        fmtFecha(a.alta_registro)) +
           dl('Domicilio',   esc(a.calle ? (a.calle + (a.numero_calle ? ' ' + a.numero_calle : '') + (a.piso ? ', P' + a.piso : '') + (a.depto ? ' D' + a.depto : '')) : '—'));
 
@@ -580,12 +589,12 @@
 
         var datos = new URLSearchParams();
         datos.append('accion', 'crear_alumno');
-         ['id_tipo_documento', 'numero_documento', 'legajo', 'primer_apellido',
-          'otros_apellidos', 'primer_nombre', 'otros_nombres', 'email', 'password',
-          'fecha_nacimiento', 'sexo', 'telefono_principal', 'calle',
+        ['id_tipo_documento', 'numero_documento', 'legajo', 'primer_apellido',
+         'otros_apellidos', 'primer_nombre', 'otros_nombres', 'email',
+         'fecha_nacimiento', 'sexo', 'telefono_principal', 'calle',
          'numero', 'piso', 'depto'].forEach(function (name) {
           var campo = document.getElementById('nuevo-' + name);
-          datos.append(name, campo ? (name === 'password' ? campo.value : campo.value.trim()) : '');
+          datos.append(name, campo ? campo.value.trim() : '');
         });
 
         var btn = document.getElementById('btn-guardar-nuevo');
@@ -610,6 +619,39 @@
             App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo crear el alumno. Revisá tu conexión.' });
           })
           .then(function () { btn.disabled = false; });
+      }
+
+      function reenviarInvitacion(idAlumno) {
+        App.confirmar({
+          tipo: 'info',
+          titulo: 'Reenviar invitación',
+          texto: 'Se generará un nuevo enlace de activación. El anterior dejará de ser válido.',
+          confirmar: 'Reenviar'
+        }).then(function (ok) {
+          if (!ok) { return; }
+
+          var datos = new URLSearchParams();
+          datos.append('accion', 'reenviar_invitacion');
+          datos.append('id_alumno', idAlumno);
+
+          fetch(AppAdmin.controladorAdmin('alumnos.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: datos.toString()
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              App.toast({
+                tipo: !res.ok ? 'error' : (res.correo_enviado ? 'success' : 'warning'),
+                titulo: !res.ok ? 'No se pudo reenviar' : 'Invitación actualizada',
+                texto: res.mensaje || 'Intentá nuevamente.'
+              });
+              if (res.ok) { cargar(paginaActual, busquedaActual); }
+            })
+            .catch(function () {
+              App.toast({ tipo: 'error', titulo: 'Error de red', texto: 'No se pudo reenviar la invitación.' });
+            });
+        });
       }
 
       function eliminarAlumno(idAlumno) {

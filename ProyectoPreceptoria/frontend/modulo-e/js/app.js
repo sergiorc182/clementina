@@ -339,7 +339,7 @@ class AppController {
 
       <nav class="nav-links">
         <a
-          href="../index.html"
+          href="../../../index.html"
           class="nav-button"
           style="text-decoration: none;"
           title="Volver al Home del Portal"

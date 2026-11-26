@@ -48,7 +48,7 @@ export function crearApp(rootElement) {
       </div>
 
       <nav class="nav-links" id="moduleNavTabs">
-        <a href="./index.html" class="nav-button" title="Volver al Home del Portal">
+        <a href="../../../index.html" class="nav-button" title="Volver al Home del Portal">
           Home
         </a>
         <span style="color: #cbd5e1; user-select: none;">|</span>
@@ -311,10 +311,41 @@ export function crearApp(rootElement) {
   });
 
   const cargarAlumnos = async () => {
+    const esAlumno = leerUsuarioDesdeCookies().esAlumno;
+    if (esAlumno) {
+      const idAl = leerUsuarioDesdeCookies().idAlumno;
+      if (!idAl) {
+        alumnos = [];
+        controlFinalesComp.update({ alumnos });
+        renderUserBadgeAndRoleTabs();
+        return;
+      }
+      cargando = true;
+      try {
+        const res = await fetch(`${API_URL}/${encodeURIComponent(idAl)}`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.data) {
+          const uno = Array.isArray(data.data) ? data.data[0] : data.data;
+          alumnos = uno ? [uno] : [];
+        } else {
+          alumnos = [];
+        }
+        controlFinalesComp.update({ alumnos });
+        renderUserBadgeAndRoleTabs();
+      } catch (error) {
+        mostrarMensaje('No se pudo conectar con el servidor.', 'error');
+        alumnos = [];
+        controlFinalesComp.update({ alumnos });
+      } finally {
+        cargando = false;
+      }
+      return;
+    }
+
     cargando = true;
     listaAlumnosComp.update({ alumnos, cargando });
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         alumnos = data.data;

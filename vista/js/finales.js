@@ -590,7 +590,7 @@
         if (!hay) {
           cajaLista.innerHTML = vacio('inbox', 'No tenés inscripciones en este turno',
             'Cuando te anotes a una mesa final de este turno, vas a poder verla acá con su llamado y su estado.',
-            '<a class="btn btn--outline" href="inscripcion_finales.html">' +
+            '<a class="btn btn--outline" href="../ProyectoPreceptoria/frontend/sistema.html">' +
             '<i data-lucide="calendar-plus"></i>Ver materias disponibles</a>');
         } else {
           cajaLista.innerHTML =

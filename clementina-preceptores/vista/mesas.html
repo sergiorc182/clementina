@@ -28,11 +28,40 @@
           </div>
         </div>
         <div class="card">
-          <div class="card__body" id="lista-mesas">
-            <div class="empty">
-              <div class="empty__icon"><i data-lucide="calendar-days" class="icon"></i></div>
-              <div class="empty__title">Cargando períodos…</div>
+          <div class="card__body">
+            <div id="lista-mesas">
+              <div class="empty">
+                <div class="empty__icon"><i data-lucide="calendar-days" class="icon"></i></div>
+                <div class="empty__title">Cargando períodos…</div>
+              </div>
             </div>
+            <form id="form-mesas" class="form-grid" style="margin-top:1rem;" hidden>
+              <div class="field">
+                <label class="label" for="m-anio">Año de mesas *</label>
+                <input class="input" id="m-anio" type="number" min="2000" max="2100" required>
+              </div>
+              <div class="field">
+                <label class="label" for="m-id-turno">Turno *</label>
+                <select class="input" id="m-id-turno" required></select>
+              </div>
+              <div class="field">
+                <label class="label" for="m-fecha-inicio">Fecha inicio</label>
+                <input class="input" id="m-fecha-inicio" type="date">
+              </div>
+              <div class="field">
+                <label class="label" for="m-fecha-fin">Fecha fin</label>
+                <input class="input" id="m-fecha-fin" type="date">
+              </div>
+              <div class="field">
+                <label class="label" for="m-tope">Tope de mesas por alumno</label>
+                <input class="input" id="m-tope" type="number" min="0" max="999">
+              </div>
+              <div class="field" style="align-self:end;">
+                <button type="button" class="btn btn--primary" id="btn-guardar-mesas"><i data-lucide="save" class="icon--sm"></i> Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
           </div>
         </div>
       </main>
@@ -40,62 +69,93 @@
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="../../vista/estilo/app.js?v=15"></script>
-  <script src="estilo/app-admin.js?v=4"></script>
+  <script src="estilo/app-admin.js?v=7"></script>
   <script>
     (function () {
       'use strict';
-      AppAdmin.montarAdmin({ titulo: 'Mesas de examen', subtitulo: 'Períodos configurados' })
+      var datosGlobal = null;
+      var turnosGlobal = [];
+
+      AppAdmin.montarAdmin({ titulo: 'Mesas de examen', subtitulo: 'Per��odos configurados' })
         .then(function (usuario) {
           if (!usuario) { return; }
           cargarMesas();
+          document.getElementById('btn-guardar-mesas').addEventListener('click', guardarMesas);
         });
 
       function cargarMesas() {
-        fetch(AppAdmin.controladorAdmin('dashboard.php'))
+        fetch(AppAdmin.controladorAdmin('parametros.php'))
           .then(function (r) { return r.json(); })
           .then(function (res) {
             var contenedor = document.getElementById('lista-mesas');
             if (!res.ok) {
-              contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No se pudieron cargar los períodos.</p>';
+              contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No se pudieron cargar los per��odos.</p>';
               return;
             }
-            var mesas = res.data.mesas || {};
-            if (mesas.estado === 'sin_datos') {
-              contenedor.innerHTML = '<p class="muted" style="font-size:.875rem;">No hay períodos de mesas configurados.</p>';
-              return;
-            }
-            var estadoBadge = mesas.estado === 'abierto' ? 'badge--success' : mesas.estado === 'proximo' ? 'badge--info' : 'badge--warning';
-            var estadoTexto = mesas.estado === 'abierto' ? 'Abierto' : mesas.estado === 'proximo' ? 'Próximo' : 'Cerrado';
-            var topeTexto = mesas.tope_mesas === null || mesas.tope_mesas === undefined
-              ? 'Sin límite'
-              : (Number(mesas.tope_mesas) === 0 ? 'Sin cupo' : esc(mesas.tope_mesas));
-            contenedor.innerHTML =
-              '<div class="data-list">' +
-              fila('Turno',         esc(mesas.turno || '—') + ' ' + esc(mesas.anio_mesas || '')) +
-              fila('Estado',        '<span class="badge ' + estadoBadge + '">' + esc(estadoTexto) + '</span>') +
-              fila('Inicio',        esc(fmtFecha(mesas.fecha_inicio))) +
-              fila('Cierre',        esc(fmtFecha(mesas.fecha_fin))) +
-              fila('Tope de mesas', topeTexto) +
-              '</div>';
+            datosGlobal = res.datos || {};
+            turnosGlobal = res.turnos || [];
+            var m = (datosGlobal.mesas || {});
+            document.getElementById('m-anio').value = m.anio_mesas || '';
+            document.getElementById('m-id-turno').innerHTML = '<option value="">Seleccion��</option>' + turnosGlobal.map(function (t) {
+              var sel = String(t.id_turno) === String(m.id_turno) ? ' selected' : '';
+              return '<option value="' + esc(t.id_turno) + '"' + sel + '>' + esc(t.turno) + '</option>';
+            }).join('');
+            document.getElementById('m-fecha-inicio').value = m.fecha_inicio ? String(m.fecha_inicio).substring(0, 10) : '';
+            document.getElementById('m-fecha-fin').value = m.fecha_fin ? String(m.fecha_fin).substring(0, 10) : '';
+            document.getElementById('m-tope').value = m.tope_mesas || '';
+            contenedor.innerHTML = '';
+            document.getElementById('form-mesas').hidden = false;
             App.iconos();
           })
           .catch(function () {
-            App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudieron cargar las mesas.' });
+            document.getElementById('lista-mesas').innerHTML = '<p class="muted" style="font-size:.875rem;">Error al cargar.</p>';
           });
       }
 
-      function esc(valor) {
-        return String(valor == null ? '' : valor).replace(/[&<>"']/g, function (c) {
-          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
+      function guardarMesas() {
+        if (!datosGlobal) return;
+        var g = datosGlobal.generales || {};
+        var i = datosGlobal.inscripcion || {};
+        var mt = datosGlobal.matriculacion || {};
+        var a = datosGlobal.aspirantes || {};
+        var datos = new URLSearchParams();
+        datos.append('accion', 'guardar');
+        datos.append('nombre_instituto', g.nombre_instituto || '');
+        datos.append('ciclo_lectivo', g.ciclo_lectivo || '');
+        datos.append('anio_mesas', document.getElementById('m-anio').value || '');
+        datos.append('id_turno', document.getElementById('m-id-turno').value || '');
+        datos.append('mesas_fecha_inicio', document.getElementById('m-fecha-inicio').value || '');
+        datos.append('mesas_fecha_fin', document.getElementById('m-fecha-fin').value || '');
+        datos.append('tope_mesas', document.getElementById('m-tope').value || '');
+        datos.append('anio_inscripcion_carrera', i.anio_inscripcion_carrera || '');
+        datos.append('inscripcion_fecha_inicio', i.fecha_inicio ? String(i.fecha_inicio).substring(0, 10) : '');
+        datos.append('inscripcion_fecha_fin', i.fecha_fin ? String(i.fecha_fin).substring(0, 10) : '');
+        datos.append('anio_matriculacion', mt.anio_matriculacion || '');
+        datos.append('matriculacion_fecha_inicio', mt.fecha_inicio ? String(mt.fecha_inicio).substring(0, 10) : '');
+        datos.append('matriculacion_fecha_fin', mt.fecha_fin ? String(mt.fecha_fin).substring(0, 10) : '');
+        datos.append('carpeta_vista_alumno', mt.carpeta_vista_alumno || '');
+        datos.append('carpeta_vista_preceptoria', mt.carpeta_vista_preceptoria || '');
+        datos.append('anio_aspirantes', a.anio || '');
+
+        var btn = document.getElementById('btn-guardar-mesas');
+        btn.disabled = true;
+        fetch(AppAdmin.controladorAdmin('parametros.php'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: datos.toString()
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { App.toast({ tipo: 'error', titulo: 'Error', texto: res.mensaje || 'No se pudo guardar.' }); return; }
+            App.toast({ tipo: 'success', titulo: 'Mesas', texto: res.mensaje || 'Guardado.' });
+            if (res.datos) { datosGlobal = res.datos; }
+          })
+          .catch(function () { App.toast({ tipo: 'error', titulo: 'Error', texto: 'No se pudo guardar.' }); })
+          .then(function () { btn.disabled = false; });
       }
-      function fila(label, value) {
-        return '<div class="data-row"><dt class="data-row__label">' + esc(label) + '</dt><dd class="data-row__value">' + value + '</dd></div>';
-      }
-      function fmtFecha(iso) {
-        if (!iso) { return '—'; }
-        var p = String(iso).substring(0, 10).split('-');
-        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+
+      function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; });
       }
     })();
   </script>

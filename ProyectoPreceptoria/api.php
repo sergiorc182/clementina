@@ -18,7 +18,7 @@ if (in_array($origen, $origenesPermitidos, true)) {
     header('Access-Control-Allow-Origin: ' . $origen);
     header('Access-Control-Allow-Credentials: true');
     header('Vary: Origin');
-    header('Access-Control-Allow-Headers: Content-Type');
+    header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
     header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 }
 
@@ -66,6 +66,62 @@ function ok($data = [], string $message = '', array $extra = []): void
 function fail(string $message, int $status = 400, array $extra = []): void
 {
     responder(array_merge(['success' => false, 'message' => $message], $extra), $status);
+}
+
+/** Requiere sesión válida (restaura desde cookie si aplica). */
+function apiRequerirSesion(): array
+{
+    if (empty($_SESSION['id_usuario'])) {
+        responder(['success' => false, 'message' => 'No autenticado.'], 401);
+    }
+    $nombre   = trim((string) ($_SESSION['nombre'] ?? ''));
+    $apellido = trim((string) ($_SESSION['apellido'] ?? ''));
+    return [
+        'id'              => (int) $_SESSION['id_usuario'],
+        'tipo'            => $_SESSION['tipo_usuario'] ?? 'alumno',
+        'rol'             => $_SESSION['rol'] ?? 'alumno',
+        'documento'       => $_SESSION['dni'] ?? null,
+        'legajo'          => $_SESSION['legajo'] ?? null,
+        'nombre'          => $nombre,
+        'apellido'        => $apellido,
+        'nombre_completo' => trim($nombre . ' ' . $apellido),
+    ];
+}
+
+function apiRequerirPersonal(): array
+{
+    $u = apiRequerirSesion();
+    if (($u['tipo'] ?? '') !== 'personal') {
+        responder(['success' => false, 'message' => 'Acceso restringido al personal institucional.'], 403);
+    }
+    return $u;
+}
+
+function apiRequerirPreceptorODirectivo(): array
+{
+    $u = apiRequerirPersonal();
+    if (!in_array($u['rol'] ?? '', ['preceptor', 'directivo', 'secretaria', 'personal'], true)) {
+        responder(['success' => false, 'message' => 'Sin permisos para esta acción.'], 403);
+    }
+    return $u;
+}
+
+function apiRequerirDocenteOPreceptor(): array
+{
+    $u = apiRequerirPersonal();
+    if (!in_array($u['rol'] ?? '', ['docente', 'preceptor'], true)) {
+        responder(['success' => false, 'message' => 'Acceso restringido a docentes y preceptores.'], 403);
+    }
+    return $u;
+}
+
+function apiRequerirCsrf(): void
+{
+    $token = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? ''));
+    $esperado = (string) ($_SESSION['csrf_token'] ?? '');
+    if ($esperado === '' || $token === '' || !hash_equals($esperado, $token)) {
+        responder(['success' => false, 'message' => 'Token CSRF inválido o ausente.'], 403);
+    }
 }
 
 function sqlAll(string $sql, array $params = []): array
@@ -155,8 +211,22 @@ function asegurarEstructura(): void
 
 function rolApi(): string
 {
-    $tipo = strtolower((string) ($_SESSION['tipo_usuario'] ?? ($_COOKIE['tipo_usuario'] ?? '')));
-    return ($tipo === 'alumno' || $tipo === 'estudiante') ? 'alumno' : 'preceptor';
+    if (empty($_SESSION['id_usuario'])) {
+        return 'anon';
+    }
+    $tipo = strtolower((string) ($_SESSION['tipo_usuario'] ?? ''));
+    if ($tipo === 'alumno' || $tipo === 'estudiante') {
+        return 'alumno';
+    }
+    if ($tipo === 'personal') {
+        $rol = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
+        $permitidos = ['docente', 'preceptor', 'directivo', 'secretaria', 'personal'];
+        if (in_array($rol, $permitidos, true)) {
+            return $rol;
+        }
+        return 'anon';
+    }
+    return 'anon';
 }
 
 function esVerdaderoApi($valor): bool
@@ -501,24 +571,43 @@ function selectAlumnosBase(): string
 }
 
 if ($ruta === '/alumnos' && $metodo === 'GET') {
+    $u = apiRequerirSesion();
+    if (($u['tipo'] ?? '') === 'alumno') {
+        $alumnos = sqlAll(selectAlumnosBase() . ' WHERE a.id_alumno = ?', [(int) $u['id']]);
+        responder(['success' => true, 'total' => count($alumnos), 'data' => $alumnos]);
+    }
+    apiRequerirPersonal();
     $alumnos = sqlAll(selectAlumnosBase() . ' ORDER BY a.id_alumno DESC');
     responder(['success' => true, 'total' => count($alumnos), 'data' => $alumnos]);
 }
 
 if ($ruta === '/alumnos/catalogo/carreras' && $metodo === 'GET') {
+    apiRequerirPersonal();
     $carreras = sqlAll('SELECT id_carrera, nro_resolucion, nombre_carrera, nombre_carrera_corto, titulo FROM carreras ORDER BY id_carrera');
     ok($carreras);
 }
 
 if (preg_match('#^/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') {
-    $alumno = sqlOne(selectAlumnosBase() . ' WHERE a.id_alumno = ?', [(int) $m[1]]);
+    $u = apiRequerirSesion();
+    $idPedido = (int) $m[1];
+    if (($u['tipo'] ?? '') === 'alumno' && (int) $u['id'] !== $idPedido) {
+        responder(['success' => false, 'message' => 'No autorizado para ver este alumno.'], 403);
+    }
+    if (($u['tipo'] ?? '') === 'personal') {
+        // ok
+    } else {
+        // alumno ya validado arriba
+    }
+    $alumno = sqlOne(selectAlumnosBase() . ' WHERE a.id_alumno = ?', [$idPedido]);
     if (!$alumno) {
-        fail('Alumno con ID ' . $m[1] . ' no encontrado en base de datos clementina', 404);
+        fail('Alumno con ID ' . $idPedido . ' no encontrado en base de datos clementina', 404);
     }
     ok($alumno);
 }
 
 if ($ruta === '/alumnos' && $metodo === 'POST') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     $nombre = trim((string) ($input['nombre'] ?? ''));
     $apellido = trim((string) ($input['apellido'] ?? ''));
     $email = trim((string) ($input['email'] ?? ''));
@@ -567,6 +656,8 @@ if ($ruta === '/alumnos' && $metodo === 'POST') {
 }
 
 if (preg_match('#^/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'PUT') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     $id = (int) $m[1];
     $nombre = trim((string) ($input['nombre'] ?? ''));
     $apellido = trim((string) ($input['apellido'] ?? ''));
@@ -598,6 +689,8 @@ if (preg_match('#^/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'PUT') {
 }
 
 if (preg_match('#^/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     $id = (int) $m[1];
     if (!sqlOne('SELECT id_alumno FROM alumnos WHERE id_alumno = ?', [$id])) {
         fail('Alumno con ID ' . $id . ' no encontrado en base de datos clementina', 404);
@@ -638,8 +731,16 @@ if (preg_match('#^/finales/materias/(\d+)$#', $ruta, $m) && $metodo === 'GET') {
 }
 
 if (preg_match('#^/finales/alumno/(\d+)$#', $ruta, $m) && $metodo === 'GET') {
+    $u = apiRequerirSesion();
+    $idPedido = (int) $m[1];
+    if (($u['tipo'] ?? '') === 'alumno' && (int) $u['id'] !== $idPedido) {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
+    if (($u['tipo'] ?? '') !== 'alumno' && ($u['tipo'] ?? '') !== 'personal') {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
     asegurarEstructura();
-    $params = [(int) $m[1]];
+    $params = [$idPedido];
     $extra = '';
     if (!empty($_GET['id_materia'])) {
         $extra = ' AND rf.id_materia = ?';
@@ -660,6 +761,7 @@ if (preg_match('#^/finales/alumno/(\d+)$#', $ruta, $m) && $metodo === 'GET') {
 }
 
 if ($ruta === '/finales/listado' && $metodo === 'GET') {
+    apiRequerirDocenteOPreceptor();
     asegurarEstructura();
     $filas = sqlAll(
         "SELECT rf.*, a.primer_apellido, a.otros_apellidos, a.primer_nombre, a.otros_nombres,
@@ -677,10 +779,20 @@ if ($ruta === '/finales/listado' && $metodo === 'GET') {
 }
 
 if ($ruta === '/finales/validar' && $metodo === 'POST') {
+    $u = apiRequerirSesion();
+    apiRequerirCsrf();
     if (empty($input['id_alumno']) || empty($input['id_carrera']) || empty($input['id_materia'])) {
         fail('Faltan parámetros obligatorios: id_alumno, id_carrera, id_materia');
     }
-    $esExcepcion = rolApi() === 'alumno' ? false : !empty($input['es_excepcion']);
+    $idAlumnoReq = (int) $input['id_alumno'];
+    if (($u['tipo'] ?? '') === 'alumno' && (int) $u['id'] !== $idAlumnoReq) {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
+    $esExcepcion = false;
+    if (($u['tipo'] ?? '') !== 'alumno') {
+        apiRequerirDocenteOPreceptor();
+        $esExcepcion = !empty($input['es_excepcion']);
+    }
     $evaluacion = evaluarCondiciones([
         'id_alumno' => $input['id_alumno'],
         'id_carrera' => $input['id_carrera'],
@@ -694,21 +806,32 @@ if ($ruta === '/finales/validar' && $metodo === 'POST') {
 }
 
 if ($ruta === '/finales/inscribir' && $metodo === 'POST') {
+    $u = apiRequerirSesion();
+    apiRequerirCsrf();
     foreach (['id_alumno', 'id_carrera', 'id_materia', 'anio_turno', 'turno_instancia'] as $campo) {
         if (empty($input[$campo])) {
             fail('Faltan campos obligatorios para la inscripción');
         }
     }
-    if (rolApi() === 'alumno' && !empty($input['es_excepcion'])) {
-        fail('Los usuarios con rol de alumno no están habilitados para inscribirse por excepción', 403);
+    $idAlumno = (int) $input['id_alumno'];
+    if (($u['tipo'] ?? '') === 'alumno' && (int) $u['id'] !== $idAlumno) {
+        responder(['success' => false, 'message' => 'No autorizado: solo puede inscribirse a sí mismo.'], 403);
     }
-    $esExcepcion = rolApi() === 'alumno' ? false : !empty($input['es_excepcion']);
+    $esExcepcion = false;
+    if (($u['tipo'] ?? '') !== 'alumno') {
+        apiRequerirDocenteOPreceptor();
+        $esExcepcion = !empty($input['es_excepcion']);
+    } else {
+        if (!empty($input['es_excepcion'])) {
+            fail('Los usuarios con rol de alumno no están habilitados para inscribirse por excepción', 403);
+        }
+    }
     $evaluacion = evaluarCondiciones([
-        'id_alumno' => $input['id_alumno'],
-        'id_carrera' => $input['id_carrera'],
-        'id_materia' => $input['id_materia'],
-        'anio_turno' => $input['anio_turno'],
-        'turno_instancia' => $input['turno_instancia'],
+        'id_alumno' => $idAlumno,
+        'id_carrera' => (int) $input['id_carrera'],
+        'id_materia' => (int) $input['id_materia'],
+        'anio_turno' => (int) $input['anio_turno'],
+        'turno_instancia' => (int) $input['turno_instancia'],
         'modalidad' => $input['modalidad'] ?? 'REGULAR',
         'es_excepcion' => $esExcepcion,
     ]);
@@ -716,7 +839,6 @@ if ($ruta === '/finales/inscribir' && $metodo === 'POST') {
         fail('Inscripción rechazada: ' . implode(' | ', $evaluacion['motivosRechazo']), 400, ['evaluacion' => $evaluacion]);
     }
 
-    $idAlumno = (int) $input['id_alumno'];
     $idCarrera = (int) $input['id_carrera'];
     $idMateria = (int) $input['id_materia'];
     $anioTurno = (int) $input['anio_turno'];
@@ -784,6 +906,7 @@ if (preg_match('#^/finales/calificar/(\d+)$#', $ruta, $m) && $metodo === 'PUT') 
 }
 
 if (preg_match('#^/finales/(\d+)/auditoria$#', $ruta, $m) && $metodo === 'GET') {
+    apiRequerirDocenteOPreceptor();
     asegurarEstructura();
     try {
         $logs = sqlAll('SELECT fecha_cambio, accion, detalle_anterior, detalle_nuevo, modificado_por FROM auditoria_inscripciones_finales WHERE id_rendicion = ? ORDER BY fecha_cambio ASC, id ASC', [(int) $m[1]]);
@@ -794,6 +917,8 @@ if (preg_match('#^/finales/(\d+)/auditoria$#', $ruta, $m) && $metodo === 'GET') 
 }
 
 if (preg_match('#^/finales/(\d+)/reasignar$#', $ruta, $m) && $metodo === 'PATCH') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     asegurarEstructura();
     $id = (int) $m[1];
     $actual = sqlOne(
@@ -836,6 +961,8 @@ if (preg_match('#^/finales/(\d+)/reasignar$#', $ruta, $m) && $metodo === 'PATCH'
 }
 
 if (preg_match('#^/finales/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     asegurarEstructura();
     $id = (int) $m[1];
     $rend = sqlOne('SELECT * FROM rendiciones_finales WHERE id_rendicion = ?', [$id]);
@@ -855,11 +982,14 @@ if (preg_match('#^/finales/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
 }
 
 if ($ruta === '/catalogos/carreras' && $metodo === 'GET') {
+    apiRequerirSesion();
     $carreras = sqlAll('SELECT id_carrera, nro_resolucion, nombre_carrera, nombre_carrera_corto, titulo, color_r, color_g, color_b FROM carreras ORDER BY nombre_carrera');
     ok($carreras);
 }
 
 if ($ruta === '/catalogos/carreras' && $metodo === 'POST') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     $nombre = trim((string) ($input['nombre_carrera'] ?? ''));
     if ($nombre === '') {
         fail('El nombre de la carrera es obligatorio');
@@ -882,6 +1012,8 @@ if ($ruta === '/catalogos/carreras' && $metodo === 'POST') {
 }
 
 if (preg_match('#^/catalogos/carreras/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     try {
         sqlExec('DELETE FROM carreras WHERE id_carrera = ?', [(int) $m[1]]);
     } catch (Throwable $e) {
@@ -891,6 +1023,49 @@ if (preg_match('#^/catalogos/carreras/(\d+)$#', $ruta, $m) && $metodo === 'DELET
 }
 
 if ($ruta === '/catalogos/alumnos' && $metodo === 'GET') {
+    $u = apiRequerirSesion();
+    $mapEstadoCivil = ['1' => 'Soltero/a', '2' => 'Casado/a', '3' => 'Divorciado/a', '4' => 'Viudo/a', '5' => 'Unión convivencial'];
+    if (($u['tipo'] ?? '') === 'alumno') {
+        $alumnos = sqlAll(
+            "SELECT a.id_alumno, a.id_tipo_documento, td.descripcion AS tipo_documento,
+                    a.numero_documento, a.legajo, a.primer_apellido, a.otros_apellidos,
+                    a.primer_nombre, a.otros_nombres,
+                    CONCAT(a.primer_apellido, ' ', COALESCE(a.otros_apellidos, '')) AS apellidos,
+                    CONCAT(a.primer_nombre, ' ', COALESCE(a.otros_nombres, '')) AS nombres,
+                    CONCAT(a.primer_apellido, IF(a.otros_apellidos IS NOT NULL AND a.otros_apellidos != '', CONCAT(' ', a.otros_apellidos), ''), ', ', a.primer_nombre, IF(a.otros_nombres IS NOT NULL AND a.otros_nombres != '', CONCAT(' ', a.otros_nombres), '')) AS apellido_nombres,
+                    a.email, a.email AS mail, m.id_carrera,
+                    COALESCE(c.nombre_carrera, 'Sin Carrera Asignada') AS carrera,
+                    c.nro_resolucion AS resolucion,
+                    DATE_FORMAT(a.fecha_nacimiento, '%Y-%m-%d') AS fecha_nacimiento,
+                    TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
+                    a.sexo, a.estado_civil, a.cantidad_hijos, a.cantidad_hijos AS hijos,
+                    p.nacionalidad, loc.nombre AS ciudad_nacimiento,
+                    prov.nombre AS provincia_nacimiento,
+                    d.calle, d.calle AS domicilio, d.numero, d.piso, d.depto,
+                    d.telefono_principal AS celular, d.telefono_alternativo,
+                    d_loc.nombre AS localidad_barrio, part.nombre AS partido
+             FROM alumnos a
+             LEFT JOIN matriculacion m ON m.id_alumno = a.id_alumno
+             LEFT JOIN carreras c ON c.id_carrera = m.id_carrera
+             LEFT JOIN tipos_documento td ON td.id_tipo_documento = a.id_tipo_documento
+             LEFT JOIN paises p ON p.id_pais = a.id_pais_nacimiento
+             LEFT JOIN localidades loc ON loc.id_localidad = a.id_localidad_nacimiento
+             LEFT JOIN provincias prov ON prov.id_provincia = loc.id_provincia
+             LEFT JOIN domicilios_alumno d ON d.id_alumno = a.id_alumno
+             LEFT JOIN localidades d_loc ON d_loc.id_localidad = d.id_localidad
+             LEFT JOIN partidos part ON part.id_partido = d_loc.id_partido
+             WHERE a.id_alumno = ?
+             ORDER BY a.id_alumno DESC",
+            [(int) $u['id']]
+        );
+        foreach ($alumnos as &$al) {
+            $ec = (string) ($al['estado_civil'] ?? '');
+            if ($ec !== '' && isset($mapEstadoCivil[$ec])) { $al['estado_civil'] = $mapEstadoCivil[$ec]; }
+        }
+        unset($al);
+        ok($alumnos);
+    }
+    apiRequerirPersonal();
     $alumnos = sqlAll(
         "SELECT a.id_alumno, a.id_tipo_documento, td.descripcion AS tipo_documento,
                 a.numero_documento, a.legajo, a.primer_apellido, a.otros_apellidos,
@@ -908,8 +1083,7 @@ if ($ruta === '/catalogos/alumnos' && $metodo === 'GET') {
                 prov.nombre AS provincia_nacimiento,
                 d.calle, d.calle AS domicilio, d.numero, d.piso, d.depto,
                 d.telefono_principal AS celular, d.telefono_alternativo,
-                d_loc.nombre AS localidad_barrio, part.nombre AS partido,
-                cp.codigo_postal
+                d_loc.nombre AS localidad_barrio, part.nombre AS partido
          FROM alumnos a
          LEFT JOIN matriculacion m ON m.id_alumno = a.id_alumno
          LEFT JOIN carreras c ON c.id_carrera = m.id_carrera
@@ -920,14 +1094,25 @@ if ($ruta === '/catalogos/alumnos' && $metodo === 'GET') {
          LEFT JOIN domicilios_alumno d ON d.id_alumno = a.id_alumno
          LEFT JOIN localidades d_loc ON d_loc.id_localidad = d.id_localidad
          LEFT JOIN partidos part ON part.id_partido = d_loc.id_partido
-         LEFT JOIN codigos_postales cp ON cp.id_codigo_postal = d.id_codigo_postal
-         ORDER BY a.primer_apellido, a.primer_nombre
-         LIMIT 100"
-    );
+         ORDER BY a.id_alumno DESC");
+    foreach ($alumnos as &$al) {
+        $ec = (string) ($al['estado_civil'] ?? '');
+        if ($ec !== '' && isset($mapEstadoCivil[$ec])) { $al['estado_civil'] = $mapEstadoCivil[$ec]; }
+    }
+    unset($al);
     ok($alumnos);
 }
 
 if (preg_match('#^/catalogos/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') {
+    $u = apiRequerirSesion();
+    $idPedido = (int) $m[1];
+    if (($u['tipo'] ?? '') === 'alumno' && (int) $u['id'] !== $idPedido) {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
+    if (($u['tipo'] ?? '') !== 'alumno' && ($u['tipo'] ?? '') !== 'personal') {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
+    $mapEstadoCivil = ['1' => 'Soltero/a', '2' => 'Casado/a', '3' => 'Divorciado/a', '4' => 'Viudo/a', '5' => 'Unión convivencial'];
     $alumno = sqlOne(
         "SELECT a.id_alumno, a.id_tipo_documento, td.descripcion AS tipo_documento,
                 a.numero_documento, a.legajo, a.primer_apellido, a.otros_apellidos,
@@ -945,8 +1130,7 @@ if (preg_match('#^/catalogos/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') 
                 prov.nombre AS provincia_nacimiento,
                 d.calle, d.calle AS domicilio, d.numero, d.piso, d.depto,
                 d.telefono_principal AS celular, d.telefono_alternativo,
-                d_loc.nombre AS localidad_barrio, part.nombre AS partido,
-                cp.codigo_postal
+                d_loc.nombre AS localidad_barrio, part.nombre AS partido
          FROM alumnos a
          LEFT JOIN matriculacion m ON m.id_alumno = a.id_alumno
          LEFT JOIN carreras c ON c.id_carrera = m.id_carrera
@@ -957,10 +1141,13 @@ if (preg_match('#^/catalogos/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') 
          LEFT JOIN domicilios_alumno d ON d.id_alumno = a.id_alumno
          LEFT JOIN localidades d_loc ON d_loc.id_localidad = d.id_localidad
          LEFT JOIN partidos part ON part.id_partido = d_loc.id_partido
-         LEFT JOIN codigos_postales cp ON cp.id_codigo_postal = d.id_codigo_postal
          WHERE a.id_alumno = ? LIMIT 1",
-        [(int) $m[1]]
+        [$idPedido]
     );
+    if ($alumno) {
+        $ec = (string) ($alumno['estado_civil'] ?? '');
+        if ($ec !== '' && isset($mapEstadoCivil[$ec])) { $alumno['estado_civil'] = $mapEstadoCivil[$ec]; }
+    }
     if (!$alumno) {
         fail('Alumno no encontrado', 404);
     }
@@ -969,7 +1156,7 @@ if (preg_match('#^/catalogos/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') 
         "SELECT id_materia, nota, DATE_FORMAT(fecha_aprobacion, '%d/%m/%Y') AS fecha, anio_regular AS cursada
          FROM historial_academico
          WHERE id_alumno = ? AND (validado_examen = 'T' OR nota >= 4)",
-        [(int) $m[1]]
+        [$idPedido]
     );
     $letras = [4 => 'Cuatro', 5 => 'Cinco', 6 => 'Seis', 7 => 'Siete', 8 => 'Ocho', 9 => 'Nueve', 10 => 'Diez'];
     foreach ($historialNotas as $nota) {
@@ -985,9 +1172,13 @@ if (preg_match('#^/catalogos/alumnos/(\d+)$#', $ruta, $m) && $metodo === 'GET') 
 }
 
 if (preg_match('#^/catalogos/carreras/(\d+)/materias$#', $ruta, $m) && $metodo === 'GET') {
+    apiRequerirSesion();
     asegurarEstructura();
     $idCarrera = (int) $m[1];
     $idAlumno = (int) ($_GET['idAlumno'] ?? 0);
+    if (rolApi() === 'alumno' && $idAlumno > 0 && $idAlumno !== (int) ($_SESSION['id_usuario'] ?? 0)) {
+        responder(['success' => false, 'message' => 'No autorizado.'], 403);
+    }
     $materias = sqlAll(
         "SELECT cm.id_carrera, cm.id_materia, cm.anio_cursada,
                 COALESCE(cm.carga_horaria_semanal, 4) AS carga_horaria_semanal,
@@ -1066,6 +1257,8 @@ if (preg_match('#^/catalogos/carreras/(\d+)/materias$#', $ruta, $m) && $metodo =
 }
 
 if (preg_match('#^/catalogos/carreras/(\d+)/materias$#', $ruta, $m) && $metodo === 'POST') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     asegurarEstructura();
     $idCarrera = (int) $m[1];
     $nombre = trim((string) ($input['nombre_materia'] ?? ''));
@@ -1097,6 +1290,8 @@ if (preg_match('#^/catalogos/carreras/(\d+)/materias$#', $ruta, $m) && $metodo =
 }
 
 if (preg_match('#^/catalogos/carreras/(\d+)/materias/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     try {
         sqlExec('DELETE FROM carrera_materias WHERE id_carrera = ? AND id_materia = ?', [(int) $m[1], (int) $m[2]]);
         sqlExec('DELETE FROM materia_horarios WHERE id_carrera = ? AND id_materia = ?', [(int) $m[1], (int) $m[2]]);
@@ -1107,6 +1302,8 @@ if (preg_match('#^/catalogos/carreras/(\d+)/materias/(\d+)$#', $ruta, $m) && $me
 }
 
 if ($ruta === '/catalogos/horarios' && $metodo === 'POST') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     asegurarEstructura();
     $idCarrera = (int) ($input['id_carrera'] ?? 0);
     $idMateria = (int) ($input['id_materia'] ?? 0);
@@ -1128,6 +1325,8 @@ if ($ruta === '/catalogos/horarios' && $metodo === 'POST') {
 }
 
 if (preg_match('#^/catalogos/horarios/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
+    apiRequerirPreceptorODirectivo();
+    apiRequerirCsrf();
     asegurarEstructura();
     sqlExec('DELETE FROM materia_horarios WHERE id_horario = ?', [(int) $m[1]]);
     ok([]);
@@ -1157,8 +1356,13 @@ if (preg_match('#^/estudiantes/(\d+)/carga-horaria$#', $ruta, $m) && $metodo ===
 }
 
 if ($ruta === '/inscripciones-materias' && $metodo === 'POST') {
+    $u = apiRequerirSesion();
+    apiRequerirCsrf();
     asegurarEstructura();
     $idAlumno = (int) ($input['id_alumno'] ?? 0);
+    if (($u['tipo'] ?? '') === 'alumno') {
+        $idAlumno = (int) $u['id'];
+    }
     $idCarrera = (int) ($input['id_carrera'] ?? 0);
     $idTurno = (int) ($input['id_turno'] ?? 3);
     $idSede = (int) ($input['id_sede'] ?? 1);
@@ -1266,6 +1470,7 @@ if ($ruta === '/inscripciones-materias' && $metodo === 'POST') {
 }
 
 if ($ruta === '/reportes/inscripciones' && $metodo === 'GET') {
+    apiRequerirPersonal();
     $where = ['1=1'];
     $params = [];
     if (!empty($_GET['carrera'])) {

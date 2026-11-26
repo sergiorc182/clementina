@@ -1749,52 +1749,75 @@ export async function initInscripcionView(container, onNotify, currentRole = 'pr
   // Sincronizar datos del alumno inicial
   syncFormDataFromAlumno(alumnoSeleccionado);
 
-  // Si es Alumno y viene un alumnoLogueado con id_carrera
-  if (isAlumno && alumnoLogueado && alumnoLogueado.id_carrera) {
+  if (isAlumno && alumnoSeleccionado?.id_carrera) {
+    idCarreraSeleccionada = alumnoSeleccionado.id_carrera;
+  } else if (isAlumno && alumnoLogueado?.id_carrera) {
     idCarreraSeleccionada = alumnoLogueado.id_carrera;
   }
 
-  // Render inmediato para evitar parpadeos o saltos
   render();
 
-  // Inicialización de catálogos y materias en segundo plano desde la base de datos clementina
   (async () => {
+    let cargaCatalogosOk = true;
     try {
-      const [c, a] = await Promise.all([api.getCarreras(), api.getAlumnos()]);
-      if (c && c.length > 0) carreras = c;
-      if (a && a.length > 0) {
-        alumnos = a;
-        alumnosFiltrados = [];
-
-        // Solo precargar datos de alumno si quien ingresó tiene rol ALUMNO.
-        // Para Admin / Preceptor / Administrativo la planilla arranca vacía hasta presionar "Cargar Planilla".
-        if (isAlumno && alumnoLogueado) {
-          const targetId = Number(alumnoLogueado.id_alumno || alumnoLogueado.id || 1);
-          const encontradoEnDb = a.find(al => Number(al.id_alumno || al.id) === targetId);
-          if (encontradoEnDb) {
-            let detalleCompleto = encontradoEnDb;
-            try {
-              const det = await api.getAlumnoDetalle(encontradoEnDb.id_alumno || encontradoEnDb.id);
-              if (det) detalleCompleto = { ...encontradoEnDb, ...det };
-            } catch (_) { }
-
-            alumnoSeleccionado = detalleCompleto;
-            alumnoElegidoEnLista = detalleCompleto;
-            syncFormDataFromAlumno(alumnoSeleccionado);
+      if (isAlumno) {
+        const targetId = Number(alumnoLogueado?.id_alumno || alumnoLogueado?.id || 0);
+        if (targetId > 0) {
+          try {
+            const det = await api.getAlumnoDetalle(targetId);
+            if (det) {
+              alumnoSeleccionado = det;
+              alumnoElegidoEnLista = det;
+              syncFormDataFromAlumno(det);
+            }
+          } catch (err) {
+            console.error('Error al cargar detalle alumno:', err);
           }
-        } else {
-          alumnoSeleccionado = null;
-          alumnoElegidoEnLista = null;
-          formData = createEmptyFormData();
-          datosAcademicos = {};
+        }
+        if (alumnoSeleccionado?.id_carrera) {
+          idCarreraSeleccionada = Number(alumnoSeleccionado.id_carrera);
+        } else if (alumnoLogueado?.id_carrera) {
+          idCarreraSeleccionada = Number(alumnoLogueado.id_carrera);
         }
       }
+
+      try {
+        const [c, a] = await Promise.all([api.getCarreras(), api.getAlumnos()]);
+        if (c && c.length > 0) carreras = c;
+        if (a && a.length > 0) {
+          alumnos = a;
+          alumnosFiltrados = [];
+          if (!isAlumno) {
+            alumnoSeleccionado = null;
+            alumnoElegidoEnLista = null;
+            formData = createEmptyFormData();
+            datosAcademicos = {};
+          } else if (alumnoSeleccionado) {
+            const idx = alumnos.findIndex((al) => Number(al.id_alumno || al.id) === Number(alumnoSeleccionado.id_alumno || alumnoSeleccionado.id));
+            if (idx >= 0) alumnos[idx] = { ...alumnos[idx], ...alumnoSeleccionado };
+          }
+        }
+        if (isAlumno && alumnoSeleccionado?.id_carrera) {
+          idCarreraSeleccionada = Number(alumnoSeleccionado.id_carrera);
+        }
+      } catch (err) {
+        cargaCatalogosOk = false;
+        console.error('Error al cargar catǭlogos:', err);
+        if (onNotify) onNotify('No se pudieron cargar carreras/lista. Se intentará usar tu carrera asignada.', 'warning');
+      }
     } catch (err) {
-      console.error('Error al cargar catálogos:', err);
-      if (onNotify) onNotify('No se pudieron cargar los catálogos. Verifique la conexión con el servidor.', 'error');
+      cargaCatalogosOk = false;
+      console.error('Error init:', err);
+    }
+
+    if (isAlumno && !alumnoSeleccionado?.id_carrera && alumnoLogueado?.id_carrera) {
+      idCarreraSeleccionada = Number(alumnoLogueado.id_carrera);
     }
 
     await cargarMaterias();
+    if (!cargaCatalogosOk && carreras.length === 0 && idCarreraSeleccionada) {
+      carreras = [{ id_carrera: idCarreraSeleccionada, nombre_carrera: 'Tu carrera (asignada)', nro_resolucion: '' }];
+    }
     render();
   })();
 }

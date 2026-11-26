@@ -25,6 +25,33 @@ function requerirMetodo(string $metodo): void
     }
 }
 
+/** Extrae el host de una URL o de un Host HTTP (con o sin esquema/puerto). */
+function clementinaHostDe(string $valor): ?string
+{
+    $valor = trim($valor);
+    if ($valor === '') {
+        return null;
+    }
+    // Si viene solo host:puerto (sin esquema), parse_url puede fallar en algunos PHP; normalizar.
+    if (strpos($valor, '://') === false && preg_match('/^[^\s\/]+:\d+$/', $valor)) {
+        $valor = 'http://' . $valor;
+    } elseif (strpos($valor, '://') === false) {
+        $valor = 'http://' . $valor;
+    }
+    $host = parse_url($valor, PHP_URL_HOST);
+    if (is_string($host) && $host !== '') {
+        return strtolower($host);
+    }
+    $sinEsq = preg_replace('#^https?://#i', '', trim($valor));
+    if (!is_string($sinEsq)) {
+        return null;
+    }
+    $sinRuta = preg_split('/[\/\?#]/', $sinEsq, 2)[0] ?? '';
+    // IPv6 no esperado aquí; quitar puerto numérico al final
+    $host2 = preg_replace('/:\d+$/', '', $sinRuta);
+    return $host2 !== '' ? strtolower($host2) : null;
+}
+
 /** Verifica el origen de la solicitud cuando el navegador lo informa. */
 function requerirOrigenSeguro(): void
 {
@@ -32,10 +59,9 @@ function requerirOrigenSeguro(): void
     if ($origen === '') {
         return;
     }
-    $hostOrigen = parse_url($origen, PHP_URL_HOST);
-    $hostLocal  = parse_url((string) ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST);
-    if (!is_string($hostOrigen) || !is_string($hostLocal)
-        || strtolower($hostOrigen) !== strtolower($hostLocal)) {
+    $hostOrigen = clementinaHostDe($origen);
+    $hostLocal  = clementinaHostDe((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($hostOrigen === null || $hostLocal === null || $hostOrigen !== $hostLocal) {
         http_response_code(403);
         responder(['ok' => false, 'mensaje' => 'Origen de la solicitud no permitido.']);
     }
@@ -60,14 +86,11 @@ function requerirPostSeguro(): void
 }
 
 /** Respuesta genérica ante errores internos; el detalle queda en el log. */
-function responderErrorServidor(string $contexto, Throwable $e, ?string $mensajePublico = null): void
+function responderErrorServidor(string $contexto, Throwable $e): void
 {
     error_log('[' . $contexto . '] ' . $e->getMessage());
     http_response_code(500);
-    responder([
-        'ok' => false,
-        'mensaje' => $mensajePublico ?? 'No se pudo completar la operación. Intentá nuevamente.',
-    ]);
+    responder(['ok' => false, 'mensaje' => 'No se pudo completar la operación. Intentá nuevamente.']);
 }
 
 /**
@@ -134,6 +157,18 @@ function requerirDocente(): array
     $usuario = requerirPersonal();
     if (($usuario['rol'] ?? '') !== 'docente') {
         responder(['ok' => false, 'mensaje' => 'Acceso restringido a docentes.']);
+    }
+    return $usuario;
+}
+
+/**
+ * Exige docente o preceptor: ambos pueden usar el panel de calificaciones.
+ */
+function requerirDocenteOPreceptor(): array
+{
+    $usuario = requerirPersonal();
+    if (!in_array($usuario['rol'] ?? '', ['docente', 'preceptor'], true)) {
+        responder(['ok' => false, 'mensaje' => 'Acceso restringido a docentes y preceptores.']);
     }
     return $usuario;
 }

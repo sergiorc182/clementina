@@ -1434,14 +1434,16 @@ export function crearControlFinales(container, initialProps = {}) {
     inicializarAlumnos(alumnosList);
   } else {
     renderAll();
-    fetch(`${API_BASE}/alumnos`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data.length > 0) {
-          inicializarAlumnos(data.data);
-        }
-      })
-      .catch(() => { });
+    if (!sesionCookie.esAlumno) {
+      fetch(`${API_BASE}/alumnos`, { credentials: 'include' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data.length > 0) {
+            inicializarAlumnos(data.data);
+          }
+        })
+        .catch(() => { });
+    }
   }
 
   // Sincronización periódica con document.cookie

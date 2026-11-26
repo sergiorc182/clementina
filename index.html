@@ -32,6 +32,9 @@
               Este es tu espacio para gestionar finales, mesas de examen y tu situación académica.
             </p>
           </div>
+          <div class="welcome__actions" data-solo-invitado hidden>
+            <a class="btn btn--secondary" href="vista/login.html">Ingresar</a>
+          </div>
         </section>
 
         <!-- Accesos rápidos -->
@@ -44,14 +47,14 @@
 
         <nav class="grid grid--modules" aria-label="Módulos de la plataforma">
 
-          <a class="module" href="vista/inscripcion_finales.html">
+          <a class="module" href="ProyectoPreceptoria/frontend/sistema.html">
             <div class="module__head">
               <span class="module__icon"><i data-lucide="calendar-plus"></i></span>
               <i data-lucide="arrow-right" class="module__arrow"></i>
             </div>
             <div>
               <div class="module__name">Inscripción a finales</div>
-              <div class="module__desc">Anotate en las mesas finales de examen.</div>
+              <div class="module__desc">Anotate en las mesas finales de examen (módulo Proyecto Preceptoría).</div>
             </div>
           </a>
 
@@ -85,6 +88,17 @@
             <div>
               <div class="module__name">Consultar cronograma de finales</div>
               <div class="module__desc">Fechas y mesas de examen programadas.</div>
+            </div>
+          </a>
+
+          <a class="module" href="ProyectoPreceptoria/frontend/modulo-e/index.html">
+            <div class="module__head">
+              <span class="module__icon"><i data-lucide="book-open"></i></span>
+              <i data-lucide="arrow-right" class="module__arrow"></i>
+            </div>
+            <div>
+              <div class="module__name">Inscripción a materias</div>
+              <div class="module__desc">Inscripción a cursadas (módulo Proyecto Preceptoría).</div>
             </div>
           </a>
 
@@ -276,8 +290,10 @@
 
       App.montarLayout({ protegida: true }).then(function (usuario) {
         var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
+        var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
 
         soloUsuario.forEach(function (el) { el.hidden = !usuario; });
+        soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
 
         if (usuario) {
           var nombre = (usuario.nombre || '').trim();

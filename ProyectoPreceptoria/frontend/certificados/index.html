@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Preceptoría - ISFT Nº 182</title>
+  <meta charset="UTF-8" name="description"
+    content="Sistema Integral de Preceptoría del Instituto Superior de Formación Técnica N° 182. Cálculo de porcentajes de materias aprobadas y emisión de certificados reglamentarios.">
+
+  <!-- Tipografía Google Fonts Outfit (Modelo 3) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+  <!-- BARRA DE NAVEGACIÓN SUPERIOR GLOBAL -->
+  <header class="navbar no-print">
+    <div class="nav-brand">
+      <div class="nav-logo-badge" title="ISFT Nº 182">
+        <img src="isft182.jpg" alt="ISFT 182" />
+      </div>
+      <div class="nav-title-group">
+        <h1>Avance Académico y Certificados</h1>
+        <span>ISFT 182 · Porcentaje de Materias y Constancias</span>
+      </div>
+    </div>
+
+    <nav class="nav-links" id="tabs-nav">
+      <a href="../index.html" class="nav-button" title="Volver al Home del Portal">
+        Home
+      </a>
+      <span style="color: #cbd5e1; user-select: none;">|</span>
+      <button type="button" class="nav-button tab-btn active" id="tab-btn-aprobadas" data-tab="tab-aprobadas">
+        Materias Aprobadas <span class="tab-badge" id="count-badge-aprobadas">0</span>
+      </button>
+      <button type="button" class="nav-button tab-btn" id="tab-btn-pendientes" data-tab="tab-pendientes">
+        Materias Pendientes <span class="tab-badge" id="count-badge-pendientes">0</span>
+      </button>
+      <button type="button" class="nav-button tab-btn" id="tab-btn-certificado" data-tab="tab-certificado">
+        Certificado Oficial
+      </button>
+    </nav>
+
+    <div id="nav-user-badge-slot"></div>
+  </header>
+
+  <div class="container">
+
+    <!-- HEADER INSTITUCIONAL (ESTILO MODELO 3) -->
+    <header class="page-header" id="main-header">
+      <div class="brand-wrapper">
+        <div class="brand-badge">182</div>
+        <div>
+          <h1>Gestión de Preceptoría e Inscripciones</h1>
+          <p>Instituto Superior de Formación Técnica N° 182 — Control Académico y Certificados</p>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div class="status-indicator">
+          <span>Ciclo Lectivo: <strong id="ciclo-lectivo-val">2026</strong></span>
+        </div>
+        <div class="header-inst-badge">I.S.F.T. Nº 182</div>
+      </div>
+    </header>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <main class="main-layout" id="app-main">
+
+      <!-- BARRA LATERAL: FILTROS Y BÚSQUEDA DE ALUMNOS -->
+      <aside class="sidebar-panel" id="sidebar-panel">
+        <div class="card">
+          <div class="results-header">
+            <h2 class="results-title">Filtros de búsqueda</h2>
+            <span class="results-count" id="student-count">0 alumnos</span>
+          </div>
+
+          <div class="search-box-wrapper">
+            <span class="search-icon"></span>
+            <input type="text" id="search-input" class="search-input-field" placeholder="Buscar por DNI o Apellido..."
+              autocomplete="off" />
+          </div>
+
+          <div class="results-header" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <span
+              style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Alumnos
+              Registrados</span>
+          </div>
+
+          <div class="student-list" id="student-list">
+            <!-- Se cargan dinámicamente -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- PANEL DE CONTENIDO PRINCIPAL -->
+      <section class="content-panel" id="content-panel">
+
+        <!-- ESTADO VACÍO (CUANDO NO HAY ALUMNO SELECCIONADO) -->
+        <div class="card empty-state" id="empty-state" style="display: none;">
+          <div class="empty-state-icon"></div>
+          <h3 style="color: var(--primary); font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Seleccioná un
+            alumno para comenzar</h3>
+          <p>Elegí uno de los alumnos del listado o utilizá el buscador por DNI o apellido.</p>
+        </div>
+
+        <!-- VISTA DE DATOS DEL ALUMNO Y PLANILLA -->
+        <div id="student-data-view" style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+          <!-- FICHA / PLANILLA DE MATRICULACIÓN (FORMULARIO A5a) -->
+          <div class="planilla-card" id="student-banner">
+
+            <div class="planilla-header">
+              <div>
+                <h2>DIRECCIÓN DE EDUCACIÓN SUPERIOR - INSTITUTO SUPERIOR DE FORMACIÓN TÉCNICA Nº 182</h2>
+                <p>Planilla de Matriculación y Control Académico - Formulario A5a</p>
+              </div>
+              <div class="badge-form">FORM A5a</div>
+            </div>
+
+            <!-- Datos del Alumno (data-grid sin número de legajo) -->
+            <div class="section-title">Datos del Alumno</div>
+
+            <div class="data-grid">
+              <div class="data-field col-6">
+                <label>Apellido y Nombres</label>
+                <div class="value" id="student-name"
+                  style="color: var(--primary); font-size: 1.15rem; font-weight: 700;">Cargando...</div>
+              </div>
+              <div class="data-field col-6 border-none">
+                <label>DNI</label>
+                <div class="value" id="student-dni">-</div>
+              </div>
+
+              <div class="data-field col-6">
+                <label>Email de Contacto</label>
+                <div class="value" id="student-email">-</div>
+              </div>
+              <div class="data-field col-6 border-none">
+                <label>Carrera Matriculada</label>
+                <select id="career-select" class="select-custom"
+                  style="padding: 0.5rem 0.8rem; margin-top: 0.2rem; font-size: 0.9rem;">
+                  <!-- Opciones dinámicas -->
+                </select>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- GRILLA DE MÉTRICAS DE AVANCE -->
+          <div class="metrics-grid" id="metrics-grid">
+            <div class="metric-card highlight">
+              <span class="metric-title">% Materias Aprobadas</span>
+              <div class="metric-value" id="metric-pct">0%</div>
+              <span class="metric-sub">del plan de estudios oficial</span>
+              <div class="progress-container">
+                <div class="progress-fill" id="metric-progress-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <span class="metric-title">Materias Aprobadas</span>
+              <div class="metric-value" id="metric-aprobadas">0</div>
+              <span class="metric-sub" id="metric-aprobadas-sub">de 0 totales</span>
+            </div>
+
+            <div class="metric-card">
+              <span class="metric-title">Materias Pendientes</span>
+              <div class="metric-value" id="metric-pendientes">0</div>
+              <span class="metric-sub">restantes para egresar</span>
+            </div>
+
+            <div class="metric-card">
+              <span class="metric-title">Promedio General</span>
+              <div class="metric-value" id="metric-promedio">0.00</div>
+              <span class="metric-sub">de materias acreditadas</span>
+            </div>
+          </div>
+
+          <!-- PLANILLA DE MATERIAS Y CERTIFICADO -->
+          <div class="planilla-card" id="tabs-card">
+
+            <div class="section-title"
+              style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 1.25rem;">
+              <span>HISTORIAL ACADÉMICO Y EMISIÓN DE CONSTANCIAS</span>
+              <span class="results-count">RÉGIMEN ACADÉMICO (RAM)</span>
+            </div>
+
+            <!-- Pestaña 1: Detalle de Aprobadas -->
+            <div class="tab-content active" id="tab-aprobadas">
+              <div class="warning-banner">
+                <span>
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  REGISTRO OFICIAL DE MATERIAS Y CALIFICACIONES ACREDITADAS
+                </span>
+                <div class="warning-box">
+                  Tipos de Examen: Libre, Regular, Promoción o Equivalencia<br>Haga clic para editar y guardar
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 60px; text-align: center;">Año</th>
+                      <th style="width: 80px; text-align: center;">Espacio</th>
+                      <th>Espacio Curricular / Asignatura</th>
+                      <th style="width: 70px; text-align: center;">Nota</th>
+                      <th style="width: 110px; text-align: center;">Fecha</th>
+                      <th style="width: 160px; text-align: center;">Acta / Folio</th>
+                      <th style="min-width: 260px;">Tipo de Examen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-aprobadas-body">
+                    <!-- Carga dinámica con controles interactivos de tipo de examen -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pestaña 2: Materias Pendientes -->
+            <div class="tab-content" id="tab-pendientes">
+              <div class="warning-banner">
+                <span>
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  ASIGNATURAS PENDIENTES DEL PLAN DE ESTUDIOS OFICIAL
+                </span>
+                <div class="warning-box">
+                  Control de Cursadas y Correlatividades<br>Plan de Estudios Vigente
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 80px; text-align: center;">Año Cursada</th>
+                      <th style="width: 100px; text-align: center;">Código</th>
+                      <th>Nombre de la Asignatura</th>
+                      <th style="width: 160px; text-align: center;">Estado Académico</th>
+                      <th style="width: 160px; text-align: center;">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-pendientes-body">
+                    <!-- Carga dinámica con botón de acreditar -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pestaña 3: Certificado Oficial Imprimible -->
+            <div class="tab-content" id="tab-certificado">
+              <div class="cert-actions-bar">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <label for="preceptor-select"
+                    style="font-size: 0.82rem; color: var(--primary); font-weight: 700; text-transform: uppercase;">Preceptor/a:</label>
+                  <select id="preceptor-select" style="min-width: 250px; padding: 0.5rem 0.8rem; font-size: 0.9rem;">
+                    <!-- Se llena dinámicamente -->
+                  </select>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                  <button class="btn-outline" id="btn-copy-cert">
+                    Copiar Texto Formal
+                  </button>
+                  <button class="btn-primary" id="btn-print-cert">
+                    Imprimir / Guardar en PDF
+                  </button>
+                </div>
+              </div>
+
+              <article class="certificate-preview-box" id="cert-preview-box">
+                <header class="cert-header">
+                  <div class="cert-escudo" id="cert-inst-nombre">Instituto Superior de Formación Técnica N° 182</div>
+                  <div class="cert-subtitulo">Dirección General de Cultura y Educación — Provincia de Buenos Aires</div>
+                  <div class="cert-folio-id" id="cert-constancia-nro">CERT-PORC-2026-0000-00</div>
+                </header>
+
+                <h3 class="cert-title">CERTIFICADO DE PORCENTAJE DE MATERIAS APROBADAS</h3>
+
+                <div class="cert-body" id="cert-body-texto">
+                  <!-- Texto formal generado sin número de legajo -->
+                </div>
+
+                <div class="cert-stats-summary">
+                  <div class="cert-stat-item">
+                    <strong id="cert-stat-total">0</strong>
+                    <span>Materias del Plan</span>
+                  </div>
+                  <div class="cert-stat-item">
+                    <strong id="cert-stat-aprobadas">0</strong>
+                    <span>Aprobadas</span>
+                  </div>
+                  <div class="cert-stat-item">
+                    <strong id="cert-stat-porcentaje">0%</strong>
+                    <span>Porcentaje Alcanzado</span>
+                  </div>
+                </div>
+
+                <div class="firmas-container">
+                  <div class="firma-line" id="cert-preceptor-sign">
+                    <strong>Preceptor/a</strong><br>
+                    <small style="color: var(--text-muted);">Preceptoría ISFT 182</small>
+                  </div>
+                  <div class="firma-line">
+                    <strong>Dirección / Secretaría</strong><br>
+                    <small style="color: var(--text-muted);">Instituto Superior N° 182</small>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- MODAL: REGISTRAR APROBACIÓN DE MATERIA PENDIENTE -->
+  <div class="modal-backdrop" id="modal-acreditar" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-materia-title">Acreditar Asignatura</h3>
+        <button class="modal-close" id="btn-modal-close" type="button">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-materia-id">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label>Asignatura</label>
+          <div id="modal-materia-nombre" style="font-weight: 700; color: var(--primary); font-size: 1.05rem;">-</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label>Calificación (Nota)</label>
+            <input type="number" id="modal-nota" min="4" max="10" value="8" style="padding: 0.65rem 0.9rem;">
+          </div>
+          <div class="form-group">
+            <label>Fecha de Examen</label>
+            <input type="date" id="modal-fecha" style="padding: 0.65rem 0.9rem;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label>Libro / Tomo Acta</label>
+            <input type="number" id="modal-tomo" value="45" style="padding: 0.65rem 0.9rem;">
+          </div>
+          <div class="form-group">
+            <label>Folio Acta</label>
+            <input type="number" id="modal-folio" value="12" style="padding: 0.65rem 0.9rem;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label>Tipo de Examen</label>
+          <select id="modal-tipo-examen" style="padding: 0.65rem 0.9rem;">
+            <option value="Regular">Regular</option>
+            <option value="Libre">Libre</option>
+            <option value="Promoción">Promoción</option>
+            <option value="Equivalencia">Equivalencia</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="modal-equiv-wrapper" style="display: none; margin-bottom: 1rem;">
+          <label>Resolución / Instituto de Origen (Equivalencia)</label>
+          <input type="text" id="modal-equiv-text" placeholder="Ej: Disposición N° 124/24 - Res. UNLu">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button class="btn-outline" id="btn-modal-cancel" type="button">Cancelar</button>
+          <button class="btn-primary" id="btn-modal-save" type="button">✓ Guardar Acreditación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de Notificaciones Toast Flotantes (Inferior Derecho) -->
+  <div id="toast-container" class="toast-container no-print"></div>
+
+  <!-- Sesión Compartida y Script Principal -->
+  <script src="../auth-session.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

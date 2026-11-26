@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inscripción a Materias y Gestión Académica | ISFT 182</title>
+    <meta name="description" content="Sistema de Gestión Académica - Inscripción online a cursadas de 2º y 3º año con validación automática de correlatividades y carga horaria. Desarrollado en JavaScript Vanilla puro." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/jpeg" href="isft182.jpg" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Barra de Navegación Dinámica y Estática al Scroll -->
+      <header id="navbar-container" class="navbar no-print"></header>
+
+      <!-- Contenedor Principal de Vistas -->
+      <main id="main-content" class="main-content"></main>
+
+      <!-- Contenedor de Notificaciones Toast Flotantes -->
+      <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Sesión Compartida y Guardia de Autenticación -->
+    <script src="../auth-session.js"></script>
+    <script src="../api-bridge.js"></script>
+
+    <!-- Librería para Estampado y Edición Oficial de PDFs (pdf-lib) -->
+    <script src="js/libs/pdf-lib.min.js"></script>
+
+    <!-- Aplicación en JavaScript Vanilla Nativo (Sin React ni Bundlers) -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
+

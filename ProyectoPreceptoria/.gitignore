@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Variables de entorno locales (usar backend/.env.example como plantilla)
+.env
+backend/.env
+frontend/.env
+
+# Compilados y logs
+/dist/
+*.log
+npm-debug.log*
+
+# Datos sensibles de prueba
+recursos/credenciales.txt
+recursos/Whatsapp Scan *.pdf
+
+# Sistema operativo / IDE
+.DS_Store
+Thumbs.db

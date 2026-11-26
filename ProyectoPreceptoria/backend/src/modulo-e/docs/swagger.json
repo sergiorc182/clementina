@@ -1,0 +1,371 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Módulo E: Inscripción a Materias - API REST",
+    "version": "1.0.0",
+    "description": "Especificación OpenAPI 3.0 para el Módulo E (Inscripción a Materias) del Sistema de Gestión Académica para el Instituto Terciario ISFT 182. Incluye validación de carga horaria, correlatividades (2º y 3º año), reportes combinables y descarga de PDFs oficiales."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Servidor de desarrollo local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Inscripciones",
+      "description": "Gestión de alta y consulta de inscripciones a cursadas (Módulo E)"
+    },
+    {
+      "name": "Carga Horaria",
+      "description": "Cálculo y verificación de carga horaria semanal del estudiante"
+    },
+    {
+      "name": "Reportes",
+      "description": "Reportes de inscripción con filtros combinables para el Equipo de Gestión"
+    },
+    {
+      "name": "Documentos PDF",
+      "description": "Generación e impresión de formularios oficiales y planillas editables"
+    },
+    {
+      "name": "Catálogos",
+      "description": "Consultas auxiliares de carreras, materias y correlativas para el frontend"
+    }
+  ],
+  "paths": {
+    "/inscripciones-materias": {
+      "post": {
+        "tags": ["Inscripciones"],
+        "summary": "Alta de inscripción a cursada de materias",
+        "description": "Registra la matrícula y materias seleccionadas de 2º y 3º año. Verifica automáticamente el cumplimiento de correlativas y que no se exceda el límite semanal de carga horaria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InscripcionRequest"
+              },
+              "example": {
+                "id_alumno": 1,
+                "id_carrera": 10,
+                "id_turno": 1,
+                "id_sede": 1,
+                "ciclo_lectivo": 2026,
+                "materias": [
+                  { "id_materia": 201, "tipo_asistencia": "1" },
+                  { "id_materia": 202, "tipo_asistencia": "1" }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscripción registrada exitosamente en matriculacion y matriculacion_detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InscripcionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error en validación de parámetros (express-validator)"
+          },
+          "404": {
+            "description": "Alumno o carrera inexistente"
+          },
+          "422": {
+            "description": "Inscripción bloqueada por correlatividades adeudadas o carga horaria excedida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBloqueo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/estudiantes/{id}/carga-horaria": {
+      "get": {
+        "tags": ["Carga Horaria"],
+        "summary": "Verifica carga horaria disponible de un estudiante",
+        "description": "Calcula las horas semanales inscriptas frente al tope institucional (32 hs semanales). Permite simular nuevas materias agregadas vía query param.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del alumno",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          },
+          {
+            "name": "idCarrera",
+            "in": "query",
+            "required": false,
+            "description": "ID de la carrera para filtrar las materias del ciclo",
+            "schema": {
+              "type": "integer",
+              "example": 10
+            }
+          },
+          {
+            "name": "materias",
+            "in": "query",
+            "required": false,
+            "description": "Lista separada por comas de IDs de materias a simular (ej: 201,202)",
+            "schema": {
+              "type": "string",
+              "example": "201,202"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen de carga horaria actual, proyectada y disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CargaHorariaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID inválido"
+          }
+        }
+      }
+    },
+    "/reportes/inscripciones": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Reporte de inscripciones para equipo de gestión",
+        "description": "Consulta combinada y filtrable por carrera, año de cursada, ciclo lectivo y situación académica (cohorte, atraso académico, recursantes y libres).",
+        "parameters": [
+          {
+            "name": "carrera",
+            "in": "query",
+            "required": false,
+            "description": "ID de la carrera",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "anio",
+            "in": "query",
+            "required": false,
+            "description": "Año de cursada (2 o 3)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "ciclo_lectivo",
+            "in": "query",
+            "required": false,
+            "description": "Ciclo lectivo / año de matriculación (ej. 2026)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "situacion",
+            "in": "query",
+            "required": false,
+            "description": "Filtro de situación académica: regular, libre, recursante, atraso",
+            "schema": {
+              "type": "string",
+              "enum": ["regular", "libre", "recursante", "atraso"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte consolidado con métricas y lista de alumnos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documentos/formulario-matriculacion/{idAlumno}/{idCarrera}": {
+      "get": {
+        "tags": ["Documentos PDF"],
+        "summary": "Descargar Formulario de Matriculación Imprimible en PDF",
+        "description": "Genera el comprobante oficial con datos personales, carrera y asignaturas inscriptas para firma del estudiante y preceptoría.",
+        "parameters": [
+          {
+            "name": "idAlumno",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "idCarrera",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "ciclo",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo PDF listo para descarga o impresión",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documentos/planilla-asistencia/{idCarrera}/{idMateria}": {
+      "get": {
+        "tags": ["Documentos PDF"],
+        "summary": "Descargar Planilla de Asistencia Editable en PDF",
+        "description": "Genera la planilla apaisada con cuadrícula de 12 clases para control de asistencia de preceptoría y cátedra.",
+        "parameters": [
+          {
+            "name": "idCarrera",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "idMateria",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "ciclo",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo PDF de planilla editable",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InscripcionRequest": {
+        "type": "object",
+        "required": ["id_alumno", "id_carrera", "id_turno", "id_sede", "materias"],
+        "properties": {
+          "id_alumno": { "type": "integer", "example": 1 },
+          "id_carrera": { "type": "integer", "example": 10 },
+          "id_turno": { "type": "integer", "example": 1 },
+          "id_sede": { "type": "integer", "example": 1 },
+          "ciclo_lectivo": { "type": "integer", "example": 2026 },
+          "materias": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id_materia"],
+              "properties": {
+                "id_materia": { "type": "integer", "example": 201 },
+                "tipo_asistencia": {
+                  "type": "string",
+                  "enum": ["1", "2", "3", "Presencial", "Libre", "Vocacional"],
+                  "default": "1"
+                }
+              }
+            }
+          }
+        }
+      },
+      "InscripcionResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "matricula": { "type": "object" },
+              "carga_horaria": { "type": "object" },
+              "materias_inscriptas": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        }
+      },
+      "CargaHorariaResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id_alumno": { "type": "integer" },
+              "ciclo_lectivo": { "type": "integer" },
+              "limite_maximo_semanal": { "type": "integer", "example": 32 },
+              "horas_actuales": { "type": "integer" },
+              "horas_totales_proyectadas": { "type": "integer" },
+              "horas_disponibles": { "type": "integer" },
+              "excedido": { "type": "boolean" },
+              "mensaje": { "type": "string" }
+            }
+          }
+        }
+      },
+      "ReporteResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "filtros_aplicados": { "type": "object" },
+              "metricas": { "type": "object" },
+              "inscripciones": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        }
+      },
+      "ErrorBloqueo": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "codigo": { "type": "string", "example": "CORRELATIVAS_BLOQUEADAS" },
+          "bloqueos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id_materia": { "type": "integer" },
+                "nombre_materia": { "type": "string" },
+                "motivo": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

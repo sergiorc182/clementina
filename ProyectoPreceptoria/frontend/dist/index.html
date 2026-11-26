@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Institucional - ISFT Nº 182</title>
+  <link rel="icon" type="image/jpeg" href="/assets/isft182-CdSl22j9.jpg" />
+  <link rel="stylesheet" crossorigin href="/assets/index-BgRtt1xD.css">
+</head>
+
+<body>
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo-badge" title="ISFT Nº 182">
+        <img src="/assets/isft182-CdSl22j9.jpg" alt="ISFT 182" />
+      </div>
+      <div class="nav-title-group">
+        <h1>Portal Institucional ISFT 182</h1>
+        <span>Plataforma de Gestión Académica Clementina</span>
+      </div>
+    </div>
+
+    <nav class="nav-links" id="homeNavLinks">
+      <a href="./index.html" class="nav-button active" title="Página Home">
+        Home
+      </a>
+    </nav>
+
+    <div id="homeUserBadgeSlot"></div>
+  </header>
+
+  <div class="container home-container" id="portalRoot">
+    <main class="card home-hero-card" style="text-align: center; padding: 3rem 2rem;">
+        <p style="color: var(--text-muted); font-weight: 600;">Verificando sesión de Clementina...</p>
+    </main>
+  </div>
+
+  <script src="./auth-session.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const portalRoot = document.getElementById('portalRoot');
+      const userBadgeSlot = document.getElementById('homeUserBadgeSlot');
+      const navLinks = document.getElementById('homeNavLinks');
+
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderNoSessionView(errorMsg = '') {
+        if (userBadgeSlot) userBadgeSlot.innerHTML = '';
+        if (navLinks) navLinks.style.display = 'none';
+
+        const hostWarning = window.location.hostname === 'localhost'
+          ? ''
+          : `<div class="login-portal-error">Abra el portal con localhost para que el navegador envíe la cookie de Clementina.</div>`;
+
+        portalRoot.innerHTML = `
+          <main class="login-portal-wrap">
+            <div class="card login-portal-card">
+              <div class="login-portal-header">
+                <img src="./isft182.jpg" alt="ISFT Nº 182" class="login-portal-logo" />
+                <h2>Sesión de Clementina requerida</h2>
+                <p>Instituto Superior de Formación Técnica Nº 182 — Clementina</p>
+              </div>
+
+              <div class="login-portal-error">${escapeHtml(errorMsg || 'No hay una sesión activa de Clementina.')}</div>
+              ${hostWarning}
+
+              <p class="login-portal-footnote">
+                <a href="${window.ISFTAuth.legacyLoginUrl()}">Iniciar sesión en Clementina</a>
+              </p>
+            </div>
+          </main>
+        `;
+
+        const redirectKey = 'isft182_legacy_redirect';
+        let lastRedirect = 0;
+        try { lastRedirect = Number(sessionStorage.getItem(redirectKey) || 0); } catch (_) {}
+        const now = Date.now();
+        if (now - lastRedirect > 60000) {
+          try { sessionStorage.setItem(redirectKey, String(now)); } catch (_) {}
+          window.setTimeout(() => {
+            window.location.replace(window.ISFTAuth.legacyLoginUrl());
+          }, 1200);
+        }
+      }
+
+      function getModulesForUser(user) {
+        const role = String(user.role || '').toUpperCase();
+        const base = window.ISFTAuth.legacyBaseUrl();
+        const isAlumno = role === 'ALUMNO';
+
+        const modules = [];
+
+        if (isAlumno) {
+          modules.push({
+            href: './sistema.html',
+            label: 'Ir a Mis Exámenes Finales'
+          });
+          modules.push({
+            href: './modulo-e/index.html',
+            label: 'Ir a Mi Inscripción a Materias'
+          });
+          modules.push({
+            href: `${base}/vista/mi_historial_academico.html`,
+            label: 'Ir a Mi Historial Académico'
+          });
+          modules.push({
+            href: `${base}/vista/mis_datos.html`,
+            label: 'Ir a Mis Datos Personales'
+          });
+          return modules;
+        }
+
+        modules.push({
+          href: `${base}/clementina-preceptores/index.html`,
+          label: 'Ir al Panel de Preceptoría'
+        });
+        modules.push({
+          href: `${base}/clementina-preceptores/vista/alumnos.html`,
+          label: 'Ir a Alumnos y Gestión Académica'
+        });
+        modules.push({
+          href: `${base}/clementina-preceptores/vista/inscripciones.html`,
+          label: 'Ir a Inscripciones a Finales'
+        });
+        modules.push({
+          href: `${base}/clementina-preceptores/vista/historial.html`,
+          label: 'Ir al Historial Académico'
+        });
+
+        if (role === 'DOCENTE') {
+          modules.push({
+            href: `${base}/clementina-docentes/index.html`,
+            label: 'Ir al Panel Docente'
+          });
+        }
+
+        return modules;
+      }
+
+      function renderHomeView(user) {
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        const role = String(user.role || '').toUpperCase();
+        const inicial = (user.firstName?.[0] || 'U').toUpperCase();
+
+        if (navLinks) navLinks.style.display = '';
+        if (userBadgeSlot) {
+          userBadgeSlot.innerHTML = `
+            <div class="nav-user-actions">
+              <div class="nav-user-badge" style="display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.65rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.78rem; flex-shrink: 0;">
+                  ${escapeHtml(inicial)}
+                </div>
+                <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.15;">
+                  <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">
+                    ${escapeHtml(fullName)}
+                  </span>
+                  <span style="font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;">
+                    ${escapeHtml(role)}
+                  </span>
+                </div>
+              </div>
+              <button type="button" id="btnHomeLogout" class="btn-nav-logout" title="Cerrar sesión institucional">
+                Salir
+              </button>
+            </div>
+          `;
+          document.getElementById('btnHomeLogout')?.addEventListener('click', () => {
+            window.ISFTAuth.logout('./index.html');
+          });
+        }
+
+        const modules = getModulesForUser(user);
+
+        portalRoot.innerHTML = `
+          <main class="card home-hero-card">
+            <div class="home-hero-content">
+              <span class="home-badge">ISFT 182 • Ciclo Lectivo Vigente • ${escapeHtml(role)}</span>
+                <h2>Bienvenido al Portal de Autogestión y Preceptoría</h2>
+                <p class="tab-description">
+                  Acceda a los paneles institucionales con su sesión de Clementina: exámenes finales, inscripción a
+                  materias, historial académico y gestión de preceptoría.
+                </p>
+
+              <div class="home-actions">
+                ${modules.map(m => `
+                  <a href="${m.href}" class="btn btn-primary home-link-btn">
+                    ${escapeHtml(m.label)}
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          </main>
+        `;
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        const user = await window.ISFTAuth.verifySession();
+        if (user) {
+          renderHomeView(user);
+        } else {
+          renderNoSessionView(window.ISFTAuth.getSessionError());
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

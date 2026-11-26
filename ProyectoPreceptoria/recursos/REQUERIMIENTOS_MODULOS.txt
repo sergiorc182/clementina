@@ -1,0 +1,279 @@
+Cinco módulos, un solo sistema académico
+Este documento organiza el trabajo final de un grupo de 5 integrantes: modernizar la gestión académica de una institución terciaria a partir de un relevamiento real de requerimientos, dividiendo el trabajo en cinco proyectos individuales que se integran en un único sistema al final del cuatrimestre.
+
+Cada integrante diseña, desarrolla y documenta su módulo como un producto profesional completo — no un prototipo suelto — siguiendo el modelo de datos y los contratos de integración definidos en esta página.
+
+Cómo usar esta página: las primeras secciones fijan las reglas compartidas — modelo de datos, contratos, cronograma. Después, cada uno de los cinco integrantes tiene su propia sección con user stories, endpoints y checklist de entrega individual.
+
+01 · ARQUITECTURA
+
+Núcleo compartido + módulos independientes
+Cada integrante construye su módulo como una aplicación separada — backend, base de datos propia o esquema propio, e interfaz — que expone una API REST y respeta el modelo de datos acordado en esta página. La integración final conecta los cinco módulos a través de esos contratos, sin mezclar código ni bases de datos entre sí.
+
+Reglas de integración
+Toda entidad que un módulo necesite leer de otro se expone vía API REST documentada — nunca acceso directo a la base de datos de otro módulo.
+Cualquier cambio al modelo de datos compartido o a un contrato de API se avisa al grupo antes de aplicarse.
+Un solo esquema de autenticación y roles, a cargo de Persona C, consumido por los otros cuatro módulos.
+Cada módulo vive en su propia carpeta del repositorio compartido, con su propio README y su propia documentación de API.
+Integración semanal: cada viernes se prueba que los módulos disponibles hasta ese día sigan funcionando juntos, aunque estén incompletos.
+02 · MODELO DE DATOS
+
+Entidades principales (borrador inicial)
+Punto de partida para la reunión de diseño de la semana 1 — no es una decisión final. Los cinco deben revisarlo juntos y cerrarlo antes de escribir código.
+
+Entidad	Campos clave	Módulo dueño
+estudiantes	id, nombre, DNI, carrera_id, cohorte	Compartida — admin. por Persona C
+carreras / planes_estudio	id, nombre, resolución, orden_curricular	Persona B
+espacios_curriculares	id, plan_id, año, código, correlativas	Persona B
+mesas_examen	id, materia_id, fecha, docente, comisión, nº acta	Persona A
+resultados_examen	id, mesa_id, estudiante_id, resultado, nº oportunidad	Persona A
+inscripciones_finales	id, estudiante_id, mesa_id, estado, condición	Persona D
+inscripciones_materias	id, estudiante_id, materia_id, ciclo_lectivo, comisión	Persona E
+usuarios	id, nombre, rol, historial_cambios	Persona C
+validaciones_notas	id, resultado_id, estado_semáforo, validado_por	Persona C
+03 · CRONOGRAMA
+
+Diez semanas, de diseño a defensa
+Semana	Hito
+1	Diseño conjunto: modelo de datos y contratos de API cerrados entre los cinco
+2	Setup de repositorio, entornos de desarrollo y primeros endpoints/pantallas
+3 – 6	Desarrollo individual de cada módulo, con demo corta semanal al resto del grupo
+4	Primera integración parcial (puede ser con datos de prueba)
+7	Integración completa de los cinco módulos
+8	Testing end-to-end y corrección de bugs de integración
+9	Documentación final y preparación de la defensa
+10	Entrega y defensa
+04 · ENTREGA
+
+Checklist para la defensa
+Cada módulo tiene su documento de requerimientos (user stories + criterios de aceptación)
+Diagrama de arquitectura general actualizado
+Modelo de datos documentado (diagrama entidad-relación)
+Documentación de API (Swagger/Postman) de cada módulo
+Manual de usuario o demo grabada por módulo
+Demo en vivo del flujo integrado de punta a punta
+Repositorio con historial de commits de los cinco integrantes
+Informe final grupal con el aporte individual de cada integrante
+PROYECTO INDIVIDUAL
+
+A
+Adecuación al Régimen Académico Marco
+A
+Módulo de finales, oportunidades y resultados de examen
+Prioridad altaTamaño medio
+Objetivo
+Registrar el resultado de cada mesa de examen (aprobado, desaprobado, ausente), contabilizar automáticamente las oportunidades usadas por estudiante (máximo 8) y alertar cuando se alcanzan 4 desaprobaciones, que disparan el recursado de la materia.
+
+Alcance
+Dentro
+Carga de resultado por número de mesa/acta
+Contabilización de oportunidades y alertas de recursado
+Historial de oportunidades utilizadas y restantes
+Fuera
+Creación de la mesa de examen en sí
+Inscripción de estudiantes a la mesa (Módulo D)
+Emisión de certificados (Módulo B)
+User stories
+Como preceptor/a, quiero registrar el resultado de una mesa a partir del número de mesa o acta.
+
+Al ingresar el número de mesa, el sistema recupera carrera, materia, fecha, docente e inscriptos automáticamente.
+Se puede cargar el resultado individual de cada estudiante inscripto.
+Al confirmar, se actualiza automáticamente el historial académico del estudiante.
+Como preceptor/a, quiero ver cuántas oportunidades usó un estudiante y cuántas le quedan.
+
+El sistema contabiliza automáticamente las oportunidades consumidas por materia.
+Identifica automáticamente a quienes llegan a 4 desaprobaciones (recursado) o agotan las 8 oportunidades.
+Endpoints propuestos
+Método	Endpoint	Descripción	Consumido por
+POST	/mesas/{id}/resultados	Carga el resultado de un estudiante en una mesa	Módulo C (validación)
+GET	/estudiantes/{id}/oportunidades	Historial de oportunidades por materia	Módulo B (certificados)
+GET	/mesas/{id}	Datos de la mesa: carrera, materia, fecha, inscriptos	Módulo D
+Preguntas abiertas
+¿Qué pasa si el docente no carga el acta a tiempo? ¿Existe un estado "pendiente de carga"?
+Una vez confirmada la carga, ¿quién puede corregir un error y con qué flujo?
+¿El límite de 8 oportunidades es por materia, o por materia y plan de estudios?
+Checklist de entrega
+API documentada (Swagger/Postman) de los 3 endpoints
+Base de datos propia con las tablas mesas_examen y resultados_examen
+Interfaz de carga de resultados por número de mesa
+Vista de historial de oportunidades por estudiante
+Tests de la lógica de conteo (8 oportunidades / 4 desaprobaciones)
+PROYECTO INDIVIDUAL
+
+B
+Certificados y nuevo plan de estudios
+B
+Módulo de planes de estudio y documentación académica
+Prioridad media / alta*Tamaño chico
+Objetivo
+Generar certificados de porcentaje de materias aprobadas respetando el orden curricular oficial de cada carrera, e incorporar el nuevo plan de estudios de la Tecnicatura Superior en Higiene, Seguridad y Ambiente Laboral (Res. 6183/25).
+
+Alcance
+Dentro
+Certificado ordenado por año y secuencia curricular
+Carga del plan de la nueva Tecnicatura y sus correlatividades
+Agrupación por año, inclusión de código de espacio curricular
+Fuera
+Carga de notas individuales (Módulo A / C)
+Inscripción de estudiantes a la nueva carrera (Módulo E)
+User stories
+Como preceptor/a, quiero generar certificados ordenados según el plan de estudios oficial, para agilizar el control contra los Libros Matrices.
+
+Las materias se agrupan por año de cursada y se ordenan según la secuencia del plan.
+Se incluye el código o número de espacio curricular de cada materia.
+Se conserva la información actual: libro, folio, fecha, nota, observaciones, promedio y porcentaje.
+Como administrador/a, quiero cargar el plan de estudios de Higiene y Seguridad completo, para habilitar la gestión de la carrera.
+
+Carga de los espacios curriculares y configuración de correlatividades.
+Organización por años de cursada.
+Endpoints propuestos
+Método	Endpoint	Descripción	Consumido por
+GET	/estudiantes/{id}/certificado	Certificado ordenado listo para imprimir	Interfaz propia
+GET	/planes/{id}/espacios	Espacios curriculares ordenados y correlativas	Módulos D y E
+POST	/planes	Alta de un plan de estudios nuevo	Admin
+Preguntas abiertas
+¿Todos los planes de estudio ya tienen su orden curricular cargado, o hay que completarlo como paso previo?
+¿Cuál es la fecha de inicio de cursada de la primera cohorte de Higiene y Seguridad? Define si este punto es bloqueante.
+Checklist de entrega
+API documentada de los 3 endpoints
+Generador de certificado en PDF respetando el orden curricular
+Carga completa del plan de Higiene y Seguridad con correlatividades
+Tests de ordenamiento por año y secuencia
+PROYECTO INDIVIDUAL
+
+C
+Usuarios y validación de notas
+C
+Módulo de autenticación, roles y verificación de notas
+Prioridad mediaTamaño medio
+Objetivo
+Administrar usuarios y roles del sistema, llevar historial de modificaciones, y dar visibilidad al estado de verificación de cada nota mediante un semáforo de colores. Este módulo además provee la autenticación compartida que consumen los otros cuatro.
+
+Alcance
+Dentro
+Alta de usuarios administradores e historial de cambios
+Semáforo de validación de notas (verde / naranja / rojo)
+Autenticación y roles compartidos para todo el sistema
+Corrección del bug "Promoción → No definido"
+Fuera
+Carga del resultado del examen en sí (Módulo A)
+Lógica de correlativas (Módulo B)
+User stories
+Como administrador/a, quiero crear usuarios con rol administrador y ver el historial de modificaciones, para tener trazabilidad de los cambios.
+
+Alta de usuarios con rol administrador.
+Historial de modificaciones accesible por materia o estudiante: qué usuario, qué cambió, cuándo.
+Como preceptor/a, quiero ver el estado de verificación de cada nota con un semáforo, para identificar rápido qué falta revisar.
+
+Verde: verificado, con final aprobado. Naranja: regularizada y verificada con receptoría. Rojo: sin verificar.
+Endpoints propuestos
+Método	Endpoint	Descripción	Consumido por
+POST	/auth/login	Autenticación compartida	Todos los módulos
+POST	/usuarios	Alta de usuario administrador	Admin
+PATCH	/resultados/{id}/validacion	Cambia el estado del semáforo de una nota	Módulo A
+Preguntas abiertas
+¿El cambio de color del semáforo es automático al cargar la nota, o requiere una acción manual de un rol específico?
+¿Qué rol tiene permiso para pasar una nota de rojo a verde o naranja?
+Checklist de entrega
+Servicio de autenticación (login + tokens) documentado para que los otros módulos lo integren
+Panel de administración de usuarios con historial de cambios
+Vista de semáforo de validación por materia/comisión
+Fix del bug de "Promoción" verificado con casos de prueba
+PROYECTO INDIVIDUAL
+
+D
+Inscripción a finales
+D
+Módulo de gestión de inscripciones a mesas de examen
+Prioridad mediaTamaño medio
+Objetivo
+Gestionar la baja y reasignación de inscripciones a finales, y habilitar la inscripción en condición de libre respetando las excepciones normativas.
+
+Alcance
+Dentro
+Baja de inscripción a una materia
+Reasignación de inscripción por comisión
+Inscripción en condición de libre, con validación de correlativas
+Fuera
+Carga del resultado del examen (Módulo A)
+Validación de notas (Módulo C)
+User stories
+Como preceptor/a, quiero dar de baja o reasignar la inscripción de un estudiante, para corregir errores o desistimientos.
+
+La baja queda registrada y no cuenta como oportunidad consumida.
+La reasignación de comisión se refleja en el acta correcta al momento de cargar resultados.
+Como preceptor/a, quiero inscribir estudiantes en condición de libre respetando las excepciones normativas.
+
+Se exceptúan: Práctica Docente, Prácticas Profesionalizantes, y formatos Taller / Ateneo / Laboratorio / Seminario.
+Único requisito habilitante: cumplir las correlativas del diseño curricular.
+Endpoints propuestos
+Método	Endpoint	Descripción	Consumido por
+POST	/inscripciones-finales	Alta de inscripción a una mesa	Módulo A
+DELETE	/inscripciones-finales/{id}	Baja de inscripción	Módulo A
+GET	/estudiantes/{id}/correlativas	Valida correlativas para inscripción libre	Consume de Módulo B
+Preguntas abiertas
+Si un estudiante libre no cumple correlativas, ¿el sistema bloquea la inscripción o solo alerta?
+¿Una baja de inscripción consume o no una de las 8 oportunidades del Módulo A?
+Checklist de entrega
+API documentada de los 3 endpoints
+Interfaz de baja y reasignación de comisión
+Flujo de inscripción libre con validación de excepciones y correlativas
+Tests de los casos límite (excepciones normativas)
+PROYECTO INDIVIDUAL
+
+E
+Inscripción a materias
+E
+Módulo de digitalización de la inscripción a cursada
+Prioridad altaTamaño grande
+Objetivo
+Digitalizar el trámite de inscripción a materias, hoy 100% presencial, comenzando por estudiantes de 2º y 3º año de todas las carreras.
+
+Este es, en tamaño, el módulo más grande del proyecto. Conviene arrancarlo primero o pedir ayuda del grupo a mitad de camino si se atrasa — un atraso acá atrasa la integración de todos.
+
+Alcance
+Dentro
+Inscripción online con verificación de carga horaria y correlativas
+Formulario de matriculación imprimible
+Planilla de asistencia editable
+Reportes por carrera / año / situación académica
+Fuera
+Inscripción a finales (Módulo D)
+Gestión de notas (Módulos A y C)
+Inscripción de 1º año (queda para una segunda etapa)
+User stories
+Como estudiante de 2º o 3º año, quiero inscribirme a materias en línea, para no tener que hacerlo presencialmente.
+
+El sistema verifica automáticamente carga horaria y correlativas antes de confirmar.
+Permite carga manual de cambios de comisión por parte de preceptoría.
+Como preceptor/a, quiero imprimir el formulario de matriculación y emitir la planilla de asistencia editable.
+
+Formulario y planilla disponibles para descarga/impresión.
+Como equipo de gestión, quiero generar reportes de inscripción por carrera/año/ciclo lectivo/situación académica.
+
+Filtros combinables por cohorte, atraso académico, recursantes y libres.
+Endpoints propuestos
+Método	Endpoint	Descripción	Consumido por
+POST	/inscripciones-materias	Alta de inscripción a cursada	Reportes propios
+GET	/estudiantes/{id}/carga-horaria	Verifica carga horaria disponible	Interno
+GET	/reportes/inscripciones	Reporte filtrable por carrera/año/situación	Equipo de gestión
+Preguntas abiertas
+¿Por qué se excluye 1º año de esta primera etapa? ¿Está planificada una segunda etapa?
+La necesidad de una interfaz "amigable e intuitiva" con indicaciones en cada campo aplica a todo el sistema, no solo a este módulo — conviene tratarlo como criterio transversal del proyecto.
+Checklist de entrega
+API documentada de los 3 endpoints
+Flujo de inscripción con validación de carga horaria y correlativas
+Formulario de matriculación y planilla de asistencia (PDF)
+Reportes con los 4 filtros combinables
+Tests de los casos de bloqueo (correlativas, carga horaria excedida)
+
+
+
+
+
+ADMINISTRADOR	admin@institucion.edu	Admin123!
+PRECEPTOR	preceptor@institucion.edu	Preceptor123!
+ADMINISTRATIVO	secretaria@institucion.edu	Admin123!
+DOCENTE	docente.perez@institucion.edu	Docente123!
+ALUMNO	alumno@institucion.edu	Alumno123!
+CONSULTA	consulta@institucion.edu	Consulta123!

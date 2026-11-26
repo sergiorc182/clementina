@@ -3,6 +3,10 @@ import { initInscripcionView } from './views/inscripcion.js';
 import { initGestionView } from './views/gestion.js';
 import { initReportesView } from './views/reportes.js';
 
+const HOME_URL = window.ISFTAuth?.legacyBaseUrl
+  ? `${window.ISFTAuth.legacyBaseUrl()}/index.html`
+  : '../../index.html';
+
 const parseCookies = () => {
   if (typeof document === 'undefined' || !document.cookie) return {};
   const cookies = {};
@@ -221,7 +225,7 @@ class AppController {
 
   async init() {
     if (window.ISFTAuth) {
-      const authUser = await window.ISFTAuth.requireAuth('../index.html');
+      const authUser = await window.ISFTAuth.requireAuth(HOME_URL);
       if (!authUser) return;
       this.authUser = authUser;
     }
@@ -339,7 +343,7 @@ class AppController {
 
       <nav class="nav-links">
         <a
-          href="../../../index.html"
+          href="${HOME_URL}"
           class="nav-button"
           style="text-decoration: none;"
           title="Volver al Home del Portal"
@@ -415,7 +419,7 @@ class AppController {
     if (btnRep) btnRep.addEventListener('click', () => this.setActiveView('reportes'));
 
     const btnOut = this.navElement.querySelector('#btnModuloELogout');
-    if (btnOut) btnOut.addEventListener('click', () => window.ISFTAuth?.logout('../index.html'));
+    if (btnOut) btnOut.addEventListener('click', () => window.ISFTAuth?.logout(HOME_URL));
   }
 
   renderActiveView() {

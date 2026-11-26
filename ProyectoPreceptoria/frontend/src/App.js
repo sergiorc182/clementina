@@ -15,6 +15,9 @@ import {
 } from './utils/cookies.js';
 
 const API_URL = 'http://localhost:3000/api/alumnos';
+const HOME_URL = window.ISFTAuth?.legacyBaseUrl
+  ? `${window.ISFTAuth.legacyBaseUrl()}/index.html`
+  : '../../index.html';
 
 const escapeHtml = (str) =>
   String(str ?? '')
@@ -36,41 +39,6 @@ export function crearApp(rootElement) {
   let mensajeTimeout = null;
 
   rootElement.innerHTML = `
-    <header class="navbar">
-      <div class="nav-brand">
-        <div class="nav-logo-badge" title="ISFT Nº 182">
-          <img src="./isft182.jpg" alt="ISFT 182" />
-        </div>
-        <div class="nav-title-group">
-          <h1>Sistema Académico y de Preceptoría</h1>
-          <span>ISFT 182 · Exámenes Finales y Alumnos</span>
-        </div>
-      </div>
-
-      <nav class="nav-links" id="moduleNavTabs">
-        <a href="../../../index.html" class="nav-button" title="Volver al Home del Portal">
-          Home
-        </a>
-        <span style="color: #cbd5e1; user-select: none;">|</span>
-        <button
-          type="button"
-          id="tabBtnFinales"
-          class="nav-button active"
-        >
-          Control de Exámenes Finales
-        </button>
-        <button
-          type="button"
-          id="tabBtnAlumnos"
-          class="nav-button"
-        >
-          Gestión de Alumnos
-        </button>
-      </nav>
-
-      <div id="navUserBadgeSlot"></div>
-    </header>
-
     <div class="container">
       <header class="main-header">
         <h1>Sistema Académico y de Preceptoría (ISFT 182)</h1>
@@ -88,9 +56,9 @@ export function crearApp(rootElement) {
     </div>
   `;
 
-  const navUserBadgeSlot = rootElement.querySelector('#navUserBadgeSlot');
-  const tabBtnFinales = rootElement.querySelector('#tabBtnFinales');
-  const tabBtnAlumnos = rootElement.querySelector('#tabBtnAlumnos');
+  const navUserBadgeSlot = document.querySelector('#navUserBadgeSlot');
+  const tabBtnFinales = document.querySelector('#tabBtnFinales');
+  const tabBtnAlumnos = document.querySelector('#tabBtnAlumnos');
   const vistaFinalesSlot = rootElement.querySelector('#vistaFinalesSlot');
   const vistaAlumnosSlot = rootElement.querySelector('#vistaAlumnosSlot');
   const formularioAlumnoSlot = rootElement.querySelector('#formularioAlumnoSlot');
@@ -156,14 +124,14 @@ export function crearApp(rootElement) {
     `;
 
     navUserBadgeSlot.querySelector('#btnSistemaLogout')?.addEventListener('click', () => {
-      if (window.ISFTAuth) window.ISFTAuth.logout('./index.html');
+      if (window.ISFTAuth) window.ISFTAuth.logout(HOME_URL);
     });
 
     renderTabs();
   };
 
   if (window.ISFTAuth) {
-    window.ISFTAuth.requireAuth('./index.html').then((verified) => {
+    window.ISFTAuth.requireAuth(HOME_URL).then((verified) => {
       if (verified) {
         authUser = verified;
         renderUserBadgeAndRoleTabs();

@@ -203,7 +203,8 @@ export function crearFiltroBuscador(container, initialProps = {}) {
     }
   };
 
-  document.addEventListener('mousedown', handleClickOutside);
+  const rootNode = groupEl.getRootNode() || document;
+  rootNode.addEventListener('mousedown', handleClickOutside);
 
   const update = (newProps = {}) => {
     props = { ...props, ...newProps };
@@ -238,7 +239,7 @@ export function crearFiltroBuscador(container, initialProps = {}) {
   return {
     update,
     destroy: () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      rootNode.removeEventListener('mousedown', handleClickOutside);
     }
   };
 }

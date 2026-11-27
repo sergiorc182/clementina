@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inscripciones a finales · Panel Administrativo · Clementina · ISFT N.º 182</title>
+  <title>Finales · Control y rendiciones · Panel Administrativo · Clementina · ISFT N.º 182</title>
   <meta name="robots" content="noindex, nofollow">
   <script>try { if (localStorage.getItem('clementina-tema') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); } } catch (e) {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,55 +21,15 @@
     <div class="admin-main">
       <header class="admin-topbar" id="admin-topbar" role="banner"></header>
       <main id="contenido" class="admin-content">
-        <div class="page-head">
-          <div>
-            <h1 class="page-head__title">Inscripciones a finales</h1>
-            <p class="page-head__text">Listado de todas las inscripciones a mesas de examen registradas en el sistema.</p>
-          </div>
-        </div>
-        <!-- Filtros -->
-        <div class="toolbar mb-4">
-          <div class="field field--icon" style="flex:1 1 260px; margin:0;">
-            <i data-lucide="search" class="field__icon icon--sm"></i>
-            <input type="search" id="input-busqueda" class="input" placeholder="Buscar por alumno, materia o carrera…" autocomplete="off">
-          </div>
-          <select class="select" id="filtro-estado" style="flex:none;">
-            <option value="">Todos los estados</option>
-            <option value="A">Activa</option>
-            <option value="C">Cancelada</option>
-          </select>
-        </div>
-        <!-- Tabla -->
-        <div class="table-wrap table-wrap--stack">
-          <table class="table" id="tabla-inscripciones" aria-label="Inscripciones a finales">
-            <thead>
-              <tr>
-                <th>Alumno</th>
-                <th>Materia</th>
-                <th>Carrera</th>
-                <th>Turno</th>
-                <th>Llamado</th>
-                <th>Año</th>
-                <th>Fecha inscripción</th>
-                <th>Estado</th>
-                <th class="col-actions">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body">
-              <tr><td colspan="9" style="text-align:center; color:var(--text-2); padding:var(--sp-8);">Cargando inscripciones…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="row between mt-4">
-          <span id="total-info" class="muted" style="font-size:.875rem;"></span>
-          <div class="row" id="paginacion" style="gap:var(--sp-2);"></div>
-        </div>
+        <h1 class="visually-hidden">Finales · Control y rendiciones</h1>
+        <div id="finales-shell-host"></div>
       </main>
     </div>
   </div>
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="../../vista/estilo/app.js?v=15"></script>
-  <script src="estilo/app-admin.js?v=4"></script>
-  <script src="estilo/inscripciones.js?v=1"></script>
+  <script src="../../ProyectoPreceptoria/frontend/api-bridge.js"></script>
+  <script src="estilo/app-admin.js?v=7"></script>
+  <script type="module" src="../../ProyectoPreceptoria/frontend/finales-shell-entry.js"></script>
 </body>
 </html>

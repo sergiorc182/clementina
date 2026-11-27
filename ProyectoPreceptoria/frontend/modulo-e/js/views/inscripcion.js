@@ -1012,23 +1012,6 @@ export async function initInscripcionView(container, onNotify, currentRole = 'pr
 
     container.innerHTML = `
       <div class="inscripcion-view${yaRenderizo ? '' : ' view-fade-in'}" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        
-        <!-- 1. ENCABEZADO INSTITUCIONAL -->
-        <header class="page-header no-print">
-          <div>
-            <h1>${isAlumno ? 'Mi Inscripción a Materias' : 'Gestión de Inscripciones'}</h1>
-            <p>
-              ${isAlumno
-        ? 'Completá tu selección de materias para el Ciclo Lectivo 2026. Verificá correlatividades y horarios de cátedra.'
-        : 'Selección de carrera, filtros de búsqueda de estudiantes y matriculación en Formulario A5a (Preceptoría).'
-      }
-            </p>
-          </div>
-          <div class="header-badge">
-            ${isAlumno ? 'Portal del Estudiante · ISFT 182' : 'I.S.F.T. Nº 182 · Preceptoría'}
-          </div>
-        </header>
-
         <!-- Si es Alumno: Banner de Bienvenida y datos del estudiante -->
         ${isAlumno ? `
           <div class="card student-welcome-card no-print" style="border-left: 4px solid var(--primary); background: #f8fafc; padding: 1.25rem 1.5rem;">

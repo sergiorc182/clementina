@@ -139,14 +139,10 @@ CREATE TABLE alumnos (
   password_hash               VARCHAR(255) DEFAULT NULL COMMENT 'Hash (bcrypt/argon2), nunca texto plano',
   alta_registro                DATETIME DEFAULT NULL,
   confirmacion_registro        DATETIME DEFAULT NULL,
-  activacion_token_hash        CHAR(64) DEFAULT NULL,
-  activacion_expira_en         DATETIME DEFAULT NULL,
-  activacion_usada_en          DATETIME DEFAULT NULL,
   fecha_ultima_actualizacion   DATETIME DEFAULT NULL,
   PRIMARY KEY (id_alumno),
   UNIQUE KEY uq_alumno_documento (id_tipo_documento, numero_documento),
   UNIQUE KEY uq_alumno_email (email),
-  KEY idx_alumno_activacion_hash (activacion_token_hash),
   KEY fk_alumno_pais (id_pais_nacimiento),
   KEY fk_alumno_provincia_nac (id_provincia_nacimiento),
   KEY fk_alumno_localidad_nac (id_localidad_nacimiento),
@@ -248,9 +244,12 @@ CREATE TABLE materias (
 
 -- Antes rel_carrera_materias.
 CREATE TABLE carrera_materias (
-  id_carrera   INT NOT NULL,
-  id_materia   INT NOT NULL,
-  anio_cursada TINYINT NOT NULL,
+  id_carrera            INT NOT NULL,
+  id_materia            INT NOT NULL,
+  anio_cursada          TINYINT NOT NULL,
+  carga_horaria_semanal TINYINT NOT NULL DEFAULT 4 COMMENT 'Carga horaria semanal (tope institucional 32 hs)',
+  exceptuada_libre      TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 si está exceptuada de condición Libre por normativa (Módulo D: Prácticas, Talleres, Seminarios)',
+  tipo_espacio          VARCHAR(45) NOT NULL DEFAULT 'Asignatura' COMMENT 'Asignatura, Práctica Profesionalizante, Taller, Seminario, Laboratorio',
   PRIMARY KEY (id_carrera, id_materia),
   KEY fk_cm_materia (id_materia),
   CONSTRAINT fk_cm_carrera FOREIGN KEY (id_carrera)
@@ -272,6 +271,30 @@ CREATE TABLE docente_asignaciones (
     REFERENCES personal (id_personal) ON DELETE CASCADE,
   CONSTRAINT fk_da_cm FOREIGN KEY (id_carrera, id_materia)
     REFERENCES carrera_materias (id_carrera, id_materia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Franjas horarias y aulas por materia (Módulo E: validación de superposición horaria)
+CREATE TABLE IF NOT EXISTS materia_horarios (
+  id_horario  INT NOT NULL AUTO_INCREMENT,
+  id_carrera  INT NOT NULL,
+  id_materia  INT NOT NULL,
+  dia_semana  ENUM('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado') NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin    TIME NOT NULL,
+  id_sede     INT DEFAULT 1,
+  id_turno    INT DEFAULT 3,
+  aula        VARCHAR(45) DEFAULT NULL,
+  comision    VARCHAR(20) DEFAULT 'Única',
+  PRIMARY KEY (id_horario),
+  KEY fk_horario_carrera_materia (id_carrera, id_materia),
+  KEY fk_horario_sede (id_sede),
+  KEY fk_horario_turno (id_turno),
+  CONSTRAINT fk_horario_carrera_materia FOREIGN KEY (id_carrera, id_materia)
+    REFERENCES carrera_materias (id_carrera, id_materia) ON DELETE CASCADE,
+  CONSTRAINT fk_horario_sede FOREIGN KEY (id_sede)
+    REFERENCES sedes (id_sede),
+  CONSTRAINT fk_horario_turno FOREIGN KEY (id_turno)
+    REFERENCES turnos (id_turno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Consolida correlatividades + Enfermeria_corr + tabla_de_correlatividades_upload.
@@ -383,13 +406,46 @@ CREATE TABLE historial_academico (
   validado_regular CHAR(1) DEFAULT 'F',
   validado_examen  CHAR(1) DEFAULT 'F',
   resolucion       VARCHAR(45) DEFAULT NULL,
+  observaciones    VARCHAR(255) DEFAULT NULL COMMENT 'Observaciones de preceptoría al validar nota o corregir tipo de examen',
   fecha_alta       DATETIME DEFAULT NULL,
+
   fecha_mod        DATETIME DEFAULT NULL,
   PRIMARY KEY (id_alumno, id_carrera, id_materia),
   KEY fk_hist_carrera_materia (id_carrera, id_materia),
   CONSTRAINT fk_hist_alumno FOREIGN KEY (id_alumno)
     REFERENCES alumnos (id_alumno),
   CONSTRAINT fk_hist_carrera_materia FOREIGN KEY (id_carrera, id_materia)
+    REFERENCES carrera_materias (id_carrera, id_materia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Control y seguimiento de inscripciones e intentos de exámenes finales.
+-- Permite verificar regularidad, cálculo de 8 turnos desde regularización,
+-- historial de fallas (hasta 3 aplazos; la 4ta obliga a recursar; los ausentes no cuentan como falla),
+-- inscripción en modalidad libre (validando correlativas regulares o aprobadas) y registro por excepción.
+CREATE TABLE rendiciones_finales (
+  id_rendicion      BIGINT NOT NULL AUTO_INCREMENT,
+  id_alumno         BIGINT NOT NULL,
+  id_carrera        INT NOT NULL,
+  id_materia        INT NOT NULL,
+  anio_turno        INT NOT NULL COMMENT 'Año del turno (ej: 2026)',
+  turno_instancia   TINYINT NOT NULL COMMENT '1=Febrero/Marzo, 2=Junio/Julio, 3=Diciembre',
+  id_llamado        TINYINT NOT NULL DEFAULT 1 COMMENT '1=Primero, 2=Segundo',
+  fecha_examen      DATE DEFAULT NULL,
+  nota              TINYINT DEFAULT NULL COMMENT 'Calificación 1-10 o NULL si ausente/inscripto',
+  estado            ENUM('INSCRIPTO', 'APROBADO', 'DESAPROBADO', 'AUSENTE', 'BAJA') NOT NULL DEFAULT 'INSCRIPTO',
+  modalidad         ENUM('REGULAR', 'LIBRE') NOT NULL DEFAULT 'REGULAR' COMMENT 'Condición de inscripción al final',
+  es_ausente        TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 si estuvo ausente (no computa como falla)',
+  es_excepcion      TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 si se inscribió por excepción',
+  motivo_excepcion  VARCHAR(255) DEFAULT NULL COMMENT 'Motivo si fue por excepción',
+  reasignada        TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 si fue reasignada de turno/llamado/modalidad (Módulo D)',
+  fecha_baja        DATETIME DEFAULT NULL COMMENT 'Fecha de baja lógica sin borrado físico (Módulo D)',
+  fecha_registro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_rendicion),
+  KEY fk_rend_alumno (id_alumno),
+  KEY fk_rend_carrera_materia (id_carrera, id_materia),
+  CONSTRAINT fk_rend_alumno FOREIGN KEY (id_alumno)
+    REFERENCES alumnos (id_alumno),
+  CONSTRAINT fk_rend_carrera_materia FOREIGN KEY (id_carrera, id_materia)
     REFERENCES carrera_materias (id_carrera, id_materia)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -441,6 +497,21 @@ CREATE TABLE aspirantes_parametros (
   PRIMARY KEY (id_registro)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Auditoría histórica de inscripciones a finales (Altas, Reasignaciones y Bajas Lógicas - Módulo D)
+CREATE TABLE auditoria_inscripciones_finales (
+  id               BIGINT NOT NULL AUTO_INCREMENT,
+  id_rendicion     BIGINT NOT NULL,
+  accion           VARCHAR(40) NOT NULL COMMENT 'ALTA, REASIGNACION, BAJA_LOGICA',
+  detalle_anterior VARCHAR(255) DEFAULT NULL,
+  detalle_nuevo    VARCHAR(255) DEFAULT NULL,
+  fecha_cambio     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modificado_por   VARCHAR(100) DEFAULT 'Preceptoría',
+  PRIMARY KEY (id),
+  KEY fk_aud_rendicion (id_rendicion),
+  CONSTRAINT fk_aud_rendicion FOREIGN KEY (id_rendicion)
+    REFERENCES rendiciones_finales (id_rendicion) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Bitácora histórica de cambios sobre inscripciones a exámenes finales (Módulo D)';
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
@@ -457,11 +528,12 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================================
 
 -- =====================================================================
--- CATÁLOGOS MÍNIMOS PARA ARRANQUE
--- Solo tipos de documento, tipos de personal y el país placeholder que
--- exige el DEFAULT de alumnos.id_pais_nacimiento. No se incluyen usuarios
--- ni credenciales de prueba: las cuentas institucionales se crean aparte.
--- Orden: primero los catálogos que referencian los INSERT de abajo.
+-- DATOS DE PRUEBA (opcionales)
+-- Contraseñas en claro: admin y alumno@clementina.edu.ar -> 123456
+-- docente1 -> password
+-- Hash bcrypt ($2y$10$...) generado con password_hash(); sirve para
+-- probar el login antes de migrar los datos reales (ver análisis H).
+-- Order: primero los catálogos que referencian los INSERT de abajo.
 -- =====================================================================
 
 INSERT INTO tipos_documento (id_tipo_documento, descripcion) VALUES
@@ -479,3 +551,26 @@ INSERT INTO tipos_personal (id_tipo_personal, descripcion) VALUES
 -- docs/datos_ubicaciones.sql (se importa después de este esquema).
 INSERT INTO paises (id_pais, iso3, nombre, nacionalidad, orden) VALUES
   ('ZZ', 'ZZZ', 'No especificado', 'No especificada', 1000);
+
+-- Usuario alumno de prueba -> login con email: alumno@clementina.edu.ar
+INSERT INTO alumnos
+  (id_tipo_documento, numero_documento, legajo, primer_apellido,
+   primer_nombre, email, password_hash)
+VALUES
+  ('DNI', 12345678, '2024-DNI-12345678', 'González',
+   'María', 'alumno@clementina.edu.ar',
+   '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq');
+
+-- Usuario personal de prueba -> login con usuario de sistema: admin
+INSERT INTO personal
+  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
+VALUES
+   ('Pérez', 'Juan Carlos', 'admin',
+    '$2y$10$W98glXeHxB2q7IhQmH.A7u/6HUiygSrURupLRtRIvFEUZKieX3Cxq', 'A');
+
+-- Usuario docente de prueba -> login con usuario de sistema: docente1
+INSERT INTO personal
+  (apellidos, nombres, usuario_sistema, password_hash, id_tipo_personal)
+VALUES
+  ('Docente', 'Prueba', 'docente1',
+   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'D');

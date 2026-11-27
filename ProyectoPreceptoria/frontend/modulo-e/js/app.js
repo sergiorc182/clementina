@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initInscripcionView } from './views/inscripcion.js';
+import { initInscripcionView } from './views/inscripcion.js?v=2';
 import { initGestionView } from './views/gestion.js';
 import { initReportesView } from './views/reportes.js';
 
@@ -51,10 +51,23 @@ class AppController {
     this.alumnoLogueado = sesion.alumno;
 
     this.navElement = document.getElementById('navbar-container');
+    this.navHomeLink = this.navElement.querySelector('#navHomeLink');
+    this.navInscripcionBtn = this.navElement.querySelector('#nav-btn-inscripcion');
+    this.navGestionBtn = this.navElement.querySelector('#nav-btn-gestion');
+    this.navReportesBtn = this.navElement.querySelector('#nav-btn-reportes');
+    this.navUserInicial = this.navElement.querySelector('#navUserInicial');
+    this.navUserNombre = this.navElement.querySelector('#navUserNombre');
+    this.navUserSubtitulo = this.navElement.querySelector('#navUserSubtitulo');
+    this.btnModuloELogout = this.navElement.querySelector('#btnModuloELogout');
     this.mainContent = document.getElementById('main-content');
     this.toastContainer = document.getElementById('toast-container');
 
     this.notify = this.notify.bind(this);
+
+    this.navInscripcionBtn?.addEventListener('click', () => this.setActiveView('inscripcion'));
+    this.navGestionBtn?.addEventListener('click', () => this.setActiveView('gestion'));
+    this.navReportesBtn?.addEventListener('click', () => this.setActiveView('reportes'));
+    this.btnModuloELogout?.addEventListener('click', () => window.ISFTAuth?.logout(HOME_URL));
 
     // Contrato global para integración con el sistema principal de login
     window.isft182 = window.isft182 || {};
@@ -329,104 +342,39 @@ class AppController {
       nombreMostrar = this.currentUser.nombre;
     }
 
-    this.navElement.className = 'navbar no-print';
-    this.navElement.innerHTML = `
-      <div class="nav-brand">
-        <div class="nav-logo-badge" title="ISFT Nº 182">
-          <img src="isft182.jpg" alt="ISFT 182" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
-        </div>
-        <div class="nav-title-group">
-          <h1>Inscripción a Materias</h1>
-          <span>ISFT 182 · Cursadas y Gestión Académica</span>
-        </div>
-      </div>
+    const rolEncabezado = isAlumno ? 'alumno' : 'preceptor';
+    document.querySelectorAll('#encabezado-inscripcion [data-rol]').forEach((elemento) => {
+      elemento.hidden = elemento.dataset.rol !== rolEncabezado;
+    });
 
-      <nav class="nav-links">
-        <a
-          href="${HOME_URL}"
-          class="nav-button"
-          style="text-decoration: none;"
-          title="Volver al Home del Portal"
-        >
-          Home
-        </a>
-        <span style="color: #cbd5e1; user-select: none;">|</span>
-        ${
-          isAlumno
-            ? `
-          <button
-            type="button"
-            id="nav-btn-inscripcion"
-            class="nav-button ${this.activeView === 'inscripcion' ? 'active' : ''}"
-          >
-            Mi Inscripción a Cursada
-          </button>
-        `
-            : `
-          <button
-            type="button"
-            id="nav-btn-inscripcion"
-            class="nav-button ${this.activeView === 'inscripcion' ? 'active' : ''}"
-          >
-            Inscripción Online
-          </button>
-          <button
-            type="button"
-            id="nav-btn-gestion"
-            class="nav-button ${this.activeView === 'gestion' ? 'active' : ''}"
-          >
-            Gestión Académica
-          </button>
-          <button
-            type="button"
-            id="nav-btn-reportes"
-            class="nav-button ${this.activeView === 'reportes' ? 'active' : ''}"
-          >
-            Reportes de Gestión
-          </button>
-        `
-        }
-      </nav>
+    if (this.navHomeLink) this.navHomeLink.href = HOME_URL;
+    if (this.navInscripcionBtn) {
+      this.navInscripcionBtn.textContent = isAlumno
+        ? 'Mi Inscripción a Cursada'
+        : 'Inscripción Online';
+    }
+    if (this.navGestionBtn) this.navGestionBtn.style.display = isAlumno ? 'none' : '';
+    if (this.navReportesBtn) this.navReportesBtn.style.display = isAlumno ? 'none' : '';
+    if (this.navUserInicial) this.navUserInicial.textContent = inicial;
+    if (this.navUserNombre) this.navUserNombre.textContent = nombreMostrar;
+    if (this.navUserSubtitulo) this.navUserSubtitulo.textContent = subtitulo;
 
-      <!-- Badge de Usuario Institucional + Cerrar Sesión -->
-      <div class="nav-user-actions">
-        <div class="nav-user-badge" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.35rem 0.75rem; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 8px;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.82rem; flex-shrink: 0;">
-            ${inicial}
-          </div>
-          <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
-            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">
-              ${nombreMostrar}
-            </span>
-            <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;">
-              ${subtitulo}
-            </span>
-          </div>
-        </div>
-        <button type="button" id="btnModuloELogout" class="btn-nav-logout" title="Cerrar sesión institucional">
-          Salir
-        </button>
-      </div>
-    `;
-
-    const btnInsc = this.navElement.querySelector('#nav-btn-inscripcion');
-    if (btnInsc) btnInsc.addEventListener('click', () => this.setActiveView('inscripcion'));
-
-    const btnGest = this.navElement.querySelector('#nav-btn-gestion');
-    if (btnGest) btnGest.addEventListener('click', () => this.setActiveView('gestion'));
-
-    const btnRep = this.navElement.querySelector('#nav-btn-reportes');
-    if (btnRep) btnRep.addEventListener('click', () => this.setActiveView('reportes'));
-
-    const btnOut = this.navElement.querySelector('#btnModuloELogout');
-    if (btnOut) btnOut.addEventListener('click', () => window.ISFTAuth?.logout(HOME_URL));
+    this.updateNavbarActiveState();
   }
 
   renderActiveView() {
-    this.mainContent.innerHTML = `
-      <div id="modulo-e-view-container" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
-    `;
-    const viewContainer = document.getElementById('modulo-e-view-container');
+    let viewContainer = document.getElementById('modulo-e-view-container');
+    if (!viewContainer) {
+      this.mainContent.insertAdjacentHTML(
+        'beforeend',
+        '<div id="modulo-e-view-container" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>'
+      );
+      viewContainer = document.getElementById('modulo-e-view-container');
+    }
+    viewContainer.innerHTML = '';
+
+    const encabezado = document.getElementById('encabezado-inscripcion');
+    if (encabezado) encabezado.hidden = this.activeView !== 'inscripcion';
 
     if (this.activeView === 'inscripcion') {
       initInscripcionView(viewContainer, this.notify, this.currentRole, this.alumnoLogueado);

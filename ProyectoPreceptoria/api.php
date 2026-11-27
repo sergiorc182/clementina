@@ -109,8 +109,8 @@ function apiRequerirPreceptorODirectivo(): array
 function apiRequerirDocenteOPreceptor(): array
 {
     $u = apiRequerirPersonal();
-    if (!in_array($u['rol'] ?? '', ['docente', 'preceptor'], true)) {
-        responder(['success' => false, 'message' => 'Acceso restringido a docentes y preceptores.'], 403);
+    if (!in_array($u['rol'] ?? '', ['docente', 'preceptor', 'directivo', 'secretaria', 'personal'], true)) {
+        responder(['success' => false, 'message' => 'Acceso restringido al personal institucional.'], 403);
     }
     return $u;
 }
@@ -861,7 +861,8 @@ if ($ruta === '/finales/inscribir' && $metodo === 'POST') {
     );
     $idRendicion = (int) $db->lastInsertId();
     $detalle = 'Año ' . $anioTurno . ' - ' . instanciaNombre($instancia) . ' - ' . $llamado . '° Llamado - Modalidad: ' . $modalidad . ($esExcepcion ? ' (Excepción)' : '');
-    auditar($idRendicion, 'ALTA', null, $detalle, $esExcepcion ? 'Preceptoría (Excepción)' : 'Sistema');
+    $actor = $u['nombre_completo'] !== '' ? $u['nombre_completo'] : 'Sistema';
+    auditar($idRendicion, 'ALTA', null, $detalle, $esExcepcion ? $actor . ' (Excepción)' : $actor);
 
     $mensaje = $esExcepcion
         ? 'Inscripción registrada con éxito a modo de EXCEPCIÓN'
@@ -872,6 +873,8 @@ if ($ruta === '/finales/inscribir' && $metodo === 'POST') {
 }
 
 if (preg_match('#^/finales/calificar/(\d+)$#', $ruta, $m) && $metodo === 'PUT') {
+    $u = apiRequerirDocenteOPreceptor();
+    apiRequerirCsrf();
     asegurarEstructura();
     $id = (int) $m[1];
     $rend = sqlOne('SELECT * FROM rendiciones_finales WHERE id_rendicion = ?', [$id]);
@@ -902,6 +905,10 @@ if (preg_match('#^/finales/calificar/(\d+)$#', $ruta, $m) && $metodo === 'PUT') 
             [$rend['id_alumno'], $rend['id_carrera'], $rend['id_materia'], $nota, $fecha]
         );
     }
+    $actor = $u['nombre_completo'] !== '' ? $u['nombre_completo'] : 'Preceptoría';
+    $anterior = 'Estado: ' . $rend['estado'] . ' | Nota: ' . ($rend['nota'] !== null ? $rend['nota'] : '-');
+    $nuevo = 'Estado: ' . $estado . ' | Nota: ' . ($nota !== null ? $nota : '-') . ($ausente ? ' (Ausente)' : '');
+    auditar($id, 'CALIFICACION', $anterior, $nuevo, $actor);
     ok(['id_rendicion' => $id, 'nuevoEstado' => $estado, 'nota' => $nota, 'es_ausente' => (bool) $flag], 'Calificación/estado de examen final registrado con éxito');
 }
 
@@ -917,7 +924,7 @@ if (preg_match('#^/finales/(\d+)/auditoria$#', $ruta, $m) && $metodo === 'GET') 
 }
 
 if (preg_match('#^/finales/(\d+)/reasignar$#', $ruta, $m) && $metodo === 'PATCH') {
-    apiRequerirPreceptorODirectivo();
+    $u = apiRequerirPreceptorODirectivo();
     apiRequerirCsrf();
     asegurarEstructura();
     $id = (int) $m[1];
@@ -956,12 +963,13 @@ if (preg_match('#^/finales/(\d+)/reasignar$#', $ruta, $m) && $metodo === 'PATCH'
     $anterior = 'Año ' . $actual['anio_turno'] . ' - ' . instanciaNombre($actual['turno_instancia']) . ' - ' . $actual['id_llamado'] . '° Llamado - Modalidad: ' . ($actual['modalidad'] ?? 'REGULAR');
     $nuevo = 'Año ' . $nuevoAnio . ' - ' . instanciaNombre($nuevoTurno) . ' - ' . $nuevoLlamado . '° Llamado - Modalidad: ' . $nuevaModalidad;
     sqlExec('UPDATE rendiciones_finales SET anio_turno = ?, turno_instancia = ?, id_llamado = ?, modalidad = ?, reasignada = 1 WHERE id_rendicion = ?', [$nuevoAnio, $nuevoTurno, $nuevoLlamado, $nuevaModalidad, $id]);
-    auditar($id, 'REASIGNACION', $anterior, $nuevo, (string) ($input['modificado_por'] ?? 'Preceptoría'));
+    $actor = $u['nombre_completo'] !== '' ? $u['nombre_completo'] : 'Preceptoría';
+    auditar($id, 'REASIGNACION', $anterior, $nuevo, $actor);
     ok(['id_rendicion' => $id, 'anio_turno' => $nuevoAnio, 'turno_instancia' => $nuevoTurno, 'id_llamado' => $nuevoLlamado, 'modalidad' => $nuevaModalidad], 'Inscripción reasignada con éxito y registrada en el historial de auditoría.');
 }
 
 if (preg_match('#^/finales/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
-    apiRequerirPreceptorODirectivo();
+    $u = apiRequerirPreceptorODirectivo();
     apiRequerirCsrf();
     asegurarEstructura();
     $id = (int) $m[1];
@@ -977,7 +985,8 @@ if (preg_match('#^/finales/(\d+)$#', $ruta, $m) && $metodo === 'DELETE') {
     }
     $anterior = 'Estado: ' . $rend['estado'] . ' | Año ' . $rend['anio_turno'] . ' - ' . instanciaNombre($rend['turno_instancia']) . ' - ' . $rend['id_llamado'] . '° Llamado - Modalidad: ' . ($rend['modalidad'] ?? 'REGULAR');
     sqlExec("UPDATE rendiciones_finales SET estado = 'BAJA', fecha_baja = NOW() WHERE id_rendicion = ?", [$id]);
-    auditar($id, 'BAJA_LOGICA', $anterior, 'Estado: BAJA (Baja lógica registrada sin borrado físico)', (string) ($input['modificado_por'] ?? 'Preceptoría'));
+    $actor = $u['nombre_completo'] !== '' ? $u['nombre_completo'] : 'Preceptoría';
+    auditar($id, 'BAJA_LOGICA', $anterior, 'Estado: BAJA (Baja lógica registrada sin borrado físico)', $actor);
     ok(['id_rendicion' => $id, 'estado' => 'BAJA', 'fecha_baja' => date('c')], 'Inscripción dada de baja lógicamente y registrada en auditoría.');
 }
 

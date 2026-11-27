@@ -44,7 +44,7 @@ export function crearControlFinales(container, initialProps = {}) {
   inicializarCookiePorDefecto();
   let sesionCookie = leerUsuarioDesdeCookies();
 
-  let mostrarListadoGeneral = false;
+  let mostrarListadoGeneral = initialProps.vistaInicial === 'listado';
   let listadoGeneralInstance = null;
 
   let alumnosList = initialProps.alumnos || [];

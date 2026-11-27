@@ -13,11 +13,80 @@
   </head>
   <body>
     <div class="app-container">
-      <!-- Barra de Navegación Dinámica y Estática al Scroll -->
-      <header id="navbar-container" class="navbar no-print"></header>
+      <!-- Barra de Navegación Institucional -->
+      <header id="navbar-container" class="navbar no-print">
+        <div class="nav-brand">
+          <div class="nav-logo-badge" title="ISFT Nº 182">
+            <img src="isft182.jpg" alt="ISFT 182" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
+          </div>
+          <div class="nav-title-group">
+            <h1>Inscripción a Materias</h1>
+            <span>ISFT 182 · Cursadas y Gestión Académica</span>
+          </div>
+        </div>
+
+        <nav class="nav-links">
+          <a
+            id="navHomeLink"
+            href="../../index.html"
+            class="nav-button"
+            style="text-decoration: none;"
+            title="Volver al Home del Portal"
+          >
+            Home
+          </a>
+          <span style="color: #cbd5e1; user-select: none;">|</span>
+          <button type="button" id="nav-btn-inscripcion" class="nav-button active">
+            Inscripción Online
+          </button>
+          <button type="button" id="nav-btn-gestion" class="nav-button">
+            Gestión Académica
+          </button>
+          <button type="button" id="nav-btn-reportes" class="nav-button">
+            Reportes de Gestión
+          </button>
+        </nav>
+
+        <div class="nav-user-actions">
+          <div class="nav-user-badge" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.35rem 0.75rem; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 8px;">
+            <div id="navUserInicial" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.82rem; flex-shrink: 0;">
+              P
+            </div>
+            <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
+              <span id="navUserNombre" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">
+                Preceptoría ISFT 182
+              </span>
+              <span id="navUserSubtitulo" style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;">
+                Personal de Gestión
+              </span>
+            </div>
+          </div>
+          <button type="button" id="btnModuloELogout" class="btn-nav-logout" title="Cerrar sesión institucional">
+            Salir
+          </button>
+        </div>
+      </header>
 
       <!-- Contenedor Principal de Vistas -->
-      <main id="main-content" class="main-content"></main>
+      <main id="main-content" class="main-content">
+        <header class="page-header no-print" id="encabezado-inscripcion">
+          <div class="encabezado-cuerpo">
+            <div data-rol="alumno">
+              <h1>Mi Inscripción a Materias</h1>
+              <p>Completá tu selección de materias para el Ciclo Lectivo 2026. Verificá correlatividades y horarios de cátedra.</p>
+            </div>
+            <div data-rol="preceptor" hidden>
+              <h1>Gestión de Inscripciones</h1>
+              <p>Selección de carrera, filtros de búsqueda de estudiantes y matriculación en Formulario A5a (Preceptoría).</p>
+            </div>
+          </div>
+          <div class="header-badge">
+            <span data-rol="alumno">Portal del Estudiante · ISFT 182</span>
+            <span data-rol="preceptor" hidden>I.S.F.T. Nº 182 · Preceptoría</span>
+          </div>
+        </header>
+        <div id="modulo-e-view-container" style="display: flex; flex-direction: column; gap: 1.5rem;"></div>
+      </main>
 
       <!-- Contenedor de Notificaciones Toast Flotantes -->
       <div id="toast-container" class="toast-container"></div>
@@ -31,7 +100,7 @@
     <script src="js/libs/pdf-lib.min.js"></script>
 
     <!-- Aplicación en JavaScript Vanilla Nativo (Sin React ni Bundlers) -->
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=2"></script>
   </body>
 </html>
 

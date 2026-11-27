@@ -113,19 +113,6 @@
             </div>
           </a>
 
-          <button type="button" class="module module--btn" id="modulo-finales" data-solo-usuario hidden
-                  aria-expanded="false" aria-controls="cal-finales">
-            <div class="module__head">
-              <span class="module__icon"><i data-lucide="calendar-clock"></i></span>
-              <span class="module__arrow" id="finales-chevron"><i data-lucide="chevron-down"></i></span>
-            </div>
-            <div>
-              <div class="module__name">Calendario de próximos finales</div>
-              <div class="module__desc" id="finales-desc">Tus mesas de examen inscriptas.</div>
-            </div>
-            <div class="cal oculto" id="cal-finales"></div>
-          </button>
-
         </nav>
 
       </main>
@@ -138,171 +125,15 @@
     (function () {
       'use strict';
 
-      var finales = [];
-      var abierto = false;
-
-      function escapar(texto) {
-        return String(texto == null ? '' : texto)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function isoLocal(f) {
-        var m = f.getMonth() + 1;
-        var d = f.getDate();
-        return f.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
-      }
-
-      /** Examen fijado para ese día: con un solo llamado, fecha_inicio = fecha_fin. */
-      function periodoDelDia(clave) {
-        for (var i = 0; i < finales.length; i++) {
-          var pm = finales[i];
-          if (pm.fecha_inicio && clave === pm.fecha_inicio) {
-            return pm;
-          }
-        }
-        return null;
-      }
-
-      function celdaDia(f, hoy) {
-        var clave = isoLocal(f);
-        var pm = periodoDelDia(clave);
-        var clases = ['cal__day'];
-
-        if (f < hoy) { clases.push('cal__day--pasado'); }
-        if (clave === isoLocal(hoy)) { clases.push('cal__day--hoy'); }
-
-        var tip = '';
-        if (pm) {
-          clases.push('cal__day--final');
-          var turno = 'Turno ' + (pm.turno || 'de examen') + (pm.anio_mesas ? ' ' + pm.anio_mesas : '');
-          tip = '<span class="cal__tip">' +
-                  '<strong>' + escapar(turno) + '</strong>' +
-                  (pm.materias || []).map(function (mm) {
-                    return '<span>' + escapar(mm.materia) +
-                             (mm.llamado ? ' · ' + escapar(mm.llamado) : '') + '</span>';
-                  }).join('') +
-                '</span>';
-        }
-
-        return '<span class="' + clases.join(' ') + '"' + (pm ? ' data-tip="1"' : '') + '>' +
-                 f.getDate() + tip +
-               '</span>';
-      }
-
-      function pintarCalendario() {
-        var cont = document.getElementById('cal-finales');
-        var hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-
-        // La grilla arranca el lunes de la semana actual y cubre 5 semanas.
-        var lunes = new Date(hoy);
-        lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
-
-        var DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-        var html = '<div class="cal__head" aria-hidden="true">';
-        DIAS.forEach(function (d) { html += '<span class="cal__wd">' + d + '</span>'; });
-        html += '</div><div class="cal__grid">';
-        for (var i = 0; i < 35; i++) {
-          var f = new Date(lunes);
-          f.setDate(lunes.getDate() + i);
-          html += celdaDia(f, hoy);
-        }
-        html += '</div>';
-        html += '<div class="cal__legend">' +
-                  '<span class="cal__lg"><i class="cal__lg-dot cal__lg-dot--final"></i>Tus finales</span>' +
-                  '<span class="cal__lg"><i class="cal__lg-dot cal__lg-dot--hoy"></i>Hoy</span>' +
-                '</div>';
-        cont.innerHTML = html;
-        conectarDias();
-      }
-
-      /* En pantallas táctiles no hay hover: el tap sobre un día marcado
-         fija o desfija su tooltip (sin cerrar el calendario). */
-      function conectarDias() {
-        contDias().forEach(function (dia) {
-          dia.addEventListener('click', function (e) {
-            e.stopPropagation();
-            var estaba = dia.classList.contains('cal__day--tip-open');
-            contDias().forEach(function (otro) {
-              otro.classList.remove('cal__day--tip-open');
-            });
-            if (!estaba) { dia.classList.add('cal__day--tip-open'); }
-          });
-        });
-      }
-
-      function contDias() {
-        return Array.prototype.slice.call(document.querySelectorAll('#cal-finales .cal__day[data-tip]'));
-      }
-
-      function aplicarEstado() {
-        var cal = document.getElementById('cal-finales');
-        var chevron = document.getElementById('finales-chevron');
-        var boton = document.getElementById('modulo-finales');
-
-        cal.classList.toggle('oculto', !abierto);
-        if (chevron) { chevron.style.transform = abierto ? 'rotate(180deg)' : ''; }
-        boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
-      }
-
-      function mostrarError() {
-        finales = [];
-        document.getElementById('finales-desc').textContent = 'No se pudieron cargar las mesas.';
-        document.getElementById('finales-chevron').classList.add('oculto');
-      }
-
-      function cargarFinales() {
-        fetch(App.controlador('get_proximos_finales.php'))
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (!Array.isArray(data)) { throw new Error('Respuesta inválida'); }
-            finales = data;
-
-            var total = 0;
-            finales.forEach(function (pm) { total += (pm.materias || []).length; });
-
-            if (!total) {
-              finales = [];
-              document.getElementById('finales-desc').textContent = 'No tenés finales inscriptos por ahora.';
-              document.getElementById('finales-chevron').classList.add('oculto');
-              return;
-            }
-            document.getElementById('finales-desc').textContent =
-              'Tenés ' + total + (total === 1 ? ' final inscripto.' : ' finales inscriptos.');
-            pintarCalendario();
-            aplicarEstado();
-          })
-          .catch(mostrarError);
-      }
-
-      document.getElementById('modulo-finales').addEventListener('click', function () {
-        if (!finales.length) {
-          window.location.href = App.vista('inscripcion_finales.html');
-          return;
-        }
-        abierto = !abierto;
-        aplicarEstado();
-      });
-
       App.montarLayout({ protegida: true }).then(function (usuario) {
-        var soloUsuario = document.querySelectorAll('[data-solo-usuario]');
-        var soloInvitado = document.querySelectorAll('[data-solo-invitado]');
-
-        soloUsuario.forEach(function (el) { el.hidden = !usuario; });
-        soloInvitado.forEach(function (el) { el.hidden = !!usuario; });
+        document.querySelectorAll('[data-solo-usuario]').forEach(function (el) { el.hidden = !usuario; });
+        document.querySelectorAll('[data-solo-invitado]').forEach(function (el) { el.hidden = !!usuario; });
 
         if (usuario) {
-          var nombre = (usuario.nombre || '').trim();
-          document.getElementById('bienvenida-nombre').textContent = nombre || 'estudiante';
           document.getElementById('welcome-texto').textContent =
             'Gestioná tus finales, inscripciones y datos académicos desde un solo lugar.';
-          cargarFinales();
-          App.iconos();
         }
+        App.iconos();
       });
     })();
   </script>

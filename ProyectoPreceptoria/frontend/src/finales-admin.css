@@ -1,0 +1,277 @@
+:host {
+  --primary: var(--primary-700, #122940);
+  --primary-light: var(--secondary, #2563EB);
+  --primary-hover: var(--primary-600, #1E3E5E);
+  --border: var(--border-strong, #CBD5E1);
+  --text-main: var(--text, #172033);
+  --text-muted: var(--text-2, #64748B);
+  --text-light: var(--text-3, #94A3B8);
+  --success: #16A34A;
+  --success-bg: #ECFDF3;
+  --success-text: #166534;
+  --success-border: #BBF7D0;
+  --danger: var(--error, #DC2626);
+  --danger-bg: var(--error-soft, #FEF2F2);
+  --danger-text: #991B1B;
+  --danger-border: var(--error-border, #FECACA);
+  --warning: #D97706;
+  --warning-bg: var(--warning-soft, #FFF7ED);
+  --warning-text: #9A3412;
+  --warning-border: #FED7AA;
+  --bg-main: var(--bg, #F6F8FB);
+  --bg-hover: var(--surface-2, #F8FAFC);
+  --card-bg: var(--surface, #FFFFFF);
+  --card-blur: none;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --card-border: 1px solid var(--border, #CBD5E1);
+  --radius-sm: var(--r-sm, 6px);
+  --radius-md: var(--r, 8px);
+  --radius-lg: var(--r-md, 10px);
+  --font-main: var(--font, "Plus Jakarta Sans", system-ui, sans-serif);
+}
+
+.finales-container {
+  padding: 0;
+  background: transparent;
+  max-width: none;
+}
+
+.card {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: var(--sp-6, 24px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4, 16px);
+  flex-wrap: wrap;
+}
+
+.card-header h3 {
+  color: var(--primary);
+  font-size: 1.05rem;
+}
+
+.tab-description {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.btn {
+  padding: 0.6rem 1rem;
+  border-radius: var(--r-sm, 6px);
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background-color: var(--surface, #FFFFFF);
+  color: var(--text-main);
+  border: 1px solid var(--border, #CBD5E1);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--surface-2, #F8FAFC);
+  color: var(--text-main);
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: var(--r-sm, 6px);
+  font-family: var(--font-main);
+  font-size: 0.875rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary, #2563EB);
+  background: var(--surface, #FFFFFF);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.form-group label,
+.filtro-label {
+  color: var(--primary);
+  font-size: 0.75rem;
+}
+
+.filtros-finales-panel {
+  background: var(--surface-2, #F8FAFC);
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: var(--r, 8px);
+  padding: var(--sp-4, 16px);
+}
+
+.filtros-finales-header h4 {
+  color: var(--primary);
+}
+
+.table-responsive {
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: var(--r, 8px);
+}
+
+.custom-table th {
+  background-color: var(--secondary-soft, #EFF4FF);
+  color: var(--primary);
+  border-bottom: 1px solid var(--border, #CBD5E1);
+  border-right: 1px solid var(--border, #E2E8F0);
+}
+
+.custom-table td {
+  border-right: 1px solid var(--border, #E2E8F0);
+}
+
+.status-badge {
+  border-radius: var(--r-full, 999px);
+}
+
+.modal-card {
+  background: var(--surface, #FFFFFF);
+  border-radius: var(--r-lg, 10px);
+  border: 1px solid var(--border, #CBD5E1);
+  color: var(--text-main);
+}
+
+input,
+select,
+textarea,
+.filtro-input,
+.login-field input {
+  background: var(--surface, #FFFFFF);
+  color: var(--text-main);
+}
+
+.filtro-input:focus {
+  background: var(--surface, #FFFFFF);
+}
+
+.filtro-dropdown {
+  background: var(--surface, #FFFFFF);
+  border-color: var(--border, #CBD5E1);
+}
+
+.filtro-dropdown-header {
+  background: var(--secondary-soft, #EFF4FF);
+  color: var(--primary);
+  border-bottom-color: var(--border, #CBD5E1);
+}
+
+.filtro-term-indicator {
+  color: var(--secondary, #2563EB);
+}
+
+.filtro-option-item {
+  border-bottom-color: var(--border, #E2E8F0);
+}
+
+.filtro-option-item:hover,
+.filtro-btn-toggle:hover {
+  background: var(--surface-3, #F1F5F9);
+}
+
+.filtro-option-item.selected {
+  background: var(--secondary-soft, #EFF4FF);
+}
+
+.custom-table td {
+  background: var(--surface, #FFFFFF);
+}
+
+.custom-table tbody tr:hover td {
+  background: var(--surface-2, #F8FAFC);
+}
+
+.empty-text,
+.loading-text {
+  background: var(--surface-2, #F8FAFC);
+  border-color: var(--border-strong, #CBD5E1);
+}
+
+.badge-id,
+.badge-count-materias {
+  background: var(--secondary-soft, #EFF4FF);
+  color: var(--primary);
+  border-color: var(--border, #CBD5E1);
+}
+
+.badge-carrera,
+.status-inscripto,
+.badge-libre,
+.badge-reciente-tag {
+  background: var(--secondary-soft, #EFF4FF);
+  color: var(--secondary, #2563EB);
+  border-color: var(--border, #CBD5E1);
+}
+
+.badge-doc,
+.badge-intentos,
+.input-alumno-bloqueado {
+  background: var(--surface-3, #F1F5F9);
+  color: var(--text-main);
+  border-color: var(--border, #CBD5E1);
+}
+
+.condition-card.pending,
+.verdict-pending,
+.materia-grupo-card,
+.cookie-session-bar {
+  background: var(--surface, #FFFFFF);
+  color: var(--text-main);
+  border-color: var(--border, #CBD5E1);
+}
+
+.materia-grupo-header {
+  background: var(--surface-2, #F8FAFC);
+  border-bottom-color: var(--primary);
+}
+
+.fila-mas-reciente td {
+  background: var(--info-soft, #EFF6FF);
+}
+
+.select-desactivado {
+  border-color: var(--danger) !important;
+  background: var(--danger-bg) !important;
+}
+
+.btn:disabled {
+  background: var(--surface-3, #F1F5F9) !important;
+  color: var(--text-3, #94A3B8) !important;
+  border-color: var(--border, #CBD5E1) !important;
+}
+
+:host-context([data-theme="dark"]) {
+  --success: #4ADE80;
+  --success-bg: #10291C;
+  --success-text: #BBF7D0;
+  --success-border: #1F5135;
+  --danger-text: #FECACA;
+  --warning: #FBBF24;
+  --warning-text: #FDE68A;
+  --warning-border: #5C4313;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
